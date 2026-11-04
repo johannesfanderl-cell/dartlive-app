@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Diagnose</title>
+<style>body{font:22px Arial,sans-serif;padding:20px;background:#fff;color:#000}td{padding:4px 14px;border-bottom:1px solid #ccc}</style></head><body>
+<h2>Browser-Diagnose</h2><div id="o">Skript läuft nicht</div>
+<script>
+var r=[['UserAgent',navigator.userAgent]];
+function s(p,v){try{return window.CSS&&CSS.supports?String(CSS.supports(p,v)):'?'}catch(e){return 'Fehler'}}
+r.push(['CSS grid',s('display','grid')]);
+r.push(['flex gap',s('gap','4px')]);
+r.push(['clamp()',s('width','clamp(1px,2px,3px)')]);
+r.push(['min()',s('width','min(1px,2px)')]);
+r.push(['env()',s('padding-top','env(safe-area-inset-top)')]);
+r.push(['inset',s('inset','0')]);
+r.push(['EventSource',String(typeof EventSource)]);
+r.push(['fetch',String(typeof fetch)]);
+r.push(['padStart',String(typeof ''.padStart)]);
+r.push(['Object.entries',String(typeof Object.entries)]);
+r.push(['Fenster',window.innerWidth+' x '+window.innerHeight]);
+document.getElementById('o').innerHTML='<table>'+r.map(function(x){return '<tr><td>'+x[0]+'</td><td>'+x[1]+'</td></tr>'}).join('')+'</table>';
+</script></body></html>

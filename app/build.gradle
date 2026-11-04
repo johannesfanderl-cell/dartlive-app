@@ -1,0 +1,41 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'de.tvriedenburg.dartlive'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'de.tvriedenburg.dartlive'
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1') as int)
+        versionName "1.0." + (System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+    }
+
+    signingConfigs {
+        verein {
+            // Fester Schlüssel, damit neue Versionen über die alte installiert werden können.
+            storeFile file('dartlive.jks')
+            storePassword 'tvriedenburg'
+            keyAlias 'dartlive'
+            keyPassword 'tvriedenburg'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.verein
+        }
+        debug {
+            signingConfig signingConfigs.verein
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

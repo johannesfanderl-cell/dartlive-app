@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dart Live – Anzeige</title>
+<style>
+/* Absichtlich sehr einfaches CSS (Tabellen, keine Variablen, kein Grid/Flex),
+   damit auch alte Fernseh-Browser alles richtig anzeigen. */
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.7em; line-height: 1.7em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #ffffff; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#bar .r { float: right; }
+#bar .net { color: #ffb3b3; margin-right: 1em; }
+table.grid { width: 100%; border-collapse: separate; border-spacing: 0.4em; table-layout: fixed; }
+table.grid td { vertical-align: top; }
+.pn { position: relative; background: #0b2d6b; border: 0.12em solid #3f6fbf; overflow: hidden; }
+.hd { height: 2.7em; padding: 0.25em 0.6em 0 0.6em; background: #10377f; white-space: nowrap; overflow: hidden; }
+.hd b { display: block; font-size: 1.15em; line-height: 1.25em; letter-spacing: 0.08em; text-transform: uppercase; }
+.hd span { display: block; color: #b7d3ff; font-size: 0.85em; line-height: 1.3em; }
+.pb { display: table; width: 100%; border-top: 0.1em solid #3f6fbf; }
+.pbi { display: table-cell; vertical-align: middle; padding: 0 0.6em; }
+.pb.on { background: #ffffff; color: #071d47; }
+.nm { font-size: 1.35em; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+.nm i { font-style: normal; float: right; margin-left: 0.4em; }
+.rm { font-size: 5.2em; font-weight: bold; line-height: 1; }
+.st { font-size: 0.95em; white-space: nowrap; overflow: hidden; opacity: 0.85; }
+.idle { display: table; width: 100%; text-align: center; }
+.idle div { display: table-cell; vertical-align: middle; }
+.idle b { display: block; font-size: 2em; letter-spacing: 0.06em; text-transform: uppercase; }
+.idle span { display: block; font-size: 1.2em; color: #b7d3ff; margin-top: 0.3em; }
+.win { display: table; width: 100%; text-align: center; background: #ffffff; color: #071d47; }
+.win div { display: table-cell; vertical-align: middle; padding: 0 0.4em; }
+.win small { display: block; font-size: 1.1em; letter-spacing: 0.1em; text-transform: uppercase; }
+.win b { display: block; font-size: 2.2em; text-transform: uppercase; margin: 0.2em 0; word-wrap: break-word; }
+.win em { display: block; font-style: normal; font-size: 3.6em; font-weight: bold; }
+table.duo { width: 100%; border-collapse: collapse; table-layout: fixed; border-top: 0.1em solid #3f6fbf; }
+table.duo td { vertical-align: middle; text-align: center; padding: 0 0.5em; }
+table.duo td.l { border-right: 0.1em solid #3f6fbf; }
+table.duo td.on { background: #ffffff; color: #071d47; }
+table.duo .nm { font-size: 2em; }
+table.duo .nm i { float: none; display: block; font-size: 0.8em; margin: 0.15em 0 0 0; }
+table.duo .rm { font-size: 8.5em; }
+table.duo .st { font-size: 1.4em; }
+body.single .hd { height: 3.7em; }
+body.single .hd b { font-size: 1.5em; }
+body.single .hd span { font-size: 1.1em; }
+.ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #ffffff; color: #071d47; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #3f6fbf; border-bottom: 0.15em solid #3f6fbf; }
+</style>
+</head>
+<body>
+<div id="bar"><span class="r"><span class="net" id="net"></span><span id="clock"></span></span>TV Riedenburg · Dart Live</div>
+<div id="wrap"></div>
+
+<script>
+(function () {
+  var path = location.pathname;
+  var list = [1, 2, 3];
+  if (/tv2/.test(path)) list = [4, 5];
+  else if (/tv3/.test(path) || /\/tv$/.test(path) || /\/tv\/$/.test(path)) list = [1, 2, 3, 4, 5];
+  var single = false;
+  var mm = path.match(/\/m([1-5])\/?$/);
+  if (mm) { list = [parseInt(mm[1], 10)]; single = true; document.body.className = 'single'; }
+  var qm = location.search.match(/s=([1-5]+)/);
+  if (qm) { list = []; for (var q = 0; q < qm[1].length; q++) list.push(parseInt(qm[1].charAt(q), 10)); }
+
+  var state = null, version = 0, seenBanner = {}, bannerUntil = {}, first = true;
+  var base = 20;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function avg(p) { return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–'; }
+  function el(id) { return document.getElementById(id); }
+
+  function sizes() {
+    var w = window.innerWidth || document.documentElement.clientWidth;
+    var h = window.innerHeight || document.documentElement.clientHeight;
+    base = single ? Math.floor(Math.min(w / 34, h / 24)) : Math.floor(Math.min(w / list.length / 15.5, h / 26));
+    if (base < 8) base = 8;
+    document.body.style.fontSize = base + 'px';
+    return { w: w, h: h };
+  }
+
+  function panel(n) {
+    var b = (state && state.boards && state.boards[n]) || { status: 'idle' };
+    var h = '<div class="pn" id="pn' + n + '">';
+    var info = '';
+    if (b.status === 'play') info = 'Leg ' + b.leg + ' · FT' + b.legsToWin + ' · ' + b.start + (b.doubleOut ? ' DO' : '');
+    h += '<div class="hd"><b>Scheibe ' + n + '</b><span>' + (esc(info) || '&nbsp;') + '</span></div>';
+    if (b.status === 'play' && b.players && single) {
+      h += '<table class="duo"><tr>';
+      for (var d = 0; d < 2; d++) {
+        var q = b.players[d];
+        h += '<td class="' + (d === 0 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
+          '<div class="nm">' + (b.turn === d ? '&#9654; ' : '') + esc(q.name) + '<i>Legs ' + q.legs + '</i></div>' +
+          '<div class="rm">' + q.rem + '</div>' +
+          '<div class="st">&Oslash; ' + avg(q) + (q.last && q.last.length ? ' &nbsp;·&nbsp; ' + esc(q.last.join('  ')) : '') + '</div></td>';
+      }
+      h += '</tr></table>';
+    } else if (b.status === 'play' && b.players) {
+      for (var i = 0; i < 2; i++) {
+        var p = b.players[i];
+        h += '<div class="pb' + (b.turn === i ? ' on' : '') + '"><div class="pbi">' +
+          '<div class="nm"><i>' + p.legs + '</i>' + (b.turn === i ? '&#9654; ' : '') + esc(p.name) + '</div>' +
+          '<div class="rm">' + p.rem + '</div>' +
+          '<div class="st">&Oslash; ' + avg(p) + (p.last && p.last.length ? ' &nbsp;·&nbsp; ' + esc(p.last.join('  ')) : '') + '</div>' +
+          '</div></div>';
+      }
+    } else if (b.status === 'done' && b.players) {
+      var w = b.players[b.winner], l = b.players[1 - b.winner];
+      h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
+        '<small>gegen ' + esc(l.name) + '</small></div></div>';
+    } else {
+      h += '<div class="idle"><div><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
+    }
+    if (b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
+    h += '</div>';
+    return h;
+  }
+
+  function render() {
+    var s = sizes();
+    var h = '<table class="grid"><tr>';
+    for (var i = 0; i < list.length; i++) h += '<td>' + panel(list[i]) + '</td>';
+    h += '</tr></table>';
+    el('wrap').innerHTML = h;
+    // Höhen in Pixeln setzen (zuverlässiger als CSS-Höhen in alten Browsern)
+    var avail = s.h - el('bar').offsetHeight - Math.round(base * 0.8) - 4;
+    for (var j = 0; j < list.length; j++) {
+      var pn = el('pn' + list[j]);
+      if (!pn) continue;
+      pn.style.height = avail + 'px';
+      var hd = pn.firstChild.offsetHeight;
+      var rest = avail - hd - 4;
+      var kids = pn.childNodes;
+      for (var k = 0; k < kids.length; k++) {
+        var c = kids[k].className;
+        if (c === 'pb' || c === 'pb on') kids[k].style.height = Math.floor(rest / 2) + 'px';
+        else if (c === 'idle' || c === 'win' || c === 'duo') kids[k].style.height = rest + 'px';
+      }
+    }
+  }
+
+  function apply(data) {
+    if (!data || !data.boards) return;
+    var now = new Date().getTime();
+    for (var i = 0; i < list.length; i++) {
+      var n = list[i], b = data.boards[n];
+      if (b && b.bannerId && seenBanner[n] !== b.bannerId) {
+        if (!first) bannerUntil[n] = now + 6000;
+        seenBanner[n] = b.bannerId;
+      }
+    }
+    first = false;
+    state = data; version = data.v;
+    render();
+  }
+
+  function setNet(t) { el('net').innerHTML = t; }
+
+  function poll() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setNet('Verbindung wird gesucht …'); setTimeout(poll, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      if (r.status === 200) {
+        var d = null;
+        try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+        if (d) { setNet(''); apply(d); setTimeout(poll, 50); return; }
+      }
+      setNet('Verbindung wird gesucht …');
+      setTimeout(poll, 2000);
+    };
+    try {
+      r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true);
+      r.send();
+    } catch (e) { done = true; clearTimeout(guard); setTimeout(poll, 3000); }
+  }
+
+  function clock() {
+    var d = new Date(), m = d.getMinutes();
+    el('clock').innerHTML = d.getHours() + ':' + (m < 10 ? '0' : '') + m;
+  }
+
+  // Banner nach Ablauf ausblenden
+  setInterval(function () {
+    var now = new Date().getTime(), redraw = false;
+    for (var n in bannerUntil) if (bannerUntil[n] && bannerUntil[n] <= now) { bannerUntil[n] = 0; redraw = true; }
+    if (redraw) render();
+  }, 1000);
+  setInterval(clock, 15000);
+  window.onresize = render;
+
+  clock();
+  render();
+  poll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+# Dart Live – TV Riedenburg
+
+Live-Eingabe an 5 Tablets und Anzeige auf den Fernsehern. Läuft ohne Internet im WLAN „TVR Dart“.
+
+## Server starten (Chromebook, Linux-Terminal)
+
+    cd ~/dartlive
+    node server.js
+
+Das Terminal-Fenster offen lassen. Beenden mit Strg + C.
+
+## Adressen (Chromebook-IP 192.168.68.222, Port 3000)
+
+- Tablet Scheibe 1–5:  http://192.168.68.222:3000/1  bis  /5
+- Fernseher 1 (Scheiben 1–3):  http://192.168.68.222:3000/tv1
+- Fernseher 2 (Scheiben 4–5):  http://192.168.68.222:3000/tv2
+- Monitor an Scheibe 1–5 (nur Spielstand, für die App):  http://192.168.68.222:3000/m1  bis  /m5
+- Alle 5 Scheiben:  http://192.168.68.222:3000/tv
+- Auswahlseite:  http://192.168.68.222:3000/
+
+## Am Tablet
+Namen eingeben (zuletzt benutzte antippen), 301/501/701, Gewinn-Legs, Double Out, Beginner → Spiel starten.
+Pro Aufnahme die Summe der 3 Darts eintippen und OK (oder Schnelltaste). Überworfen wird automatisch erkannt.
+Bei Double Out fragt das Tablet beim Checkout, ob mit einem Doppel beendet wurde. Keine Checkout-Hinweise.
+„Rückgängig“ nimmt die letzte Aufnahme zurück. Spielstände bleiben bei einem Server-Neustart erhalten.
