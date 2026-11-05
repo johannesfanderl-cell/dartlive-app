@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
     private String scoreUrl() { return server() + "/m" + board(); }
 
     private void loadAll() {
-        web.loadUrl(inputUrl());
+        open(web, inputUrl(), true);
         if (scoreDisplay != null) { scoreDisplay.dismiss(); scoreDisplay = null; }
         updateScoreDisplay();
     }
@@ -229,29 +229,66 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-        w.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (!request.isForMainFrame()) return;
-                final String url = request.getUrl().toString();
-                String html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-                        + "<body style='background:#071d47;color:#fff;font-family:Arial;text-align:center;padding-top:15vh'>"
-                        + "<h1 style='font-size:7vmin'>Server nicht erreichbar</h1>"
-                        + "<p style='font-size:4vmin'>" + url + "</p>"
-                        + "<p style='font-size:3.5vmin;color:#b7d3ff'>Läuft der Server auf dem Chromebook?<br>Ist das Tablet im WLAN „TVR Dart“?</p>"
-                        + "<p style='font-size:3.5vmin;color:#b7d3ff'>Neuer Versuch in 5 Sekunden …</p>"
-                        + (input ? "<p style='font-size:3vmin;color:#b7d3ff'>Zurück-Taste: Einstellungen</p>" : "")
-                        + "<script>setTimeout(function(){location.href='" + url.replace("'", "") + "'},5000)</script>"
-                        + "</body></html>";
-                view.loadDataWithBaseURL(null, html, "text/html", "utf-8", url);
-            }
-
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                return false;
-            }
-        });
+        w.setWebViewClient(new Client(input));
         return w;
+    }
+
+    /** Seite, die angezeigt wird, solange der Server nicht antwortet. */
+    static String statusPage(String title, String url, boolean input, boolean retry) {
+        return "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
+                + "<body style='background:#071d47;color:#fff;font-family:Arial;text-align:center;padding:12vh 4vw 0'>"
+                + "<h1 style='font-size:6vmin;margin:0 0 3vmin'>" + title + "</h1>"
+                + "<p style='font-size:4vmin;margin:0 0 4vmin'>" + url + "</p>"
+                + (retry ? "<p style='font-size:3.5vmin;color:#b7d3ff'>Läuft der Server auf dem Chromebook?<br>Ist das Gerät im WLAN „TVR Dart“?</p>"
+                         + "<p style='font-size:3.5vmin;color:#b7d3ff'>Neuer Versuch in 5 Sekunden …</p>" : "")
+                + (input ? "<p style='font-size:3vmin;color:#b7d3ff'>Zurück-Taste: Menü mit Einstellungen</p>" : "")
+                + (retry ? "<script>setTimeout(function(){location.href='" + url.replace("'", "") + "'},5000)</script>" : "")
+                + "</body></html>";
+    }
+
+    /** Lädt eine Seite und zeigt sofort „Verbinde …“; nach 10 s ohne Antwort eine Fehlermeldung. */
+    static void open(final WebView w, final String url, boolean input) {
+        w.loadDataWithBaseURL(null, statusPage("Verbinde mit dem Server …", url, input, false), "text/html", "utf-8", null);
+        w.postDelayed(new Runnable() { @Override public void run() { w.loadUrl(url); } }, 400);
+    }
+
+    static class Client extends WebViewClient {
+        private final boolean input;
+        private final Handler timer = new Handler(Looper.getMainLooper());
+        private Runnable pending;
+
+        Client(boolean input) { this.input = input; }
+
+        private void cancel() { if (pending != null) { timer.removeCallbacks(pending); pending = null; } }
+
+        private void fail(WebView view, String url) {
+            cancel();
+            view.stopLoading();
+            view.loadDataWithBaseURL(null, statusPage("Server nicht erreichbar", url, input, true), "text/html", "utf-8", null);
+        }
+
+        @Override
+        public void onPageStarted(final WebView view, final String url, android.graphics.Bitmap favicon) {
+            cancel();
+            if (url == null || !url.startsWith("http")) return;
+            pending = new Runnable() { @Override public void run() { pending = null; fail(view, url); } };
+            timer.postDelayed(pending, 10000);
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            if (url != null && url.startsWith("http")) cancel();
+        }
+
+        @Override
+        public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+            if (request.isForMainFrame()) fail(view, request.getUrl().toString());
+        }
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            return false;
+        }
     }
 
     /** Der Spielstand auf dem zweiten Bildschirm (HDMI). */
@@ -268,7 +305,7 @@ public class MainActivity extends Activity {
             super.onCreate(savedInstanceState);
             WebView w = createWebView(getContext(), false);
             setContentView(w);
-            w.loadUrl(url);
+            open(w, url, false);
         }
     }
 }
