@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script src="/local.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Dart Live Riedenburg</title>
@@ -29,5 +30,16 @@ small { display: block; font-size: 14px; font-weight: normal; margin-top: 4px; }
 <a class="tv" href="/liga">Spieltag<small>Aufstellung, Spiele, Bericht</small></a><a class="tv" href="/liga-tv">Spieltag-Anzeige<small>für den Fernseher</small></a>
 <h2>Statistik</h2>
 <a class="tv" href="/statistik">Spielerstatistik<small>Average, 180er, Finishes</small></a><a class="tv" href="/statistik-tv">Ehrentafel<small>für den Fernseher</small></a>
+<p id="lokal" style="display:none;margin-top:26px;color:#b7d3ff;font-size:14px">Betrieb ohne Server – alle Daten liegen nur auf diesem Gerät.<br><a href="#" id="reset" style="color:#ffb3b3;display:inline;background:none;padding:0;min-width:0;font-size:14px;font-weight:normal">Alle Testdaten auf diesem Gerät löschen</a></p>
+<script>
+(function () {
+  if (!window.DartLokal) return;
+  document.getElementById('lokal').style.display = 'block';
+  document.getElementById('reset').onclick = function () {
+    if (confirm('Wirklich alle Spiele, Turniere, Ergebnisse und Statistiken auf diesem Gerät löschen?')) { window.DartLokal.reset(); location.reload(); }
+    return false;
+  };
+})();
+</script>
 </body>
 </html>

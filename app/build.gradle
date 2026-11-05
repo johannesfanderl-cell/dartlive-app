@@ -41,6 +41,8 @@ android {
             resValue 'string', 'app_name', 'Dart Live'
             resValue 'string', 'start_prefix', ''
             resValue 'bool', 'offline_default', 'false'
+            resValue 'bool', 'start_home', 'false'
+            manifestPlaceholders = [orientation: 'sensorLandscape']
         }
         training {
             dimension 'modus'
@@ -48,6 +50,17 @@ android {
             resValue 'string', 'app_name', 'Dart Training'
             resValue 'string', 'start_prefix', 't'
             resValue 'bool', 'offline_default', 'true'
+            resValue 'bool', 'start_home', 'false'
+            manifestPlaceholders = [orientation: 'sensorLandscape']
+        }
+        demo {
+            dimension 'modus'
+            applicationIdSuffix '.demo'
+            resValue 'string', 'app_name', 'Dart Demo'
+            resValue 'string', 'start_prefix', ''
+            resValue 'bool', 'offline_default', 'true'
+            resValue 'bool', 'start_home', 'true'
+            manifestPlaceholders = [orientation: 'fullSensor']
         }
     }
 

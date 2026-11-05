@@ -185,6 +185,11 @@ public class LocalServer {
         PAGES.put("/bestenliste", "best.html");
         PAGES.put("/diag", "diag.html");
         PAGES.put("/icon.svg", "icon.svg");
+        PAGES.put("/local.js", "local.js");
+        PAGES.put("/local-core.js", "local-core.js");
+        PAGES.put("/turnier", "turnier.html"); PAGES.put("/turnier-tv", "turnier-tv.html");
+        PAGES.put("/liga", "liga.html"); PAGES.put("/liga-tv", "liga-tv.html"); PAGES.put("/liga-bericht", "liga-bericht.html");
+        PAGES.put("/statistik", "statistik.html"); PAGES.put("/statistik-tv", "statistik-tv.html");
     }
 
     public WebResourceResponse intercept(Uri uri, String method) {
@@ -204,7 +209,7 @@ public class LocalServer {
             String file = PAGES.get(path);
             if (file == null) return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", headers, new ByteArrayInputStream(new byte[0]));
             InputStream in = ctx.getAssets().open(file);
-            String mime = file.endsWith(".svg") ? "image/svg+xml" : "text/html";
+            String mime = file.endsWith(".svg") ? "image/svg+xml" : (file.endsWith(".js") ? "application/javascript" : "text/html");
             return new WebResourceResponse(mime, "utf-8", 200, "OK", headers, in);
         } catch (Exception e) {
             return new WebResourceResponse("text/plain", "utf-8", 500, "Error", headers, new ByteArrayInputStream(new byte[0]));

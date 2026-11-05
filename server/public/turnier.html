@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script src="/local.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Turnierleitung – Dart Live</title>
@@ -62,6 +63,13 @@ tr.q td { background: rgba(140,196,255,.12); }
 #dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
 #toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
 #toast.bad { background: #ffd6d6; color: #6b1d2d; }
+@media (max-width: 600px) {
+  #main { padding: 10px 8px 50px; }
+  td, th { padding: 5px 3px; font-size: 14px; }
+  .btn.sm { padding: 5px 7px; font-size: 12px; margin: 2px; }
+  .card { padding: 8px; }
+  .score .n { font-size: 36px; } .score .t { font-size: 15px; }
+}
 </style>
 </head>
 <body>
@@ -149,7 +157,7 @@ tr.q td { background: rgba(140,196,255,.12); }
     for (var b = 1; b <= 5; b++) h += '<button data-board="' + b + '"' + (form.boards.indexOf(b) >= 0 ? ' class="on"' : '') + '>' + b + '</button>';
     h += '</div></div></div>';
     h += '<p class="note" id="plan">' + esc(planText(pl.length)) + '</p>';
-    h += '<div class="err">' + esc(err) + '</div><button class="btn" data-a="create">Gruppen auslosen</button></div>';
+    h += '<div class="err">' + esc(err) + '</div><button class="btn" data-a="create">Gruppen auslosen</button><button class="btn sec" data-a="demo">15 Testspieler eintragen</button></div>';
     return h;
   }
 
@@ -331,6 +339,10 @@ tr.q td { background: rgba(140,196,255,.12); }
       return;
     }
     a = t.getAttribute('data-a');
+    if (a === 'demo') {
+      form.players = ['Johannes', 'Sepp', 'Max', 'Anna', 'Toni', 'Lisa', 'Franz', 'Vroni', 'Hans', 'Resi', 'Kurt', 'Moni', 'Fritz', 'Gabi', 'Lukas'].join('\n');
+      form.seeds = ['Johannes', 'Sepp', 'Max']; render(); return;
+    }
     if (a === 'create') {
       readForm();
       var pl = plist();

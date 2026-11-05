@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script src="/local.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Liga-Spieltag – Dart Live</title>
@@ -58,6 +59,13 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
 #dlg .btn { background: #0b2d6b; color: #fff; } #dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
 #toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
 #toast.bad { background: #ffd6d6; color: #6b1d2d; }
+@media (max-width: 600px) {
+  #main { padding: 10px 8px 50px; }
+  td, th { padding: 5px 3px; font-size: 14px; }
+  .btn.sm { padding: 5px 7px; font-size: 12px; margin: 2px; }
+  .card { padding: 8px; }
+  .score .n { font-size: 36px; } .score .t { font-size: 15px; }
+}
 </style>
 </head>
 <body>
@@ -126,7 +134,7 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
       '<p class="note">Blockweise: Doppel starten erst, wenn Spiel 1–6 fertig sind, und Spiel 10–15 erst nach den Doppeln (wie auf dem Spielbericht).</p></div>';
     h += '<div class="teams">' + teamHTML('home', 'Heim (A1–A6)', names) + teamHTML('guest', 'Gast (B1–B6)', []) + '</div>';
     h += '<datalist id="known">'; for (var k = 0; k < names.length; k++) h += '<option value="' + esc(names[k]) + '">'; h += '</datalist>';
-    h += '<button class="btn" data-a="create">Spieltag anlegen</button>';
+    h += '<button class="btn" data-a="create">Spieltag anlegen</button><button class="btn sec" data-a="demo">Testaufstellung eintragen</button>';
     return h;
   }
   function teamHTML(team, title, names) {
@@ -233,6 +241,11 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
       return;
     }
     a = t.getAttribute('data-a');
+    if (a === 'demo') {
+      var hn = ['Johannes', 'Sepp', 'Max', 'Toni', 'Franz', 'Hans'], gn = ['Huber', 'Maier', 'Gruber', 'Bauer', 'Wagner', 'Schmid'];
+      for (var d = 0; d < 6; d++) { form.home[d] = { name: hn[d], nr: String(1001 + d) }; form.guest[d] = { name: gn[d], nr: String(2001 + d) }; }
+      if (!form.guestTeam) form.guestTeam = 'Testgegner'; render(); return;
+    }
     if (a === 'create') {
       act({ action: 'league', homeTeam: form.homeTeam, guestTeam: form.guestTeam || 'Gast', place: form.place, date: form.date, legs: form.legs, start: form.start, strict: form.strict, home: form.home, guest: form.guest }, 'Spieltag angelegt – Spiele werden zugeteilt');
     } else if (a === 'sub') {

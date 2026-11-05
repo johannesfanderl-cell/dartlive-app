@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
+<script src="/local.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#071d47">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -133,13 +134,6 @@ input { font-family: inherit; }
   function $(id) { return document.getElementById(id); }
 
   function xhr(method, url, body, cb) {
-    // App ohne Server: Schreibzugriffe gehen direkt an die App
-    if (window.DartLocal && method !== 'GET') {
-      var t = null;
-      try { t = window.DartLocal.call(method, url, body != null ? JSON.stringify(body) : ''); } catch (e) { t = null; }
-      setTimeout(function () { var d = null; try { d = JSON.parse(t); } catch (e) { d = null; } cb(d && !d.error ? null : 'lokal', d); }, 0);
-      return;
-    }
     var r = new XMLHttpRequest();
     r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
     r.timeout = 8000;
@@ -237,7 +231,6 @@ input { font-family: inherit; }
       }
       setTimeout(watch, 100);
     };
-    if (window.DartLocal) return; // ohne Server gibt es kein Turnier
     r.open('GET', '/api/wait?v=' + ver + '&_=' + new Date().getTime(), true); r.send();
   }
 

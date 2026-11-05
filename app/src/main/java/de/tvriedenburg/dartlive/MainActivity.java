@@ -80,7 +80,9 @@ public class MainActivity extends Activity {
 
     private int board() { return prefs.getInt("board", 1); }
 
-    private String inputUrl() { return server() + "/" + getString(R.string.start_prefix) + board(); }
+    private boolean startHome() { return getResources().getBoolean(R.bool.start_home); }
+
+    private String inputUrl() { return startHome() ? server() + "/" : server() + "/" + getString(R.string.start_prefix) + board(); }
 
     private String scoreUrl() { return server() + "/m" + board(); }
 
@@ -104,7 +106,7 @@ public class MainActivity extends Activity {
         }
         if (target != null && scoreDisplay == null) {
             try {
-                scoreDisplay = new ScoreDisplay(this, target, scoreUrl());
+                scoreDisplay = new ScoreDisplay(this, target, scoreUrl(), offline());
                 scoreDisplay.show();
             } catch (WindowManager.InvalidDisplayException e) {
                 scoreDisplay = null;
@@ -152,7 +154,14 @@ public class MainActivity extends Activity {
     @SuppressWarnings("deprecation")
     @Override
     public void onBackPressed() {
-        String[] items = { "Neu laden", "Einstellungen (Scheibe / Server)", "App beenden" };
+        // Demo-App: Zurück-Taste blättert zurück wie im Browser, auf der Startseite kommt das Menü
+        if (startHome() && web.canGoBack()) {
+            String u = web.getUrl();
+            if (u != null && !u.equals(server() + "/")) { web.goBack(); return; }
+        }
+        String[] items = startHome()
+                ? new String[] { "Startseite", "Einstellungen (Scheibe / Server)", "App beenden" }
+                : new String[] { "Neu laden", "Einstellungen (Scheibe / Server)", "App beenden" };
         new AlertDialog.Builder(this)
                 .setTitle(getString(R.string.app_name) + " – Scheibe " + board())
                 .setItems(items, new DialogInterface.OnClickListener() {
@@ -314,16 +323,19 @@ public class MainActivity extends Activity {
     /** Der Spielstand auf dem zweiten Bildschirm (HDMI). */
     static class ScoreDisplay extends Presentation {
         private final String url;
+        private final boolean offline;
 
-        ScoreDisplay(Context outer, Display display, String url) {
+        ScoreDisplay(Context outer, Display display, String url, boolean offline) {
             super(outer, display, android.R.style.Theme_Material_NoActionBar_Fullscreen);
             this.url = url;
+            this.offline = offline;
         }
 
         @Override
         protected void onCreate(Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             WebView w = createWebView(getContext(), false);
+            if (offline) w.addJavascriptInterface(LocalServer.get(getContext()), "DartLocal");
             setContentView(w);
             open(w, url, false);
         }

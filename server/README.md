@@ -46,3 +46,8 @@ Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
 - http://192.168.68.222:3000/statistik  (Average, 100+/140+/180, High Finish, bestes Leg, Saison/Spielart filtern)
 - Ehrentafel für den Fernseher: http://192.168.68.222:3000/statistik-tv
 - Beim Checkout fragt das Tablet, mit dem wievielten Dart gecheckt wurde (für den genauen Average).
+
+## Zum Ausprobieren auf dem Handy: App „Dart Demo“
+Enthält alles (Spiel, Training, Turnier, Liga, Statistik) und läuft komplett ohne Server – Daten bleiben auf dem Handy.
+Technik: public/local-core.js (erzeugt mit `node build-local.js` aus core.js + tournament.js) beantwortet die Anfragen im Gerät.
+Im Browser ausprobieren: http://<IP>:3000/?lokal=1  (zurück zum Server-Betrieb: ?lokal=0)
