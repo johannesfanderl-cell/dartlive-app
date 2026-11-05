@@ -29,3 +29,10 @@ JDC Challenge (offizielle Wertung), Around the Clock (Single/Double/Triple), Bob
 Checkout-Training (ab 61/81/101/121, 10 Versuche), Count Up (10/20 Aufnahmen), Cricket, Swedish Killer.
 1–6 Spieler. Ergebnisse landen in der Bestenliste (data/results.json).
 Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
+
+## Turnier (z. B. Vereinsmeisterschaft)
+- Turnierleitung: http://192.168.68.222:3000/turnier  (Spieler eintragen, Gesetzte antippen, Gruppen auslosen, starten)
+- Fernseher: http://192.168.68.222:3000/turnier-tv  (Tabellen, laufende/nächste Spiele, K.-o.-Baum)
+- Die Tablets zeigen das zugeteilte Spiel automatisch an („… beginnt“ nach dem Ausbullen antippen).
+  Das Ergebnis geht nach Spielende automatisch an die Turnierleitung, danach wird das nächste Spiel zugeteilt.
+- Ergebnisse können in der Turnierleitung korrigiert oder Spiele zurückgesetzt werden.

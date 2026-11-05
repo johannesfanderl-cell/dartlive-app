@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Turnierleitung – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, select, input, textarea { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
+#net { font-size: 13px; color: #b7d3ff; } #net.bad { color: #ffb3b3; font-weight: bold; }
+#main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 60px; }
+h2 { font-size: 20px; margin: 6px 0 10px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+label.f { display: block; color: #b7d3ff; font-size: 14px; margin: 10px 0 4px; }
+input[type=text], textarea, select { width: 100%; padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; }
+textarea { min-height: 220px; line-height: 1.4; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; } .row > * { flex: 1 1 140px; }
+.btn { display: inline-block; padding: 10px 16px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; }
+.btn.warn { background: #6b1d2d; color: #fff; }
+.btn.sm { padding: 6px 10px; font-size: 14px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.chips span { display: inline-block; margin: 0 6px 6px 0; padding: 6px 10px; border-radius: 16px; background: #10377f; border: 1px solid #3f6fbf; cursor: pointer; }
+.chips span.on { background: #fff; color: #071d47; font-weight: bold; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
+.err { color: #ffb3b3; font-weight: bold; min-height: 20px; margin: 6px 0; }
+.groups { display: flex; flex-wrap: wrap; gap: 12px; }
+.groups .card { flex: 1 1 260px; }
+.pl { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #23498f; }
+.pl select { width: auto; padding: 4px; }
+.boards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.bd { flex: 1 1 170px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 8px; padding: 8px 10px; min-height: 76px; }
+.bd b { display: block; font-size: 13px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; }
+.bd .m { font-weight: bold; margin-top: 4px; }
+.bd .s { font-size: 13px; color: #b7d3ff; margin-top: 2px; }
+.bd.run { background: #fff; color: #071d47; } .bd.run b, .bd.run .s { color: #3f5f99; }
+.tabs { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
+.tabs button { padding: 9px 14px; margin: 0 6px 6px 0; border-radius: 7px; background: #10377f; border: 1px solid #3f6fbf; }
+.tabs button.on { background: #fff; color: #071d47; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 7px 6px; border-bottom: 1px solid #23498f; text-align: left; vertical-align: middle; }
+th { color: #b7d3ff; font-weight: normal; font-size: 13px; text-transform: uppercase; }
+td.n, th.n { text-align: center; }
+tr.q td { background: rgba(140,196,255,.12); }
+.st { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
+.st.pending { background: #23498f; } .st.assigned { background: #c9a227; color: #071d47; } .st.running { background: #2e9d5b; } .st.done { background: #fff; color: #071d47; }
+.champ { text-align: center; padding: 22px; font-size: 26px; font-weight: bold; background: #fff; color: #071d47; border-radius: 10px; margin-bottom: 12px; }
+#dlg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20; }
+#dlg .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-width: 94%; background: #fff; color: #071d47; border-radius: 10px; padding: 16px; }
+#dlg h4 { font-size: 19px; margin-bottom: 8px; }
+#dlg .lg { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+#dlg .lg span { flex: 1 1 auto; font-weight: bold; }
+#dlg .lg input { width: 70px; text-align: center; font-size: 22px; padding: 6px; border: 2px solid #3f6fbf; border-radius: 6px; }
+#dlg .btn { background: #0b2d6b; color: #fff; }
+#dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
+#toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+#toast.bad { background: #ffd6d6; color: #6b1d2d; }
+</style>
+</head>
+<body>
+<div id="top"><b>Turnierleitung</b><span id="net">verbinde …</span></div>
+<div id="main">Lade …</div>
+<div id="dlg"><div class="box" id="dlgbox"></div></div>
+<div id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  var S = null, version = 0, tab = 'spiele';
+  var form = { name: 'Vereinsmeisterschaft ' + new Date().getFullYear(), players: '', seeds: [], groups: 3, koSize: 8, legs: 3, koLegs: 3, finalLegs: 3, start: 501, third: false, boards: [1, 2, 3, 4, 5] };
+  var err = '';
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  var tt = null;
+  function toast(t, bad) { var el = $('toast'); el.innerHTML = esc(t); el.className = bad ? 'bad' : ''; el.style.display = 'block'; clearTimeout(tt); tt = setTimeout(function () { el.style.display = 'none'; }, 3500); }
+
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d);
+    };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function act(body, okMsg, cb) {
+    req('POST', '/api/turnier', body, function (e, d) {
+      if (e) { toast(e, true); return; }
+      if (okMsg) toast(okMsg);
+      if (cb) cb(d);
+    });
+  }
+
+  function poll() {
+    req('GET', '/api/wait?v=' + version, null, function (e, d) {
+      if (e || !d) { $('net').className = 'bad'; $('net').innerHTML = '⚠ Server nicht erreichbar'; setTimeout(poll, 2500); return; }
+      $('net').className = ''; $('net').innerHTML = '● verbunden';
+      var changed = d.v !== version;
+      version = d.v; S = d;
+      if (changed && !dialogOpen()) render();
+      setTimeout(poll, 50);
+    });
+  }
+  function dialogOpen() { return $('dlg').style.display === 'block' || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !(S && S.tournament)); }
+
+  /* ---------- Darstellung ---------- */
+  function render() {
+    var T = S && S.tournament;
+    var h;
+    if (!T) h = createHTML();
+    else if (T.status === 'setup') h = setupHTML(T);
+    else h = runHTML(T);
+    $('main').innerHTML = h;
+  }
+
+  function seg(key, vals, cur, labels) {
+    var h = '<div class="seg">';
+    for (var i = 0; i < vals.length; i++) h += '<button data-f="' + key + '" data-v="' + vals[i] + '"' + (String(cur) === String(vals[i]) ? ' class="on"' : '') + '>' + (labels ? labels[i] : vals[i]) + '</button>';
+    return h + '</div>';
+  }
+  function plist() { return form.players.split(/\n|,/).map(function (s) { return s.replace(/^\s+|\s+$/g, ''); }).filter(function (s) { return s; }); }
+
+  function createHTML() {
+    var names = (S && S.names) || [], pl = plist();
+    var h = '<h2>Neues Turnier anlegen</h2><div class="card">';
+    h += '<label class="f">Name</label><input type="text" id="f-name" value="' + esc(form.name) + '">';
+    h += '<label class="f">Spieler – einer pro Zeile (' + pl.length + ')</label><textarea id="f-players" placeholder="Name 1&#10;Name 2&#10;…">' + esc(form.players) + '</textarea>';
+    var known = '';
+    for (var i = 0; i < names.length; i++) if (pl.indexOf(names[i]) < 0) known += '<span data-addname="' + esc(names[i]) + '">' + esc(names[i]) + '</span>';
+    if (known) h += '<p class="note">Bekannte Namen antippen zum Hinzufügen:</p><div class="chips">' + known + '</div>';
+    h += '<label class="f">Gesetzte Spieler (der Reihe nach antippen: Nr. 1, 2, 3 … – werden auf die Gruppen verteilt)</label><div class="chips" id="seedbox">' + seedChips() + '</div>';
+    h += '<div class="row"><div><label class="f">Gruppen</label>' + seg('groups', [2, 3, 4], form.groups) + '</div>';
+    h += '<div><label class="f">K.-o.-Runde ab</label>' + seg('koSize', [4, 8, 16], form.koSize, ['Halbfinale', 'Viertelfinale', 'Achtelfinale']) + '</div></div>';
+    h += '<div class="row"><div><label class="f">Gruppenspiele First to</label>' + seg('legs', [1, 2, 3, 4], form.legs) + '</div>';
+    h += '<div><label class="f">K.-o. First to</label>' + seg('koLegs', [2, 3, 4, 5], form.koLegs) + '</div>';
+    h += '<div><label class="f">Finale First to</label>' + seg('finalLegs', [3, 4, 5, 6], form.finalLegs) + '</div></div>';
+    h += '<div class="row"><div><label class="f">Punkte</label>' + seg('start', [301, 501], form.start) + '</div>';
+    h += '<div><label class="f">Spiel um Platz 3</label>' + seg('third', ['true', 'false'], String(form.third), ['Ja', 'Nein']) + '</div>';
+    h += '<div><label class="f">Scheiben</label><div class="seg">';
+    for (var b = 1; b <= 5; b++) h += '<button data-board="' + b + '"' + (form.boards.indexOf(b) >= 0 ? ' class="on"' : '') + '>' + b + '</button>';
+    h += '</div></div></div>';
+    h += '<p class="note" id="plan">' + esc(planText(pl.length)) + '</p>';
+    h += '<div class="err">' + esc(err) + '</div><button class="btn" data-a="create">Gruppen auslosen</button></div>';
+    return h;
+  }
+
+  function seedChips() {
+    var pl = plist(), h = '';
+    for (var j = 0; j < pl.length; j++) { var si = form.seeds.indexOf(pl[j]); h += '<span data-seed="' + esc(pl[j]) + '"' + (si >= 0 ? ' class="on"' : '') + '>' + (si >= 0 ? (si + 1) + '. ' : '') + esc(pl[j]) + '</span>'; }
+    return h || '<span style="cursor:default">erst Spieler eintragen</span>';
+  }
+
+  function planText(n) {
+    if (n < 4) return 'Mindestens 4 Spieler eintragen.';
+    var g = form.groups, sizes = [];
+    for (var i = 0; i < g; i++) sizes.push(Math.floor(n / g) + (i < n % g ? 1 : 0));
+    var games = 0; for (var k = 0; k < sizes.length; k++) games += sizes[k] * (sizes[k] - 1) / 2;
+    var per = Math.floor(form.koSize / g), extra = form.koSize - per * g;
+    return 'Gruppen: ' + sizes.join(' / ') + ' Spieler · ' + games + ' Gruppenspiele · weiter: je ' + per + ' pro Gruppe' + (extra ? ' + ' + extra + ' beste Gruppen-' + (per + 1) + '.' : '') + ' → ' + form.koSize + ' Spieler in der K.-o.-Runde.';
+  }
+
+  function setupHTML(T) {
+    var h = '<h2>' + esc(T.name) + ' – Gruppen prüfen</h2>';
+    h += '<p class="note">Gesetzt: ' + (T.seeds.length ? T.seeds.map(function (s, i) { return (i + 1) + '. ' + esc(s); }).join(', ') : 'niemand') + '. Spieler lassen sich noch verschieben.</p><div class="groups">';
+    for (var i = 0; i < T.groups.length; i++) {
+      var g = T.groups[i];
+      h += '<div class="card"><h3 style="margin-top:0">Gruppe ' + g.name + ' (' + g.players.length + ')</h3>';
+      for (var j = 0; j < g.players.length; j++) {
+        var p = g.players[j];
+        h += '<div class="pl"><span>' + (T.seeds.indexOf(p) >= 0 ? '★ ' : '') + esc(p) + '</span><select data-move="' + esc(p) + '">';
+        for (var k = 0; k < T.groups.length; k++) h += '<option value="' + T.groups[k].name + '"' + (T.groups[k].name === g.name ? ' selected' : '') + '>Gruppe ' + T.groups[k].name + '</option>';
+        h += '</select></div>';
+      }
+      h += '</div>';
+    }
+    h += '</div><button class="btn" data-a="start">Turnier starten</button><button class="btn sec" data-a="draw">Neu auslosen</button><button class="btn warn" data-a="delete">Verwerfen</button>';
+    return h;
+  }
+
+  function stLabel(m) { return { pending: 'offen', assigned: 'Scheibe ' + m.board + ' – bereit', running: 'läuft auf ' + m.board, done: 'beendet' }[m.status]; }
+  function mLabel(m) { return m.phase === 'group' ? 'Gruppe ' + m.group + ' · Runde ' + m.round : m.label; }
+
+  function runHTML(T) {
+    var h = '';
+    if (T.status === 'done') h += '<div class="champ">🏆 ' + esc(T.name) + ': ' + esc(T.champion) + '</div>';
+    var done = 0, total = 0;
+    for (var i = 0; i < T.matches.length; i++) { if (T.matches[i].p1 || T.matches[i].from) total++; if (T.matches[i].status === 'done') done++; }
+    h += '<h2>' + esc(T.name) + ' <span class="note">· ' + (T.status === 'groups' ? 'Gruppenphase' : (T.status === 'ko' ? 'K.-o.-Runde' : 'beendet')) + ' · ' + done + '/' + total + ' Spiele</span></h2>';
+    h += '<div class="boards">';
+    for (var b = 1; b <= 5; b++) {
+      var m = null;
+      for (var k = 0; k < T.matches.length; k++) if ((T.matches[k].status === 'running' || T.matches[k].status === 'assigned') && T.matches[k].board === b) m = T.matches[k];
+      var bs = S.boards && S.boards[b], live = '';
+      if (m && m.status === 'running' && bs && bs.tmatch === m.id && bs.players) live = bs.players[0].legs + ' : ' + bs.players[1].legs + ' Legs';
+      var inUse = T.cfg.boards.indexOf(b) >= 0;
+      h += '<div class="bd' + (m && m.status === 'running' ? ' run' : '') + '"><b>Scheibe ' + b + (inUse ? '' : ' · nicht im Turnier') + '</b>' +
+        (m ? '<div class="m">' + esc(m.p1) + ' – ' + esc(m.p2) + '</div><div class="s">' + esc(mLabel(m)) + ' · ' + (m.status === 'running' ? (live || 'läuft') : 'wartet auf Start') + '</div>' : '<div class="s">' + (bs && bs.status === 'play' && !bs.tmatch ? 'freies Spiel läuft' : 'frei') + '</div>') + '</div>';
+    }
+    h += '</div><div class="tabs">';
+    var tabs = [['spiele', 'Spiele'], ['tabellen', 'Tabellen'], ['ko', 'K.-o.-Runde'], ['setup', 'Einstellungen']];
+    for (var t = 0; t < tabs.length; t++) h += '<button data-tab="' + tabs[t][0] + '"' + (tab === tabs[t][0] ? ' class="on"' : '') + '>' + tabs[t][1] + '</button>';
+    h += '</div>';
+    if (tab === 'spiele') h += gamesHTML(T);
+    else if (tab === 'tabellen') h += tablesHTML(T);
+    else if (tab === 'ko') h += koHTML(T);
+    else h += settingsHTML(T);
+    return h;
+  }
+
+  function matchRow(m) {
+    var res = m.legs ? m.legs[0] + ' : ' + m.legs[1] : '';
+    var h = '<tr><td>' + esc(mLabel(m)) + '</td><td>' + (m.winner === m.p1 ? '<b>' + esc(m.p1) + '</b>' : esc(m.p1 || '?')) + ' – ' + (m.winner === m.p2 ? '<b>' + esc(m.p2) + '</b>' : esc(m.p2 || '?')) + '</td>' +
+      '<td class="n">' + res + '</td><td><span class="st ' + m.status + '">' + esc(stLabel(m)) + '</span></td><td style="text-align:right;white-space:nowrap">';
+    if (m.p1 && m.p2) h += '<button class="btn sec sm" data-res="' + m.id + '">Ergebnis</button>';
+    if (m.status === 'pending' && m.p1 && m.p2) h += '<button class="btn sec sm" data-assign="' + m.id + '">Scheibe…</button>';
+    if (m.status === 'assigned') h += '<button class="btn sec sm" data-unassign="' + m.id + '">Freigeben</button>';
+    if (m.status === 'done' || m.status === 'running') h += '<button class="btn warn sm" data-reset="' + m.id + '">Zurücksetzen</button>';
+    return h + '</td></tr>';
+  }
+
+  function gamesHTML(T) {
+    var groups = [['Laufend & zugeteilt', function (m) { return m.status === 'running' || m.status === 'assigned'; }],
+      ['Offen', function (m) { return m.status === 'pending' && m.p1 && m.p2; }],
+      ['Wartet auf Vorrunde', function (m) { return m.status === 'pending' && (!m.p1 || !m.p2); }],
+      ['Beendet', function (m) { return m.status === 'done'; }]];
+    var h = '';
+    for (var g = 0; g < groups.length; g++) {
+      var list = T.matches.filter(groups[g][1]);
+      if (g === 3) list.reverse();
+      if (!list.length) continue;
+      h += '<h3>' + groups[g][0] + ' (' + list.length + ')</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table>';
+      for (var i = 0; i < list.length; i++) h += matchRow(list[i]);
+      h += '</table></div>';
+    }
+    return h;
+  }
+
+  function tablesHTML(T) {
+    var tables = S.standings || {}, h = '<div class="groups">';
+    for (var i = 0; i < T.groups.length; i++) {
+      var g = T.groups[i], st = tables[g.name] || [];
+      h += '<div class="card" style="overflow-x:auto"><h3 style="margin-top:0">Gruppe ' + g.name + '</h3><table><tr><th>#</th><th>Spieler</th><th class="n">Sp</th><th class="n">S</th><th class="n">N</th><th class="n">Legs</th><th class="n">Diff</th><th class="n">Pkt</th></tr>';
+      for (var j = 0; j < st.length; j++) {
+        var r = st[j];
+        h += '<tr' + (r.q ? ' class="q"' : '') + '><td>' + r.rank + '.</td><td>' + esc(r.name) + '</td><td class="n">' + r.played + '</td><td class="n">' + r.won + '</td><td class="n">' + r.lost + '</td><td class="n">' + r.lf + ':' + r.la + '</td><td class="n">' + (r.diff > 0 ? '+' : '') + r.diff + '</td><td class="n"><b>' + r.pts + '</b></td></tr>';
+      }
+      h += '</table></div>';
+    }
+    h += '</div><p class="note">Wertung: Punkte (Sieg 2) → Leg-Differenz → direkter Vergleich → mehr gewonnene Legs. Hellblau: aktuell für die K.-o.-Runde qualifiziert.</p>';
+    return h;
+  }
+
+  function koHTML(T) {
+    var ko = T.matches.filter(function (m) { return m.phase === 'ko'; });
+    if (!ko.length) return '<div class="card"><p class="note">Die K.-o.-Runde wird automatisch erstellt, sobald alle Gruppenspiele beendet sind.</p></div>';
+    var h = '';
+    if (T.koSeeds) h += '<p class="note">Setzliste: ' + T.koSeeds.map(function (s) { return s.seed + '. ' + esc(s.name) + ' (' + s.group + s.rank + ')'; }).join(' · ') + '</p>';
+    var rounds = [], seen = {};
+    for (var i = 0; i < ko.length; i++) if (!seen[ko[i].koRound]) { seen[ko[i].koRound] = 1; rounds.push(ko[i].koRound); }
+    for (var r = 0; r < rounds.length; r++) {
+      var list = ko.filter(function (m) { return m.koRound === rounds[r]; });
+      h += '<h3>' + esc(list[0].label.replace(/ \d+$/, '')) + '</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table>';
+      for (var j = 0; j < list.length; j++) h += matchRow(list[j]);
+      h += '</table></div>';
+    }
+    return h;
+  }
+
+  function settingsHTML(T) {
+    var h = '<div class="card"><h3 style="margin-top:0">Scheiben im Turnier</h3><div class="seg">';
+    for (var b = 1; b <= 5; b++) h += '<button data-tboard="' + b + '"' + (T.cfg.boards.indexOf(b) >= 0 ? ' class="on"' : '') + '>Scheibe ' + b + '</button>';
+    h += '</div><p class="note">Abgewählte Scheiben bekommen keine neuen Spiele (laufende Spiele bleiben).</p>';
+    h += '<h3>Modus</h3><p class="note">' + T.cfg.start + (T.cfg.doubleOut ? ' Double Out' : '') + ' · Gruppen First to ' + T.cfg.legs + ' · K.-o. First to ' + T.cfg.koLegs + ' · Finale First to ' + T.cfg.finalLegs + (T.cfg.third ? ' · mit Spiel um Platz 3' : '') + '</p>';
+    h += '<h3>Fernseher</h3><p class="note">Turnier-Anzeige: <b>' + esc(location.host) + '/turnier-tv</b> · Live-Spielstände: ' + esc(location.host) + '/tv</p>';
+    h += '<h3>Turnier beenden</h3><button class="btn warn" data-a="delete">Turnier löschen</button><p class="note">Löscht Spielplan und Ergebnisse dieses Turniers endgültig.</p></div>';
+    return h;
+  }
+
+  /* ---------- Dialoge ---------- */
+  var dlgFns = [];
+  function dialog(html, btns) {
+    dlgFns = btns;
+    var h = html;
+    for (var i = 0; i < btns.length; i++) h += '<button class="btn' + (btns[i].sec ? ' sec' : '') + '" data-dlg="' + i + '">' + esc(btns[i].label) + '</button>';
+    $('dlgbox').innerHTML = h; $('dlg').style.display = 'block';
+  }
+  function closeDlg() { $('dlg').style.display = 'none'; render(); }
+  function confirmDo(title, text, fn) { dialog('<h4>' + esc(title) + '</h4><p>' + esc(text) + '</p>', [{ label: 'Ja', fn: fn }, { label: 'Abbrechen', sec: true }]); }
+  function findMatch(id) { var ms = S.tournament.matches; for (var i = 0; i < ms.length; i++) if (ms[i].id === id) return ms[i]; return null; }
+
+  /* ---------- Bedienung ---------- */
+  function readForm() {
+    var n = $('f-name'), p = $('f-players');
+    if (n) form.name = n.value; if (p) form.players = p.value;
+    var pl = plist();
+    form.seeds = form.seeds.filter(function (s) { return pl.indexOf(s) >= 0; });
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.getAttribute && (t.getAttribute('data-a') || t.getAttribute('data-f') || t.getAttribute('data-board') || t.getAttribute('data-seed') !== null && t.getAttribute('data-seed') !== undefined && t.hasAttribute('data-seed') ||
+      t.hasAttribute('data-addname') || t.hasAttribute('data-tab') || t.hasAttribute('data-res') || t.hasAttribute('data-assign') || t.hasAttribute('data-unassign') || t.hasAttribute('data-reset') || t.hasAttribute('data-dlg') || t.hasAttribute('data-tboard')))) t = t.parentNode;
+    if (!t || t === document.body || !t.getAttribute) return;
+    var a;
+    if (t.hasAttribute('data-dlg')) { var b = dlgFns[+t.getAttribute('data-dlg')]; var keep = b && b.keep; if (!keep) closeDlg(); if (b && b.fn) b.fn(); return; }
+    if ((a = t.getAttribute('data-f'))) { readForm(); var v = t.getAttribute('data-v'); form[a] = v === 'true' ? true : (v === 'false' ? false : +v); err = ''; render(); return; }
+    if ((a = t.getAttribute('data-board'))) { readForm(); var n = +a, i = form.boards.indexOf(n); if (i >= 0) form.boards.splice(i, 1); else form.boards.push(n); form.boards.sort(); render(); return; }
+    if (t.hasAttribute('data-seed')) { readForm(); var s = t.getAttribute('data-seed'), si = form.seeds.indexOf(s); if (si >= 0) form.seeds.splice(si, 1); else form.seeds.push(s); render(); return; }
+    if (t.hasAttribute('data-addname')) { readForm(); form.players = (form.players.replace(/\s+$/, '') + (form.players.replace(/\s/g, '') ? '\n' : '') + t.getAttribute('data-addname')); render(); return; }
+    if (t.hasAttribute('data-tab')) { tab = t.getAttribute('data-tab'); render(); return; }
+    if (t.hasAttribute('data-tboard')) {
+      var nb = +t.getAttribute('data-tboard'), cur = S.tournament.cfg.boards.slice(), ci = cur.indexOf(nb);
+      if (ci >= 0) cur.splice(ci, 1); else cur.push(nb);
+      act({ action: 'boards', boards: cur }); return;
+    }
+    if (t.hasAttribute('data-res')) { resultDialog(findMatch(t.getAttribute('data-res'))); return; }
+    if (t.hasAttribute('data-assign')) { assignDialog(findMatch(t.getAttribute('data-assign'))); return; }
+    if (t.hasAttribute('data-unassign')) { act({ action: 'unassign', id: t.getAttribute('data-unassign') }, 'Scheibe freigegeben'); return; }
+    if (t.hasAttribute('data-reset')) {
+      var rid = t.getAttribute('data-reset'), rm = findMatch(rid);
+      confirmDo('Spiel zurücksetzen?', rm.p1 + ' – ' + rm.p2 + ': Ergebnis bzw. Spielstand wird gelöscht, das Spiel wird neu angesetzt.', function () { act({ action: 'reset', id: rid }, 'Zurückgesetzt'); });
+      return;
+    }
+    a = t.getAttribute('data-a');
+    if (a === 'create') {
+      readForm();
+      var pl = plist();
+      if (pl.length < 4) { err = 'Bitte mindestens 4 Spieler eintragen'; render(); return; }
+      act({ action: 'create', name: form.name, players: pl, seeds: form.seeds, groups: form.groups, koSize: form.koSize, legs: form.legs, koLegs: form.koLegs, finalLegs: form.finalLegs, start: form.start, third: form.third, boards: form.boards }, 'Gruppen ausgelost');
+    } else if (a === 'draw') act({ action: 'draw' }, 'Neu ausgelost');
+    else if (a === 'start') confirmDo('Turnier starten?', 'Danach lassen sich die Gruppen nicht mehr ändern. Die ersten Spiele werden sofort den Scheiben zugeteilt.', function () { act({ action: 'start' }, 'Turnier gestartet'); });
+    else if (a === 'delete') confirmDo('Turnier löschen?', 'Alle Spiele und Ergebnisse dieses Turniers gehen verloren.', function () { act({ action: 'delete' }, 'Turnier gelöscht'); });
+  }, false);
+
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.hasAttribute && t.hasAttribute('data-move')) act({ action: 'move', player: t.getAttribute('data-move'), group: t.value });
+  }, false);
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'f-players') {
+      form.players = e.target.value;
+      var pl = plist(); form.seeds = form.seeds.filter(function (x) { return pl.indexOf(x) >= 0; });
+      if ($('seedbox')) $('seedbox').innerHTML = seedChips();
+      if ($('plan')) $('plan').innerHTML = esc(planText(pl.length));
+    }
+  }, false);
+  document.addEventListener('focusout', function (e) {
+    if (e.target.id === 'f-players' || e.target.id === 'f-name') { readForm(); setTimeout(function () { if (!S || !S.tournament) { var ae = document.activeElement; if (!ae || !/INPUT|TEXTAREA/.test(ae.tagName)) render(); } }, 150); }
+  }, false);
+
+  function resultDialog(m) {
+    if (!m) return;
+    var l = m.legs || [0, 0];
+    dialog('<h4>Ergebnis ' + esc(mLabel(m)) + '</h4><p class="note" style="color:#3f5f99">First to ' + m.legsToWin + '</p>' +
+      '<div class="lg"><span>' + esc(m.p1) + '</span><input id="l1" inputmode="numeric" value="' + l[0] + '"></div>' +
+      '<div class="lg"><span>' + esc(m.p2) + '</span><input id="l2" inputmode="numeric" value="' + l[1] + '"></div>',
+      [{ label: 'Speichern', keep: true, fn: function () {
+        var a = parseInt($('l1').value, 10) || 0, b = parseInt($('l2').value, 10) || 0;
+        act({ action: 'result', id: m.id, legs: [a, b] }, 'Ergebnis gespeichert', function () { closeDlg(); });
+      } }, { label: 'Abbrechen', sec: true }]);
+  }
+
+  function assignDialog(m) {
+    if (!m) return;
+    var btns = [];
+    for (var b = 1; b <= 5; b++) (function (n) { btns.push({ label: 'Scheibe ' + n, fn: function () { act({ action: 'assign', id: m.id, board: n }, m.p1 + ' – ' + m.p2 + ' auf Scheibe ' + n); } }); })(b);
+    btns.push({ label: 'Abbrechen', sec: true });
+    dialog('<h4>' + esc(m.p1) + ' – ' + esc(m.p2) + '</h4><p>Auf welcher Scheibe soll das Spiel laufen? Ein dort wartendes Spiel wird wieder freigegeben.</p>', btns);
+  }
+
+  poll();
+})();
+</script>
+</body>
+</html>

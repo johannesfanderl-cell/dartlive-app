@@ -5,6 +5,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const TN = require('./tournament');
 
 const PORT = Number(process.env.PORT) || 3000;
 const BOARDS = 5;
@@ -39,7 +40,18 @@ function save() {
 
 // Wartende Anzeigen (Long-Polling)
 let waiting = [];
+// Tabellen fürs Turnier mitschicken (berechnet, nicht gespeichert)
+function decorate() {
+  const T = state.tournament;
+  if (!T || T.status === 'setup') { delete state.standings; return; }
+  const q = {};
+  try { TN.qualifiers(T).forEach(function (x) { q[x.name] = 1; }); } catch (e) { /* noch keine Ergebnisse */ }
+  state.standings = {};
+  T.groups.forEach(function (g) { state.standings[g.name] = TN.standings(T, g.name).map(function (r) { r.q = !!q[r.name]; return r; }); });
+}
+
 function notify() {
+  decorate();
   const list = waiting; waiting = [];
   list.forEach(function (w) { clearTimeout(w.timer); sendJSON(w.res, 200, state); });
 }
@@ -57,6 +69,8 @@ const PAGES = {
   '/m1': 'tv.html', '/m2': 'tv.html', '/m3': 'tv.html', '/m4': 'tv.html', '/m5': 'tv.html',
   '/t1': 'training.html', '/t2': 'training.html', '/t3': 'training.html', '/t4': 'training.html', '/t5': 'training.html',
   '/bestenliste': 'best.html',
+  '/turnier': 'turnier.html',
+  '/turnier-tv': 'turnier-tv.html',
   '/diag': 'diag.html',
 };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml' };
@@ -100,10 +114,42 @@ const server = http.createServer(function (req, res) {
         });
       }
       state.boards[m[1]] = b;
+      if (state.tournament) {
+        try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); }
+        catch (e) { console.error('Turnier:', e.message); }
+      }
       state.v++;
       save();
       notify();
       sendJSON(res, 200, { ok: true, v: state.v });
+    });
+  }
+
+  if (req.method === 'POST' && p === '/api/turnier') {
+    return readBody(req, function (txt) {
+      let q;
+      try { q = JSON.parse(txt); } catch (e) { return sendJSON(res, 400, { error: 'Ungültige Daten' }); }
+      const T = state.tournament;
+      try {
+        switch (q.action) {
+          case 'create': state.tournament = TN.create(q); break;
+          case 'delete': state.tournament = null; break;
+          default:
+            if (!T) throw new Error('Kein Turnier angelegt');
+            if (q.action === 'draw') { if (T.status !== 'setup') throw new Error('Turnier läuft bereits'); TN.draw(T); }
+            else if (q.action === 'move') TN.movePlayer(T, q.player, q.group);
+            else if (q.action === 'start') { TN.start(T); TN.schedule(T, state.boards); }
+            else if (q.action === 'result') TN.setResult(T, q.id, q.legs);
+            else if (q.action === 'reset') TN.resetMatch(T, q.id);
+            else if (q.action === 'assign') TN.assign(T, q.id, q.board);
+            else if (q.action === 'unassign') { TN.unassign(T, q.id); }
+            else if (q.action === 'boards') { T.cfg.boards = (q.boards || []).map(Number).filter(n => n >= 1 && n <= 5); TN.schedule(T, state.boards); }
+            else if (q.action === 'schedule') TN.schedule(T, state.boards);
+            else throw new Error('Unbekannte Aktion');
+        }
+      } catch (e) { return sendJSON(res, 400, { error: e.message }); }
+      state.v++; save(); notify();
+      sendJSON(res, 200, { ok: true, tournament: state.tournament });
     });
   }
 
@@ -156,6 +202,7 @@ const server = http.createServer(function (req, res) {
   res.end('Nicht gefunden');
 });
 
+decorate();
 server.listen(PORT, '0.0.0.0', function () {
   const ips = [];
   const nets = os.networkInterfaces();
@@ -164,6 +211,7 @@ server.listen(PORT, '0.0.0.0', function () {
   console.log('Tablets:    http://<IP>:' + PORT + '/1  bis  /5');
   console.log('Monitor an Scheibe (nur Spielstand): http://<IP>:' + PORT + '/m1  bis  /m5');
   console.log('Training am Tablet: http://<IP>:' + PORT + '/t1  bis  /t5     Bestenliste: http://<IP>:' + PORT + '/bestenliste');
+  console.log('Turnierleitung: http://<IP>:' + PORT + '/turnier     Turnier am Fernseher: http://<IP>:' + PORT + '/turnier-tv');
   console.log('Fernseher:  http://<IP>:' + PORT + '/tv1  (Scheiben 1-3)   /tv2  (Scheiben 4-5)');
   if (ips.length) console.log('Eigene IP(s) hier: ' + ips.join(', ') + '  (am Chromebook gilt die WLAN-IP aus den ChromeOS-Einstellungen)');
 });

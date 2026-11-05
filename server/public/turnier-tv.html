@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turnier – Dart Live</title>
+<style>
+/* Bewusst einfaches CSS (Tabellen), damit auch alte Fernseh-Browser es darstellen */
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.8em; line-height: 1.8em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #fff; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#bar .r { float: right; }
+#bar .ph { color: #8cc4ff; }
+table.cols { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0.4em; }
+table.cols > tbody > tr > td { vertical-align: top; }
+.box { background: #0b2d6b; border: 0.08em solid #3f6fbf; }
+.h { background: #10377f; padding: 0.25em 0.5em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; }
+table.t { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.t td, table.t th { padding: 0.18em 0.35em; border-top: 0.05em solid #23498f; white-space: nowrap; overflow: hidden; }
+table.t th { color: #b7d3ff; font-weight: normal; font-size: 0.7em; text-transform: uppercase; text-align: center; }
+table.t td.c { text-align: center; }
+table.t td.p { text-align: center; font-weight: bold; }
+table.t tr.q td { background: #1d4f99; }
+table.t tr.q td.nm { font-weight: bold; }
+.ml td { font-size: 0.95em; }
+.live { color: #8cff9e; font-weight: bold; }
+.km { background: #0b2d6b; border: 0.08em solid #3f6fbf; margin-bottom: 0.5em; }
+.km table { width: 100%; border-collapse: collapse; }
+.km td { padding: 0.25em 0.45em; white-space: nowrap; overflow: hidden; }
+.km td.s { width: 2.2em; text-align: center; font-weight: bold; background: #10377f; }
+.km tr.w td { background: #ffffff; color: #071d47; font-weight: bold; }
+.km tr.w td.s { background: #dfe9fa; }
+.km .lab { font-size: 0.7em; color: #b7d3ff; padding: 0.15em 0.45em; text-transform: uppercase; letter-spacing: 0.05em; }
+.km.run { border-color: #8cff9e; }
+.champ { margin: 0.4em; padding: 0.5em; text-align: center; background: #fff; color: #071d47; font-size: 2.2em; font-weight: bold; text-transform: uppercase; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.6em; color: #b7d3ff; }
+</style>
+</head>
+<body>
+<div id="bar"><span class="r" id="clock"></span><span id="title">Turnier</span></div>
+<div id="wrap"><div class="empty">Lade …</div></div>
+<script>
+(function () {
+  var S = null, version = 0;
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function size() {
+    var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
+    document.body.style.fontSize = Math.max(9, Math.floor(Math.min(w / 58, h / 32))) + 'px';
+  }
+  function liveLegs(m) {
+    var b = S.boards && S.boards[m.board];
+    if (m.status === 'running' && b && b.tmatch === m.id && b.players) return b.players[0].legs + ':' + b.players[1].legs;
+    return '';
+  }
+  function render() {
+    size();
+    var T = S && S.tournament;
+    if (!T) { el('title').innerHTML = 'Dart Live · Turnier'; el('wrap').innerHTML = '<div class="empty">Kein Turnier angelegt</div>'; return; }
+    var phase = { setup: 'Auslosung', groups: 'Gruppenphase', ko: 'K.-o.-Runde', done: 'Beendet' }[T.status];
+    el('title').innerHTML = esc(T.name) + ' &middot; <span class="ph">' + phase + '</span>';
+    if (T.status === 'setup') el('wrap').innerHTML = setupView(T);
+    else if (T.status === 'groups') el('wrap').innerHTML = groupView(T);
+    else el('wrap').innerHTML = koView(T);
+  }
+  function setupView(T) {
+    var h = '<table class="cols"><tr>';
+    for (var i = 0; i < T.groups.length; i++) {
+      var g = T.groups[i];
+      h += '<td><div class="box"><div class="h">Gruppe ' + g.name + '</div><table class="t">';
+      for (var j = 0; j < g.players.length; j++) h += '<tr><td>' + esc(g.players[j]) + '</td></tr>';
+      h += '</table></div></td>';
+    }
+    return h + '</tr></table>';
+  }
+  function groupView(T) {
+    var st = S.standings || {}, h = '<table class="cols"><tr>';
+    for (var i = 0; i < T.groups.length; i++) {
+      var g = T.groups[i], rows = st[g.name] || [];
+      h += '<td><div class="box"><div class="h">Gruppe ' + g.name + '</div><table class="t"><tr><th style="width:1.6em">#</th><th style="text-align:left">Spieler</th><th style="width:1.8em">Sp</th><th style="width:3em">Legs</th><th style="width:2.4em">+/-</th><th style="width:2.2em">Pkt</th></tr>';
+      for (var j = 0; j < rows.length; j++) {
+        var r = rows[j];
+        h += '<tr' + (r.q ? ' class="q"' : '') + '><td class="c">' + r.rank + '</td><td class="nm">' + esc(r.name) + '</td><td class="c">' + r.played + '</td><td class="c">' + r.lf + ':' + r.la + '</td><td class="c">' + (r.diff > 0 ? '+' : '') + r.diff + '</td><td class="p">' + r.pts + '</td></tr>';
+      }
+      h += '</table></div></td>';
+    }
+    h += '</tr></table>';
+    // Laufende und nächste Spiele
+    var run = [], next = [], last = [];
+    for (var k = 0; k < T.matches.length; k++) {
+      var m = T.matches[k];
+      if (m.status === 'running' || m.status === 'assigned') run.push(m);
+      else if (m.status === 'pending' && m.p1 && m.p2) next.push(m);
+      else if (m.status === 'done') last.push(m);
+    }
+    run.sort(function (a, b) { return a.board - b.board; });
+    last.sort(function (a, b) { return (b.ended || 0) - (a.ended || 0); });
+    h += '<table class="cols"><tr><td><div class="box"><div class="h">Auf den Scheiben</div><table class="t ml">';
+    if (!run.length) h += '<tr><td>–</td></tr>';
+    for (var r1 = 0; r1 < run.length; r1++) {
+      var a = run[r1], lv = liveLegs(a);
+      h += '<tr><td style="width:2.4em" class="p">' + a.board + '</td><td>' + esc(a.p1) + ' – ' + esc(a.p2) + '</td><td style="width:4.5em" class="c' + (lv ? ' live' : '') + '">' + (lv || 'bereit') + '</td><td style="width:2em" class="c">' + a.group + '</td></tr>';
+    }
+    h += '</table></div></td><td><div class="box"><div class="h">Als Nächstes</div><table class="t ml">';
+    if (!next.length) h += '<tr><td>–</td></tr>';
+    for (var n1 = 0; n1 < next.length && n1 < 5; n1++) h += '<tr><td>' + esc(next[n1].p1) + ' – ' + esc(next[n1].p2) + '</td><td style="width:2em" class="c">' + next[n1].group + '</td></tr>';
+    h += '</table></div></td><td><div class="box"><div class="h">Letzte Ergebnisse</div><table class="t ml">';
+    if (!last.length) h += '<tr><td>–</td></tr>';
+    for (var l1 = 0; l1 < last.length && l1 < 5; l1++) { var z = last[l1]; h += '<tr><td>' + esc(z.p1) + ' – ' + esc(z.p2) + '</td><td style="width:3em" class="p">' + z.legs[0] + ':' + z.legs[1] + '</td></tr>'; }
+    h += '</table></div></td></tr></table>';
+    return h;
+  }
+  function kmatch(m) {
+    var lv = liveLegs(m);
+    var h = '<div class="km' + (m.status === 'running' ? ' run' : '') + '"><div class="lab">' + esc(m.label) +
+      (m.status === 'running' ? ' &middot; Scheibe ' + m.board + ' &middot; läuft' : (m.status === 'assigned' ? ' &middot; Scheibe ' + m.board : '')) + '</div><table>';
+    var l = m.legs || (lv ? lv.split(':') : ['', '']);
+    h += '<tr' + (m.winner && m.winner === m.p1 ? ' class="w"' : '') + '><td>' + esc(m.p1 || '…') + '</td><td class="s">' + l[0] + '</td></tr>';
+    h += '<tr' + (m.winner && m.winner === m.p2 ? ' class="w"' : '') + '><td>' + esc(m.p2 || '…') + '</td><td class="s">' + l[1] + '</td></tr>';
+    return h + '</table></div>';
+  }
+  function koView(T) {
+    var ko = [], rounds = [], seen = {}, i;
+    for (i = 0; i < T.matches.length; i++) if (T.matches[i].phase === 'ko') ko.push(T.matches[i]);
+    for (i = 0; i < ko.length; i++) if (!seen[ko[i].koRound]) { seen[ko[i].koRound] = 1; rounds.push(ko[i].koRound); }
+    rounds.sort(function (a, b) { if (a === 3) return 1; if (b === 3) return -1; return b - a; });
+    var h = T.status === 'done' ? '<div class="champ">&#127942; ' + esc(T.champion) + '</div>' : '';
+    h += '<table class="cols"><tr>';
+    for (var r = 0; r < rounds.length; r++) {
+      var list = [];
+      for (i = 0; i < ko.length; i++) if (ko[i].koRound === rounds[r]) list.push(ko[i]);
+      var pad = rounds[r] === 3 ? 0 : Math.max(0, (rounds[0] / rounds[r] - 1)) * 1.6;
+      h += '<td><div class="h" style="margin-bottom:0.4em">' + esc(list[0].label.replace(/ \d+$/, '')) + '</div>';
+      for (var j = 0; j < list.length; j++) h += '<div style="padding-top:' + (j === 0 ? pad / 2 : pad) + 'em">' + kmatch(list[j]) + '</div>';
+      h += '</td>';
+    }
+    return h + '</tr></table>';
+  }
+  function poll() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(poll, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (d) { S = d; version = d.v; render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
+    };
+    r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
+  }
+  function clock() { var d = new Date(), m = d.getMinutes(); el('clock').innerHTML = d.getHours() + ':' + (m < 10 ? '0' : '') + m; }
+  setInterval(clock, 15000); clock();
+  window.onresize = render;
+  poll();
+})();
+</script>
+</body>
+</html>

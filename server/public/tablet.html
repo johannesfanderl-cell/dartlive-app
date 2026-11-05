@@ -121,6 +121,7 @@ input { font-family: inherit; }
   var msg = '';
   var setup = { n1: '', n2: '', start: 501, legs: 2, dout: true, first: 0, active: 0 };
   var dirty = false, saving = false, loaded = false;
+  var tour = null, ver = 0, lastAssign = '';
 
   /* ---------- Hilfen ---------- */
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -193,6 +194,7 @@ input { font-family: inherit; }
       if (err || !data) { setNet(false, '⚠ Server nicht erreichbar'); if (!loaded) render(); setTimeout(load, 3000); return; }
       setNet(true, '● verbunden');
       names = data.names || [];
+      tour = data.tournament || null; ver = data.v || 0; lastAssign = assignKey();
       if (!loaded) {
         loaded = true;
         var b = data.boards && data.boards[N];
@@ -201,14 +203,47 @@ input { font-family: inherit; }
         if (b && (b.status === 'play' || b.status === 'done') && b.players && b.players.length === 2) { setup.n1 = b.players[0].name; setup.n2 = b.players[1].name; setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false; }
       }
       render();
+      if (!watching) { watching = true; setTimeout(watch, 500); }
     });
+  }
+
+  /* ---------- Turnier ---------- */
+  var watching = false;
+  function myMatch() {
+    if (!tour || !tour.matches) return null;
+    for (var i = 0; i < tour.matches.length; i++) { var m = tour.matches[i]; if (m.status === 'assigned' && m.board === N && m.p1 && m.p2) return m; }
+    return null;
+  }
+  function assignKey() { var m = myMatch(); return m ? m.id : ''; }
+  function tLabel(m) { return m.phase === 'group' ? 'Gruppe ' + m.group + ' · Runde ' + m.round : m.label; }
+  // Hält die Turnierdaten aktuell, damit neue Spielzuteilungen sofort erscheinen
+  function watch() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(watch, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (!d) { setTimeout(watch, 3000); return; }
+      ver = d.v; tour = d.tournament || null; names = d.names || names;
+      var k = assignKey();
+      if (k !== lastAssign) {
+        lastAssign = k;
+        var ae = document.activeElement;
+        if (board.status !== 'play' && !(ae && ae.tagName === 'INPUT') && $('dlg').style.display !== 'block') render();
+      }
+      setTimeout(watch, 100);
+    };
+    if (window.DartLocal) return; // ohne Server gibt es kein Turnier
+    r.open('GET', '/api/wait?v=' + ver + '&_=' + new Date().getTime(), true); r.send();
   }
 
   /* ---------- Spiellogik ---------- */
   function newPlayer(name, start) { return { name: name, legs: 0, rem: start, sum: 0, visits: 0, last: [] }; }
 
-  function startMatch(n1, n2, start, legs, dout, first) {
+  function startMatch(n1, n2, start, legs, dout, first, tm) {
     board = {
+      tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : undefined,
       status: 'play', start: start, legsToWin: legs, doubleOut: dout,
       players: [newPlayer(n1, start), newPlayer(n2, start)],
       turn: first, legStarter: first, leg: 1, winner: null,
@@ -294,7 +329,19 @@ input { font-family: inherit; }
   }
 
   function setupHTML() {
-    var h = '<div class="setup"><h2>Neues Spiel</h2>';
+    var h = '<div class="setup">';
+    var tm = myMatch();
+    if (tm) {
+      h += '<div style="background:#fff;color:#071d47;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem">' +
+        '<div style="font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:#3f5f99">' + esc(tour.name) + ' · ' + esc(tLabel(tm)) + '</div>' +
+        '<div style="font-size:2rem;font-weight:bold;margin:.2rem 0">' + esc(tm.p1) + ' – ' + esc(tm.p2) + '</div>' +
+        '<div style="font-size:1rem;margin-bottom:.4rem">' + tour.cfg.start + (tour.cfg.doubleOut ? ' Double Out' : '') + ' · First to ' + tm.legsToWin + ' Legs · Ausbullen: Wer beginnt?</div>' +
+        '<div class="seg"><button data-tstart="0" style="background:#0b2d6b;color:#fff;font-weight:bold">' + esc(tm.p1) + ' beginnt</button>' +
+        '<button data-tstart="1" style="background:#0b2d6b;color:#fff;font-weight:bold">' + esc(tm.p2) + ' beginnt</button></div></div>';
+    } else if (tour && (tour.status === 'groups' || tour.status === 'ko')) {
+      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
+    }
+    h += '<h2>' + (tm ? 'Oder freies Spiel' : 'Neues Spiel') + '</h2>';
     h += '<div class="row"><label>Spieler 1</label><input id="n1" maxlength="24" autocomplete="off" placeholder="Name" value="' + esc(setup.n1) + '"' + (setup.active === 0 ? ' class="on"' : '') + '></div>';
     h += '<div class="row"><label>Spieler 2</label><input id="n2" maxlength="24" autocomplete="off" placeholder="Name" value="' + esc(setup.n2) + '"' + (setup.active === 1 ? ' class="on"' : '') + '></div>';
     if (names.length) {
@@ -334,7 +381,7 @@ input { font-family: inherit; }
   function playHTML() {
     var p = board.players[board.turn];
     var h = '<div class="play"><div class="side">';
-    h += '<div class="info">Leg ' + board.leg + ' · First to ' + board.legsToWin + ' · ' + board.start + (board.doubleOut ? ' Double Out' : ' Single Out') + '</div>';
+    h += '<div class="info">' + (board.tlabel ? esc(board.tlabel) + ' · ' : '') + 'Leg ' + board.leg + ' · First to ' + board.legsToWin + ' · ' + board.start + (board.doubleOut ? ' Double Out' : ' Single Out') + '</div>';
     h += plHTML(0) + plHTML(1) + '</div><div class="pad">';
     h += '<div class="disp"><span class="who">' + esc(p.name) + '</span>' +
       (typed ? '<span class="val">' + esc(typed) + '</span>' : '<span class="val ph' + (msg ? ' err' : '') + '">' + esc(msg || 'Punkte der Aufnahme') + '</span>') + '</div>';
@@ -357,6 +404,13 @@ input { font-family: inherit; }
     var h = '<div class="done"><p>Spiel beendet</p><h1>' + esc(w.name) + ' gewinnt</h1>';
     h += '<div class="res">' + w.legs + ' : ' + l.legs + '</div>';
     h += '<p>Ø ' + esc(w.name) + ' ' + avg(w) + ' · Ø ' + esc(l.name) + ' ' + avg(l) + '</p>';
+    if (board.tmatch) {
+      var nx = myMatch();
+      h += '<p style="color:#fff;font-weight:bold">✓ Ergebnis an die Turnierleitung gemeldet</p>';
+      h += '<div class="btns">' + (nx ? '<button class="big" data-a="new">Nächstes Spiel: ' + esc(nx.p1) + ' – ' + esc(nx.p2) + '</button>' : '<button class="big" data-a="new">Fertig – Scheibe frei</button>') +
+        '<button class="big sec" data-a="undo">↶ Letzten Wurf zurücknehmen</button></div></div>';
+      return h;
+    }
     h += '<div class="btns"><button class="big" data-a="rematch">Rückspiel</button>' +
       '<button class="big sec" data-a="new">Neues Spiel</button>' +
       '<button class="big sec" data-a="undo">↶ Letzten Wurf zurücknehmen</button>' +
@@ -368,10 +422,15 @@ input { font-family: inherit; }
   function onTap(e) {
     var t = e.target;
     while (t && t !== document.body && !(t.getAttribute && (t.getAttribute('data-k') || t.getAttribute('data-q') || t.getAttribute('data-a') || t.getAttribute('data-dlg') ||
-      t.getAttribute('data-name') || t.getAttribute('data-start') || t.getAttribute('data-legs') || t.getAttribute('data-dout') || t.getAttribute('data-first')))) t = t.parentNode;
+      t.getAttribute('data-name') || t.getAttribute('data-tstart') || t.getAttribute('data-start') || t.getAttribute('data-legs') || t.getAttribute('data-dout') || t.getAttribute('data-first')))) t = t.parentNode;
     if (!t || t === document.body || !t.getAttribute) return;
     var a;
 
+    if ((a = t.getAttribute('data-tstart')) !== null) {
+      var tm = myMatch();
+      if (tm) startMatch(tm.p1, tm.p2, tour.cfg.start, tm.legsToWin, tour.cfg.doubleOut !== false, +a, tm);
+      return;
+    }
     if ((a = t.getAttribute('data-dlg')) !== null) { var b = dlgBtns[+a]; closeDlg(); if (b && b.fn) b.fn(); return; }
 
     if ((a = t.getAttribute('data-k')) !== null) {
@@ -405,7 +464,7 @@ input { font-family: inherit; }
       dialog('Menü', board.players[0].name + ' gegen ' + board.players[1].name, [
         { label: 'Spiel abbrechen', fn: function () {
           dialog('Wirklich abbrechen?', 'Das laufende Spiel wird beendet und nicht gewertet.', [
-            { label: 'Ja, abbrechen', fn: function () { board = { status: 'idle' }; undo = []; save(); render(); } },
+            { label: 'Ja, abbrechen', fn: function () { board = { status: 'idle', tmatch: board.tmatch }; undo = []; save(); render(); } },
             { label: 'Nein, weiterspielen', sec: true }
           ]);
         } },
