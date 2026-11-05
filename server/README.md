@@ -23,3 +23,9 @@ Namen eingeben (zuletzt benutzte antippen), 301/501/701, Gewinn-Legs, Double Out
 Pro Aufnahme die Summe der 3 Darts eintippen und OK (oder Schnelltaste). Überworfen wird automatisch erkannt.
 Bei Double Out fragt das Tablet beim Checkout, ob mit einem Doppel beendet wurde. Keine Checkout-Hinweise.
 „Rückgängig“ nimmt die letzte Aufnahme zurück. Spielstände bleiben bei einem Server-Neustart erhalten.
+
+## Training (am Tablet über „Training & Bestenliste“ oder direkt /t1 bis /t5)
+JDC Challenge (offizielle Wertung), Around the Clock (Single/Double/Triple), Bob's 27,
+Checkout-Training (ab 61/81/101/121, 10 Versuche), Count Up (10/20 Aufnahmen), Cricket, Swedish Killer.
+1–6 Spieler. Ergebnisse landen in der Bestenliste (data/results.json).
+Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste

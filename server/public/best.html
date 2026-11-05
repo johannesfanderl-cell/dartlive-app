@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bestenliste – Dart Training</title>
+<style>
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.7em; line-height: 1.7em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #fff; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#bar .r { float: right; }
+table.cols { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0.5em; }
+table.cols > tbody > tr > td { vertical-align: top; background: #0b2d6b; border: 0.1em solid #3f6fbf; }
+.h { background: #10377f; padding: 0.3em 0.5em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; }
+table.l { width: 100%; border-collapse: collapse; }
+table.l td { padding: 0.2em 0.5em; border-top: 0.05em solid #3f6fbf; white-space: nowrap; overflow: hidden; }
+table.l td.r { text-align: right; font-weight: bold; }
+table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; }
+.empty { padding: 2em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+</style>
+</head>
+<body>
+<div id="bar"><span class="r" id="pg"></span>TV Riedenburg · Bestenliste Training</div>
+<div id="wrap"><div class="empty">Lade …</div></div>
+<script>
+(function () {
+  var GAMES = [['jdc', 'JDC Challenge', 'max'], ['atc', 'Around the Clock', 'min'], ['bobs', "Bob's 27", 'max'], ['checkout', 'Checkout', 'max'], ['countup', 'Count Up', 'max'], ['cricket', 'Cricket (MPR)', 'max'], ['killer', 'Swedish Killer (Siege)', 'sum']];
+  var results = [], page = 0, version = 0;
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmtScore(game, s) { if (game === 'cricket') return (Math.round(s * 100) / 100).toFixed(2).replace('.', ','); return String(s); }
+  function boards() {
+    var g = {}, order = [], i, j;
+    for (i = 0; i < results.length; i++) {
+      var r = results[i], key = r.game + '|' + (r.variant || '');
+      if (!g[key]) { g[key] = []; order.push(key); }
+      g[key].push(r);
+    }
+    var out = [];
+    for (j = 0; j < GAMES.length; j++) for (i = 0; i < order.length; i++) if (order[i].split('|')[0] === GAMES[j][0]) {
+      var v = order[i].split('|')[1];
+      out.push({ key: order[i], game: GAMES[j][0], mode: GAMES[j][2], title: GAMES[j][1] + (v ? ' · ' + v : ''), list: g[order[i]] });
+    }
+    return out;
+  }
+  function top(b) {
+    var per = {}, k, arr = [];
+    for (k = 0; k < b.list.length; k++) {
+      var r = b.list[k], key = r.name.toLowerCase(), e = per[key];
+      if (!e) e = per[key] = { name: r.name, best: r.score, sum: 0 };
+      e.sum += r.score;
+      if (b.mode === 'min' ? r.score < e.best : r.score > e.best) e.best = r.score;
+    }
+    for (k in per) arr.push(per[k]);
+    arr.sort(function (a, c) { if (b.mode === 'sum') return c.sum - a.sum; return b.mode === 'min' ? a.best - c.best : c.best - a.best; });
+    return arr.slice(0, 10);
+  }
+  function render() {
+    var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
+    var bs = boards(), per = w > h ? 3 : 1;
+    var pages = Math.max(1, Math.ceil(bs.length / per));
+    if (page >= pages) page = 0;
+    document.body.style.fontSize = Math.floor(Math.min(w / per / 16, h / 16)) + 'px';
+    document.getElementById('pg').innerHTML = pages > 1 ? (page + 1) + ' / ' + pages : '';
+    if (!bs.length) { document.getElementById('wrap').innerHTML = '<div class="empty">Noch keine Trainingsergebnisse</div>'; return; }
+    var html = '<table class="cols"><tr>';
+    for (var i = page * per; i < page * per + per; i++) {
+      if (!bs[i]) { html += '<td style="background:none;border:0"></td>'; continue; }
+      var t = top(bs[i]);
+      html += '<td><div class="h">' + esc(bs[i].title) + '</div><table class="l">';
+      for (var j = 0; j < t.length; j++) html += '<tr' + (j === 0 ? ' class="f"' : '') + '><td>' + (j + 1) + '. ' + esc(t[j].name) + '</td><td class="r">' + esc(bs[i].mode === 'sum' ? t[j].sum : fmtScore(bs[i].game, t[j].best)) + '</td></tr>';
+      html += '</table></td>';
+    }
+    document.getElementById('wrap').innerHTML = html + '</tr></table>';
+  }
+  function get() {
+    var r = new XMLHttpRequest();
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      try { var d = JSON.parse(r.responseText); results = d.results || []; } catch (e) {}
+      render();
+    };
+    r.open('GET', '/api/results?_=' + new Date().getTime(), true); r.send();
+  }
+  function wait() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(wait, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      try { var d = JSON.parse(r.responseText); if (d.v !== version) { version = d.v; get(); } } catch (e) { setTimeout(wait, 3000); return; }
+      setTimeout(wait, 100);
+    };
+    r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
+  }
+  setInterval(function () { page++; render(); }, 12000);
+  window.onresize = render;
+  get(); wait();
+})();
+</script>
+</body>
+</html>

@@ -11,6 +11,7 @@ const BOARDS = 5;
 const PUB = path.join(__dirname, 'public');
 const DATA = path.join(__dirname, 'data');
 const FILE = path.join(DATA, 'live.json');
+const RFILE = path.join(DATA, 'results.json');
 
 function emptyState() {
   const boards = {};
@@ -23,6 +24,13 @@ try {
   const s = JSON.parse(fs.readFileSync(FILE, 'utf8'));
   if (s && s.boards) { state = s; for (let i = 1; i <= BOARDS; i++) if (!state.boards[i]) state.boards[i] = { status: 'idle' }; if (!Array.isArray(state.names)) state.names = []; }
 } catch (e) { /* noch keine Datei */ }
+
+let results = [];
+try { results = JSON.parse(fs.readFileSync(RFILE, 'utf8')); if (!Array.isArray(results)) results = []; } catch (e) { results = []; }
+function saveResults() {
+  try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(RFILE + '.tmp', JSON.stringify(results)); fs.renameSync(RFILE + '.tmp', RFILE); }
+  catch (e) { console.error('Ergebnisse speichern fehlgeschlagen:', e.message); }
+}
 
 function save() {
   try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(FILE + '.tmp', JSON.stringify(state)); fs.renameSync(FILE + '.tmp', FILE); }
@@ -47,6 +55,8 @@ const PAGES = {
   '/1': 'tablet.html', '/2': 'tablet.html', '/3': 'tablet.html', '/4': 'tablet.html', '/5': 'tablet.html',
   '/tv': 'tv.html', '/tv1': 'tv.html', '/tv2': 'tv.html', '/tv3': 'tv.html',
   '/m1': 'tv.html', '/m2': 'tv.html', '/m3': 'tv.html', '/m4': 'tv.html', '/m5': 'tv.html',
+  '/t1': 'training.html', '/t2': 'training.html', '/t3': 'training.html', '/t4': 'training.html', '/t5': 'training.html',
+  '/bestenliste': 'best.html',
   '/diag': 'diag.html',
 };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml' };
@@ -84,7 +94,7 @@ const server = http.createServer(function (req, res) {
       if (b.players && Array.isArray(b.players)) {
         b.players.forEach(function (pl) {
           pl.name = cleanName(pl.name);
-          if (b.status === 'play' && pl.name) {
+          if ((b.status === 'play' || b.status === 'training') && pl.name) {
             state.names = [pl.name].concat(state.names.filter(function (n) { return n.toLowerCase() !== pl.name.toLowerCase(); })).slice(0, 40);
           }
         });
@@ -95,6 +105,40 @@ const server = http.createServer(function (req, res) {
       notify();
       sendJSON(res, 200, { ok: true, v: state.v });
     });
+  }
+
+  if (req.method === 'GET' && p === '/api/results') return sendJSON(res, 200, { results: results });
+
+  if (req.method === 'POST' && p === '/api/results') {
+    return readBody(req, function (txt) {
+      let list;
+      try { list = JSON.parse(txt); } catch (e) { return sendJSON(res, 400, { error: 'Ungültige Daten' }); }
+      if (!Array.isArray(list)) list = [list];
+      const now = new Date().toISOString();
+      const ids = [];
+      list.slice(0, 10).forEach(function (r) {
+        if (!r || typeof r !== 'object') return;
+        const name = cleanName(r.name), game = String(r.game || '').slice(0, 20);
+        const score = Number(r.score);
+        if (!name || !game || !isFinite(score)) return;
+        const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        ids.push(id);
+        results.push({ id: id, name: name, game: game,
+          variant: String(r.variant || '').slice(0, 40), score: score, detail: String(r.detail || '').slice(0, 120), date: now });
+      });
+      if (results.length > 5000) results = results.slice(-5000);
+      saveResults();
+      state.v++; notify();
+      sendJSON(res, 200, { ok: true, ids: ids });
+    });
+  }
+
+  const rd = p.match(/^\/api\/results\/([a-z0-9]+)$/);
+  if (rd && req.method === 'DELETE') {
+    const before = results.length;
+    results = results.filter(function (r) { return r.id !== rd[1]; });
+    if (results.length !== before) { saveResults(); state.v++; notify(); }
+    return sendJSON(res, 200, { ok: true });
   }
 
   if (req.method === 'DELETE' && p === '/api/names') { state.names = []; state.v++; save(); notify(); return sendJSON(res, 200, { ok: true }); }
@@ -119,6 +163,7 @@ server.listen(PORT, '0.0.0.0', function () {
   console.log('Dart Live läuft auf Port ' + PORT);
   console.log('Tablets:    http://<IP>:' + PORT + '/1  bis  /5');
   console.log('Monitor an Scheibe (nur Spielstand): http://<IP>:' + PORT + '/m1  bis  /m5');
+  console.log('Training am Tablet: http://<IP>:' + PORT + '/t1  bis  /t5     Bestenliste: http://<IP>:' + PORT + '/bestenliste');
   console.log('Fernseher:  http://<IP>:' + PORT + '/tv1  (Scheiben 1-3)   /tv2  (Scheiben 4-5)');
   if (ips.length) console.log('Eigene IP(s) hier: ' + ips.join(', ') + '  (am Chromebook gilt die WLAN-IP aus den ChromeOS-Einstellungen)');
 });

@@ -46,6 +46,15 @@ table.duo .st { font-size: 1.4em; }
 body.single .hd { height: 3.7em; }
 body.single .hd b { font-size: 1.5em; }
 body.single .hd span { font-size: 1.1em; }
+.tr .nm { line-height: 1.6; }
+.tr .nm i { font-size: 2.3em; line-height: 0.7; }
+.many .tr .nm { font-size: 1.1em; }
+.many .tr .nm i { font-size: 1.9em; }
+.lots .tr .nm { font-size: 0.95em; }
+.lots .tr .st { font-size: 0.75em; }
+body.single .tr .nm { font-size: 1.9em; }
+body.single .tr .st { font-size: 1.2em; }
+.st.cur { font-weight: bold; opacity: 1; }
 .ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #ffffff; color: #071d47; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #3f6fbf; border-bottom: 0.15em solid #3f6fbf; }
 </style>
 </head>
@@ -87,7 +96,20 @@ body.single .hd span { font-size: 1.1em; }
     var info = '';
     if (b.status === 'play') info = 'Leg ' + b.leg + ' · FT' + b.legsToWin + ' · ' + b.start + (b.doubleOut ? ' DO' : '');
     h += '<div class="hd"><b>Scheibe ' + n + '</b><span>' + (esc(info) || '&nbsp;') + '</span></div>';
-    if (b.status === 'play' && b.players && single) {
+    if (b.status === 'training' && b.view) {
+      var vw = b.view, rows = vw.rows || [];
+      h = '<div class="pn' + (rows.length > 2 ? ' many' : '') + (rows.length > 4 ? ' lots' : '') + '" id="pn' + n + '">';
+      h += single ? '<div class="hd"><b>' + esc(vw.title) + '</b><span>' + esc(vw.sub || '') + '</span></div>'
+                  : '<div class="hd"><b>Scheibe ' + n + '</b><span>' + esc(vw.title) + ' · ' + esc(vw.sub || '') + '</span></div>';
+      for (var t = 0; t < rows.length; t++) {
+        var rw = rows[t];
+        h += '<div class="pb tr' + (rw.on ? ' on' : '') + '"><div class="pbi">' +
+          '<div class="nm"><i>' + esc(rw.big) + '</i>' + (rw.on ? '&#9654; ' : '') + esc(rw.name) + '</div>' +
+          '<div class="st">' + esc(rw.small) + '</div>' +
+          (rw.on && vw.cur ? '<div class="st cur">' + esc(vw.cur) + '</div>' : '') +
+          '</div></div>';
+      }
+    } else if (b.status === 'play' && b.players && single) {
       h += '<table class="duo"><tr>';
       for (var d = 0; d < 2; d++) {
         var q = b.players[d];
@@ -132,10 +154,12 @@ body.single .hd span { font-size: 1.1em; }
       pn.style.height = avail + 'px';
       var hd = pn.firstChild.offsetHeight;
       var rest = avail - hd - 4;
-      var kids = pn.childNodes;
+      var kids = pn.childNodes, npb = 0;
+      for (var q = 0; q < kids.length; q++) if (/^pb/.test(kids[q].className)) npb++;
+      if (!npb) npb = 2;
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
-        if (c === 'pb' || c === 'pb on') kids[k].style.height = Math.floor(rest / 2) + 'px';
+        if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
         else if (c === 'idle' || c === 'win' || c === 'duo') kids[k].style.height = rest + 'px';
       }
     }

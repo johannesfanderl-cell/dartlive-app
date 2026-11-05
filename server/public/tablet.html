@@ -189,6 +189,7 @@ input { font-family: inherit; }
       if (!loaded) {
         loaded = true;
         var b = data.boards && data.boards[N];
+        if (b && b.status === 'training') { location.replace('/t' + N); return; }
         if (b && (b.status === 'play' || b.status === 'done')) board = b;
         if (b && b.players) { setup.n1 = b.players[0].name; setup.n2 = b.players[1].name; setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false; }
       }
@@ -307,7 +308,8 @@ input { font-family: inherit; }
       '<button data-first="0"' + (setup.first === 0 ? ' class="on"' : '') + '>' + esc(setup.n1 || 'Spieler 1') + '</button>' +
       '<button data-first="1"' + (setup.first === 1 ? ' class="on"' : '') + '>' + esc(setup.n2 || 'Spieler 2') + '</button></div></div>';
     h += '<div class="hint">' + esc(msg) + '</div>';
-    h += '<button class="big" data-a="start">Spiel starten</button></div>';
+    h += '<button class="big" data-a="start">Spiel starten</button>';
+    h += '<button class="big sec" data-a="training">Training &amp; Bestenliste</button></div>';
     return h;
   }
 
@@ -406,6 +408,7 @@ input { font-family: inherit; }
       var p = board.players;
       startMatch(p[1].name, p[0].name, board.start, board.legsToWin, board.doubleOut, 0);
     } else if (a === 'new') { board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
+    else if (a === 'training') { location.href = '/t' + N; }
     else if (a === 'free') { setup.n1 = ''; setup.n2 = ''; board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
   }
 
