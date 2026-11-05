@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Liga-Spieltag – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, select, input, textarea { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
+#net { font-size: 13px; color: #b7d3ff; } #net.bad { color: #ffb3b3; font-weight: bold; }
+#main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 60px; }
+h2 { font-size: 20px; margin: 6px 0 10px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+label.f { display: block; color: #b7d3ff; font-size: 14px; margin: 10px 0 4px; }
+input[type=text], input[type=date], textarea, select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; } .row > * { flex: 1 1 200px; }
+.teams { display: flex; flex-wrap: wrap; gap: 12px; } .teams > .card { flex: 1 1 380px; }
+.pr { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.pr b { width: 30px; color: #b7d3ff; }
+.pr input.nr { width: 90px; flex: 0 0 90px; }
+.btn { display: inline-block; padding: 10px 16px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; }
+.btn.warn { background: #6b1d2d; color: #fff; }
+.btn.sm { padding: 6px 10px; font-size: 14px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
+.err { color: #ffb3b3; font-weight: bold; min-height: 20px; margin: 6px 0; }
+.score { display: flex; align-items: center; justify-content: center; gap: 20px; background: #fff; color: #071d47; border-radius: 10px; padding: 14px; margin-bottom: 12px; text-align: center; }
+.score .t { flex: 1 1 0; font-size: 20px; font-weight: bold; text-transform: uppercase; }
+.score .n { font-size: 48px; font-weight: bold; white-space: nowrap; }
+.score small { display: block; font-size: 14px; font-weight: normal; color: #3f5f99; }
+.boards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.bd { flex: 1 1 170px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 8px; padding: 8px 10px; min-height: 70px; }
+.bd b { display: block; font-size: 13px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; }
+.bd .m { font-weight: bold; margin-top: 4px; } .bd .s { font-size: 13px; color: #b7d3ff; margin-top: 2px; }
+.bd.run { background: #fff; color: #071d47; } .bd.run b, .bd.run .s { color: #3f5f99; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 7px 6px; border-bottom: 1px solid #23498f; text-align: left; vertical-align: middle; }
+th { color: #b7d3ff; font-weight: normal; font-size: 13px; text-transform: uppercase; }
+td.n { text-align: center; white-space: nowrap; }
+tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+.st { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+.st.pending { background: #23498f; } .st.assigned { background: #c9a227; color: #071d47; } .st.running { background: #2e9d5b; } .st.done { background: #fff; color: #071d47; }
+.dsel { display: flex; flex-wrap: wrap; gap: 4px; } .dsel select { width: auto; padding: 4px; font-size: 14px; }
+#dlg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20; }
+#dlg .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-width: 94%; background: #fff; color: #071d47; border-radius: 10px; padding: 16px; }
+#dlg h4 { font-size: 19px; margin-bottom: 8px; }
+#dlg .lg { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+#dlg .lg span { flex: 1 1 auto; font-weight: bold; }
+#dlg .lg input { width: 70px; text-align: center; font-size: 22px; padding: 6px; border: 2px solid #3f6fbf; border-radius: 6px; }
+#dlg .btn { background: #0b2d6b; color: #fff; } #dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
+#toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+#toast.bad { background: #ffd6d6; color: #6b1d2d; }
+</style>
+</head>
+<body>
+<div id="top"><b>Liga-Spieltag</b><span id="net">verbinde …</span></div>
+<div id="main">Lade …</div>
+<div id="dlg"><div class="box" id="dlgbox"></div></div>
+<div id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  var S = null, version = 0;
+  var today = new Date();
+  var form = { homeTeam: 'TV Riedenburg', guestTeam: '', place: 'Riedenburg', date: today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2), legs: 3, start: 501, strict: true, home: [], guest: [] };
+  for (var i = 0; i < 6; i++) { form.home.push({ name: '', nr: '' }); form.guest.push({ name: '', nr: '' }); }
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  var tt = null;
+  function toast(t, bad) { var el = $('toast'); el.innerHTML = esc(t); el.className = bad ? 'bad' : ''; el.style.display = 'block'; clearTimeout(tt); tt = setTimeout(function () { el.style.display = 'none'; }, 3500); }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d);
+    };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function act(body, okMsg, cb) { req('POST', '/api/turnier', body, function (e, d) { if (e) { toast(e, true); return; } if (okMsg) toast(okMsg); if (cb) cb(d); }); }
+  function busyInput() { var a = document.activeElement; return a && /INPUT|TEXTAREA|SELECT/.test(a.tagName); }
+  function poll() {
+    req('GET', '/api/wait?v=' + version, null, function (e, d) {
+      if (e || !d) { $('net').className = 'bad'; $('net').innerHTML = '⚠ Server nicht erreichbar'; setTimeout(poll, 2500); return; }
+      $('net').className = ''; $('net').innerHTML = '● verbunden';
+      var changed = d.v !== version; version = d.v; S = d;
+      if (changed && $('dlg').style.display !== 'block' && !busyInput()) render();
+      setTimeout(poll, 50);
+    });
+  }
+
+  function L() { return S && S.tournament && S.tournament.type === 'league' ? S.tournament : null; }
+
+  function render() {
+    var T = S && S.tournament;
+    if (T && T.type !== 'league') { $('main').innerHTML = '<div class="card"><p>Gerade läuft ein Turnier („' + esc(T.name) + '“). Ein Liga-Spieltag kann erst angelegt werden, wenn das Turnier in der <a href="/turnier" style="color:#8cc4ff">Turnierleitung</a> gelöscht wurde.</p></div>'; return; }
+    $('main').innerHTML = T ? runHTML(T) : createHTML();
+  }
+
+  function seg(key, vals, cur, labels) {
+    var h = '<div class="seg">';
+    for (var i = 0; i < vals.length; i++) h += '<button data-f="' + key + '" data-v="' + vals[i] + '"' + (String(cur) === String(vals[i]) ? ' class="on"' : '') + '>' + (labels ? labels[i] : vals[i]) + '</button>';
+    return h + '</div>';
+  }
+
+  function createHTML() {
+    var names = (S && S.names) || [];
+    var h = '<h2>Neuen Spieltag anlegen</h2><div class="card"><div class="row">' +
+      '<div><label class="f">Heim-Team</label><input type="text" data-in="homeTeam" value="' + esc(form.homeTeam) + '"></div>' +
+      '<div><label class="f">Gast-Team</label><input type="text" data-in="guestTeam" value="' + esc(form.guestTeam) + '" placeholder="Name der Gastmannschaft"></div></div>' +
+      '<div class="row"><div><label class="f">Ort</label><input type="text" data-in="place" value="' + esc(form.place) + '"></div>' +
+      '<div><label class="f">Datum</label><input type="date" data-in="date" value="' + esc(form.date) + '"></div></div>' +
+      '<div class="row"><div><label class="f">Pro Spiel: First to</label>' + seg('legs', [2, 3, 4, 5], form.legs) + '</div>' +
+      '<div><label class="f">Punkte</label>' + seg('start', [301, 501], form.start) + '</div>' +
+      '<div><label class="f">Reihenfolge</label>' + seg('strict', ['true', 'false'], String(form.strict), ['Blockweise', 'Frei']) + '</div></div>' +
+      '<p class="note">Blockweise: Doppel starten erst, wenn Spiel 1–6 fertig sind, und Spiel 10–15 erst nach den Doppeln (wie auf dem Spielbericht).</p></div>';
+    h += '<div class="teams">' + teamHTML('home', 'Heim (A1–A6)', names) + teamHTML('guest', 'Gast (B1–B6)', []) + '</div>';
+    h += '<datalist id="known">'; for (var k = 0; k < names.length; k++) h += '<option value="' + esc(names[k]) + '">'; h += '</datalist>';
+    h += '<button class="btn" data-a="create">Spieltag anlegen</button>';
+    return h;
+  }
+  function teamHTML(team, title, names) {
+    var h = '<div class="card"><h3 style="margin-top:0">' + title + '</h3>', list = form[team], pre = team === 'home' ? 'A' : 'B';
+    for (var i = 0; i < 6; i++) h += '<div class="pr"><b>' + pre + (i + 1) + '</b><input type="text" list="' + (team === 'home' ? 'known' : '') + '" data-p="' + team + '" data-i="' + i + '" value="' + esc(list[i].name) + '" placeholder="Name"><input type="text" class="nr" data-nr="' + team + '" data-i="' + i + '" value="' + esc(list[i].nr) + '" placeholder="Pass-Nr."></div>';
+    return h + '</div>';
+  }
+
+  function stText(m) { return { pending: 'offen', assigned: 'Scheibe ' + m.board + ' – bereit', running: 'läuft auf ' + m.board, done: 'beendet' }[m.status]; }
+
+  function runHTML(T) {
+    var sc = S.leagueScore || { home: 0, guest: 0, legsHome: 0, legsGuest: 0, running: [] };
+    var h = '<div class="score"><div class="t">' + esc(T.homeTeam) + '</div><div class="n">' + sc.home + ' : ' + sc.guest + '<small>Spiele · Sätze ' + sc.legsHome + ':' + sc.legsGuest + '</small></div><div class="t">' + esc(T.guestTeam) + '</div></div>';
+    if (T.status === 'done') h += '<div class="card" style="text-align:center;font-weight:bold">Spieltag beendet – ' + (sc.home > sc.guest ? esc(T.homeTeam) + ' gewinnt' : esc(T.guestTeam) + ' gewinnt') + ' ' + sc.home + ':' + sc.guest + '</div>';
+    h += '<div class="boards">';
+    for (var b = 1; b <= 5; b++) {
+      var m = null;
+      for (var k = 0; k < T.matches.length; k++) if ((T.matches[k].status === 'running' || T.matches[k].status === 'assigned') && T.matches[k].board === b) m = T.matches[k];
+      var bs = S.boards && S.boards[b], live = '';
+      if (m && m.status === 'running' && bs && bs.tmatch === m.id && bs.players) live = bs.players[0].legs + ' : ' + bs.players[1].legs;
+      h += '<div class="bd' + (m && m.status === 'running' ? ' run' : '') + '"><b>Scheibe ' + b + '</b>' + (m ? '<div class="m">' + esc(m.p1) + ' – ' + esc(m.p2) + '</div><div class="s">Spiel ' + m.no + ' · ' + (m.status === 'running' ? (live || 'läuft') : 'wartet auf Start') + '</div>' : '<div class="s">frei</div>') + '</div>';
+    }
+    h += '</div><div class="card" style="overflow-x:auto"><table><tr><th>Nr</th><th>Heim</th><th class="n">Sätze</th><th>Gast</th><th class="n">Stand</th><th>Status</th><th></th></tr>';
+    var secs = { 1: 'Einzel', 2: 'Doppel', 3: 'Einzel' }, last = 0;
+    for (var i = 0; i < T.matches.length; i++) {
+      var x = T.matches[i];
+      if (x.sec !== last) { h += '<tr class="sec"><td colspan="7">' + secs[x.sec] + '</td></tr>'; last = x.sec; }
+      var home = x.doubles ? dsel(T, x, 'home') : '<b>A' + x.hs + '</b> ' + esc(x.p1), guest = x.doubles ? dsel(T, x, 'guest') : '<b>B' + x.gs + '</b> ' + esc(x.p2);
+      h += '<tr><td class="n">' + x.no + '</td><td>' + home + '</td><td class="n"><b>' + (x.legs ? x.legs[0] + ' : ' + x.legs[1] : '') + '</b></td><td>' + guest + '</td><td class="n">' + (sc.running[x.no - 1] || '') + '</td>' +
+        '<td><span class="st ' + x.status + '">' + stText(x) + '</span></td><td style="text-align:right;white-space:nowrap">';
+      if (x.doubles && x.status !== 'running' && x.status !== 'done') h += '<button class="btn sec sm" data-dset="' + x.no + '">Doppel festlegen</button>';
+      if (x.p1 && x.p2) h += '<button class="btn sec sm" data-res="' + x.id + '">Ergebnis</button>';
+      if (x.status === 'pending' && x.p1 && x.p2) h += '<button class="btn sec sm" data-assign="' + x.id + '">Scheibe…</button>';
+      if (x.status === 'done' || x.status === 'running') h += '<button class="btn warn sm" data-reset="' + x.id + '">Zurücksetzen</button>';
+      h += '</td></tr>';
+    }
+    h += '</table></div>';
+    // Auswechslung
+    h += '<h3>Auswechslung</h3><div class="card"><div class="row"><div><label class="f">Team</label><select id="sub-team" data-keep="1"><option value="home">' + esc(T.homeTeam) + '</option><option value="guest">' + esc(T.guestTeam) + '</option></select></div>' +
+      '<div><label class="f">Position</label><select id="sub-slot" data-keep="1">';
+    for (var p = 1; p <= 6; p++) h += '<option value="' + p + '">' + p + '</option>';
+    h += '</select></div><div><label class="f">Neuer Spieler</label><input type="text" id="sub-name" data-keep="1"></div><div><label class="f">Pass-Nr.</label><input type="text" id="sub-nr" data-keep="1"></div>' +
+      '<div><label class="f">ab Spiel</label><select id="sub-from" data-keep="1">';
+    for (var n = 1; n <= 15; n++) h += '<option value="' + n + '">' + n + '</option>';
+    h += '</select></div></div><button class="btn sec" data-a="sub">Auswechseln</button>';
+    if (T.subs && T.subs.length) { h += '<p class="note">'; for (var s = 0; s < T.subs.length; s++) { var u = T.subs[s]; h += (u.team === 'home' ? 'A' : 'B') + u.slot + ': ' + esc(u.out) + ' → ' + esc(u.in) + ' ab Spiel ' + u.fromNo + '<br>'; } h += '</p>'; }
+    h += '</div>';
+    h += '<h3>Bemerkungen / Protest</h3><div class="card"><textarea id="notes" data-keep="1" rows="3">' + esc(T.notes || '') + '</textarea><button class="btn sec" data-a="notes">Speichern</button></div>';
+    h += '<h3>Spielbericht & Anzeige</h3><div class="card"><a class="btn" href="/liga-bericht" target="_blank">Spielbericht öffnen / drucken</a>' +
+      '<p class="note">Fernseher: <b>' + esc(location.host) + '/liga-tv</b> · Spielstände aller Scheiben: ' + esc(location.host) + '/tv</p>' +
+      '<button class="btn warn" data-a="delete">Spieltag löschen</button></div>';
+    return h;
+  }
+
+  function dsel(T, m, team) {
+    var cur = team === 'home' ? m.hp : m.gp;
+    if (cur && cur.length) return esc(cur.join(' / '));
+    return '<span class="note">noch offen</span>';
+  }
+
+  /* ---------- Dialoge ---------- */
+  var dlgFns = [];
+  function dialog(html, btns) {
+    dlgFns = btns;
+    var h = html;
+    for (var i = 0; i < btns.length; i++) h += '<button class="btn' + (btns[i].sec ? ' sec' : '') + '" data-dlg="' + i + '">' + esc(btns[i].label) + '</button>';
+    $('dlgbox').innerHTML = h; $('dlg').style.display = 'block';
+  }
+  function closeDlg() { $('dlg').style.display = 'none'; render(); }
+  function findMatch(id) { var ms = L().matches; for (var i = 0; i < ms.length; i++) if (ms[i].id === id || String(ms[i].no) === String(id)) return ms[i]; return null; }
+
+  function opts(list, sel) { var h = '<option value="">– wählen –</option>'; for (var i = 0; i < list.length; i++) h += '<option' + (list[i].name === sel ? ' selected' : '') + '>' + esc(list[i].name) + '</option>'; return h; }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.hasAttribute && (t.hasAttribute('data-a') || t.hasAttribute('data-f') || t.hasAttribute('data-res') || t.hasAttribute('data-assign') || t.hasAttribute('data-reset') || t.hasAttribute('data-dlg') || t.hasAttribute('data-dset')))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    if (t.hasAttribute('data-dlg')) { var b = dlgFns[+t.getAttribute('data-dlg')]; if (!(b && b.keep)) closeDlg(); if (b && b.fn) b.fn(); return; }
+    var a;
+    if ((a = t.getAttribute('data-f'))) { var v = t.getAttribute('data-v'); form[a] = v === 'true' ? true : (v === 'false' ? false : +v); render(); return; }
+    var T = L();
+    if (t.hasAttribute('data-res')) {
+      var m = findMatch(t.getAttribute('data-res')), l = m.legs || [0, 0];
+      dialog('<h4>Spiel ' + m.no + '</h4><p class="note" style="color:#3f5f99">First to ' + m.legsToWin + '</p><div class="lg"><span>' + esc(m.p1) + '</span><input id="l1" inputmode="numeric" value="' + l[0] + '"></div><div class="lg"><span>' + esc(m.p2) + '</span><input id="l2" inputmode="numeric" value="' + l[1] + '"></div>',
+        [{ label: 'Speichern', keep: true, fn: function () { act({ action: 'result', id: m.id, legs: [parseInt($('l1').value, 10) || 0, parseInt($('l2').value, 10) || 0] }, 'Gespeichert', closeDlg); } }, { label: 'Abbrechen', sec: true }]);
+      return;
+    }
+    if (t.hasAttribute('data-assign')) {
+      var ma = findMatch(t.getAttribute('data-assign')), btns = [];
+      for (var bb = 1; bb <= 5; bb++) (function (n) { btns.push({ label: 'Scheibe ' + n, fn: function () { act({ action: 'assign', id: ma.id, board: n }, 'Spiel ' + ma.no + ' auf Scheibe ' + n); } }); })(bb);
+      btns.push({ label: 'Abbrechen', sec: true });
+      dialog('<h4>Spiel ' + ma.no + ': ' + esc(ma.p1) + ' – ' + esc(ma.p2) + '</h4>', btns); return;
+    }
+    if (t.hasAttribute('data-reset')) {
+      var mr = findMatch(t.getAttribute('data-reset'));
+      dialog('<h4>Spiel ' + mr.no + ' zurücksetzen?</h4><p>Ergebnis bzw. Spielstand wird gelöscht.</p>', [{ label: 'Ja', fn: function () { act({ action: 'reset', id: mr.id }, 'Zurückgesetzt'); } }, { label: 'Abbrechen', sec: true }]); return;
+    }
+    if (t.hasAttribute('data-dset')) {
+      var md = findMatch(t.getAttribute('data-dset')), hp = md.hp || [], gp = md.gp || [];
+      dialog('<h4>Doppel – Spiel ' + md.no + '</h4><p class="note" style="color:#3f5f99">Der zuerst genannte Spieler wirft im Team zuerst.</p>' +
+        '<label class="f" style="color:#3f5f99">' + esc(T.homeTeam) + '</label><div class="dsel"><select id="h1">' + opts(T.home, hp[0]) + '</select><select id="h2">' + opts(T.home, hp[1]) + '</select></div>' +
+        '<label class="f" style="color:#3f5f99">' + esc(T.guestTeam) + '</label><div class="dsel"><select id="g1">' + opts(T.guest, gp[0]) + '</select><select id="g2">' + opts(T.guest, gp[1]) + '</select></div><br>',
+        [{ label: 'Festlegen', keep: true, fn: function () { act({ action: 'doubles', no: md.no, hp: [$('h1').value, $('h2').value], gp: [$('g1').value, $('g2').value] }, 'Doppel ' + md.no + ' festgelegt', closeDlg); } }, { label: 'Abbrechen', sec: true }]);
+      return;
+    }
+    a = t.getAttribute('data-a');
+    if (a === 'create') {
+      act({ action: 'league', homeTeam: form.homeTeam, guestTeam: form.guestTeam || 'Gast', place: form.place, date: form.date, legs: form.legs, start: form.start, strict: form.strict, home: form.home, guest: form.guest }, 'Spieltag angelegt – Spiele werden zugeteilt');
+    } else if (a === 'sub') {
+      act({ action: 'sub', team: $('sub-team').value, slot: $('sub-slot').value, name: $('sub-name').value, nr: $('sub-nr').value, fromNo: $('sub-from').value }, 'Ausgewechselt');
+    } else if (a === 'notes') act({ action: 'notes', notes: $('notes').value }, 'Gespeichert');
+    else if (a === 'delete') dialog('<h4>Spieltag löschen?</h4><p>Alle Ergebnisse dieses Spieltags gehen verloren (die Spielerstatistik bleibt).</p>', [{ label: 'Ja, löschen', fn: function () { act({ action: 'delete' }, 'Gelöscht'); } }, { label: 'Abbrechen', sec: true }]);
+  }, false);
+
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t.hasAttribute('data-in')) form[t.getAttribute('data-in')] = t.value;
+    if (t.hasAttribute('data-p')) form[t.getAttribute('data-p')][+t.getAttribute('data-i')].name = t.value;
+    if (t.hasAttribute('data-nr')) form[t.getAttribute('data-nr')][+t.getAttribute('data-i')].nr = t.value;
+  }, false);
+
+  poll();
+})();
+</script>
+</body>
+</html>

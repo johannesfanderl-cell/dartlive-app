@@ -57,6 +57,7 @@ table.t tr.q td.nm { font-weight: bold; }
   function render() {
     size();
     var T = S && S.tournament;
+    if (T && T.type === 'league') { location.replace('/liga-tv'); return; }
     if (!T) { el('title').innerHTML = 'Dart Live · Turnier'; el('wrap').innerHTML = '<div class="empty">Kein Turnier angelegt</div>'; return; }
     var phase = { setup: 'Auslosung', groups: 'Gruppenphase', ko: 'K.-o.-Runde', done: 'Beendet' }[T.status];
     el('title').innerHTML = esc(T.name) + ' &middot; <span class="ph">' + phase + '</span>';

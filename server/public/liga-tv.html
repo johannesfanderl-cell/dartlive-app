@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spieltag – Dart Live</title>
+<style>
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+table.sc { width: 100%; border-collapse: collapse; background: #fff; color: #071d47; table-layout: fixed; }
+table.sc td { padding: 0.25em 0.5em; text-align: center; font-weight: bold; text-transform: uppercase; }
+table.sc td.t { font-size: 1.4em; white-space: nowrap; overflow: hidden; }
+table.sc td.n { font-size: 2.8em; width: 4.2em; line-height: 1.05; }
+table.sc small { display: block; font-size: 0.32em; text-transform: none; color: #3f5f99; font-weight: normal; }
+table.g { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 0.3em; }
+table.g td { padding: 0.08em 0.4em; border-bottom: 0.05em solid #23498f; white-space: nowrap; overflow: hidden; }
+table.g td.no { width: 1.8em; text-align: center; color: #b7d3ff; }
+table.g td.r { width: 3.6em; text-align: center; font-weight: bold; }
+table.g td.h { text-align: right; }
+table.g td.s { width: 3.2em; text-align: center; color: #b7d3ff; font-size: 0.8em; }
+table.g td.st { width: 6.2em; text-align: center; font-size: 0.75em; color: #b7d3ff; }
+table.g tr.sec td { background: #10377f; color: #b7d3ff; font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; padding: 0.1em; }
+table.g tr.run td { background: #1d4f99; }
+table.g tr.run td.r { color: #8cff9e; }
+td.w { font-weight: bold; color: #ffffff; }
+td.l { color: #9fb4d6; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+</style>
+</head>
+<body>
+<div id="wrap"><div class="empty">Lade …</div></div>
+<script>
+(function () {
+  var S = null, version = 0;
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function render() {
+    var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
+    document.body.style.fontSize = Math.max(9, Math.floor(Math.min(w / 42, h / 31))) + 'px';
+    var T = S && S.tournament, el = document.getElementById('wrap');
+    if (!T || T.type !== 'league') { el.innerHTML = '<div class="empty">Kein Liga-Spieltag angelegt</div>'; return; }
+    var sc = S.leagueScore;
+    var o = '<table class="sc"><tr><td class="t">' + esc(T.homeTeam) + '</td><td class="n">' + sc.home + ' : ' + sc.guest + '<small>Sätze ' + sc.legsHome + ':' + sc.legsGuest + (T.status === 'done' ? ' · Endstand' : '') + '</small></td><td class="t">' + esc(T.guestTeam) + '</td></tr></table>';
+    o += '<table class="g">';
+    var last = 0, names = { 1: 'Einzel', 2: 'Doppel', 3: 'Einzel' };
+    for (var i = 0; i < T.matches.length; i++) {
+      var m = T.matches[i];
+      if (m.sec !== last) { o += '<tr class="sec"><td colspan="6">' + names[m.sec] + '</td></tr>'; last = m.sec; }
+      var b = S.boards && S.boards[m.board], live = (m.status === 'running' && b && b.tmatch === m.id && b.players) ? b.players[0].legs + ':' + b.players[1].legs : '';
+      var res = m.legs ? m.legs[0] + ':' + m.legs[1] : (live || '');
+      var st = m.status === 'running' ? 'Scheibe ' + m.board : (m.status === 'assigned' ? 'gleich auf ' + m.board : (m.status === 'done' ? '' : ''));
+      var hc = m.status === 'done' ? (m.winner === m.p1 ? 'w' : 'l') : '', gc = m.status === 'done' ? (m.winner === m.p2 ? 'w' : 'l') : '';
+      o += '<tr' + (m.status === 'running' ? ' class="run"' : '') + '><td class="no">' + m.no + '</td><td class="h ' + hc + '">' + esc(m.p1 || 'Doppel offen') + '</td><td class="r">' + res + '</td><td class="' + gc + '">' + esc(m.p2 || '') + '</td><td class="s">' + (m.status === 'done' ? sc.running[m.no - 1] : '') + '</td><td class="st">' + st + '</td></tr>';
+    }
+    el.innerHTML = o + '</table>';
+  }
+  function poll() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(poll, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (d) { S = d; version = d.v; render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
+    };
+    r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
+  }
+  window.onresize = render;
+  poll();
+})();
+</script>
+</body>
+</html>

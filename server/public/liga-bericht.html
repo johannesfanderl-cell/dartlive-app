@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spielbericht</title>
+<style>
+@page { size: A4; margin: 10mm; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #e9edf3; color: #000; font-family: Arial, Helvetica, sans-serif; font-size: 11pt; }
+.page { width: 190mm; margin: 10px auto; background: #fff; padding: 8mm; box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+.tools { text-align: center; margin: 12px; }
+.tools button { padding: 10px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; border: 0; background: #0b2d6b; color: #fff; cursor: pointer; }
+h1 { font-size: 22pt; margin-bottom: 4mm; }
+table { width: 100%; border-collapse: collapse; }
+td, th { border: 1.2px solid #000; padding: 1.6mm 1.5mm; vertical-align: middle; }
+th { font-size: 9pt; background: #f1f3f6; }
+.hdr td { font-size: 11pt; height: 9mm; }
+.hdr td.l { width: 18mm; font-weight: bold; border: 0; }
+.sec { text-align: center; font-weight: bold; padding: 2mm 0 1mm; font-size: 12pt; }
+td.c { text-align: center; white-space: nowrap; }
+td.no { width: 8mm; text-align: center; font-weight: bold; }
+td.av { width: 13mm; text-align: center; font-size: 10pt; }
+td.nr { width: 16mm; text-align: center; font-size: 9pt; }
+td.pos { width: 8mm; text-align: center; font-size: 8pt; font-weight: bold; border-left: 0; border-right: 0; }
+td.res { width: 15mm; text-align: center; font-weight: bold; }
+td.std { width: 15mm; text-align: center; }
+td.win { font-weight: bold; }
+.box { border: 1.2px solid #000; padding: 2mm; min-height: 22mm; font-size: 9.5pt; margin-top: 3mm; }
+.box b { display: block; font-size: 8.5pt; margin-bottom: 1mm; }
+.end { display: flex; gap: 4mm; margin-top: 3mm; align-items: stretch; }
+.end .box { flex: 1 1 auto; margin-top: 0; }
+.end .tot { flex: 0 0 40mm; border: 1.2px solid #000; text-align: center; padding: 2mm; }
+.end .tot b { display: block; font-size: 9pt; }
+.end .tot div { font-size: 18pt; font-weight: bold; margin-top: 2mm; }
+.sig { display: flex; justify-content: space-around; margin-top: 6mm; }
+.sig div { width: 60mm; border-top: 1.2px solid #000; text-align: center; font-size: 8.5pt; padding-top: 1mm; }
+.foot { margin-top: 4mm; font-size: 7.5pt; color: #666; text-align: right; }
+@media print { body { background: #fff; } .tools { display: none; } .page { box-shadow: none; margin: 0; width: auto; padding: 0; } }
+</style>
+</head>
+<body>
+<div class="tools"><button onclick="window.print()">Drucken / als PDF speichern</button></div>
+<div class="page" id="page">Lade …</div>
+<script>
+(function () {
+  var S = null, M = [];
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function f1(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ','); }
+  function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + '?_=' + new Date().getTime(), true); r.send(); }
+  function rec(m) { for (var i = 0; i < M.length; i++) if (M[i].tmatch === m.id) return M[i]; return null; }
+  function avg(r, i) { if (!r) return ''; var p = r.players[i]; return p.darts ? f1(p.sum / p.darts * 3) : ''; }
+  function nrOf(T, team, name) {
+    var l = team === 'home' ? T.home : T.guest, i;
+    for (i = 0; i < l.length; i++) if (l[i].name === name) return l[i].nr;
+    for (i = 0; i < (T.subs || []).length; i++) if (T.subs[i].team === team && T.subs[i].out === name) return T.subs[i].outNr || '';
+    return '';
+  }
+  function render() {
+    var T = S && S.tournament;
+    if (!T || T.type !== 'league') { document.getElementById('page').innerHTML = '<p>Kein Liga-Spieltag angelegt.</p>'; return; }
+    var sc = S.leagueScore, d = T.date ? T.date.split('-').reverse().join('.') : '';
+    var h = '<h1>Spielbericht</h1><table class="hdr"><tr><td class="l">Heim-Team</td><td><b>' + esc(T.homeTeam) + '</b></td><td class="l" style="padding-left:4mm">Gast-Team</td><td><b>' + esc(T.guestTeam) + '</b></td></tr>' +
+      '<tr><td class="l">Ort</td><td>' + esc(T.place) + '</td><td class="l" style="padding-left:4mm">Datum</td><td>' + esc(d) + '</td></tr></table>';
+    function singles(from, to, title) {
+      var o = '<div class="sec">' + title + '</div><table><tr><th></th><th>AVG3</th><th>Name</th><th>Nr.</th><th></th><th>AVG3</th><th>Name</th><th>Nr.</th><th></th><th>Sätze</th><th>Stand</th></tr>';
+      for (var i = 0; i < T.matches.length; i++) {
+        var m = T.matches[i]; if (m.no < from || m.no > to) continue;
+        var r = rec(m);
+        o += '<tr><td class="no">' + m.no + '</td><td class="av">' + avg(r, 0) + '</td><td class="' + (m.winner && m.winner === m.p1 ? 'win' : '') + '">' + esc(m.p1) + '</td><td class="nr">' + esc(nrOf(T, 'home', m.p1)) + '</td><td class="pos">A' + m.hs + '</td>' +
+          '<td class="av">' + avg(r, 1) + '</td><td class="' + (m.winner && m.winner === m.p2 ? 'win' : '') + '">' + esc(m.p2) + '</td><td class="nr">' + esc(nrOf(T, 'guest', m.p2)) + '</td><td class="pos">B' + m.gs + '</td>' +
+          '<td class="res">' + (m.legs ? m.legs[0] + ' : ' + m.legs[1] : ':') + '</td><td class="std">' + (sc.running[m.no - 1] || '-') + '</td></tr>';
+      }
+      return o + '</table>';
+    }
+    h += singles(1, 6, 'Einzel');
+    h += '<div class="sec">Doppel</div><table>';
+    for (var i = 0; i < T.matches.length; i++) {
+      var m = T.matches[i]; if (!m.doubles) continue;
+      var hp = m.hp || ['', ''], gp = m.gp || ['', ''];
+      for (var k = 0; k < 2; k++) {
+        h += '<tr>' + (k === 0 ? '<td class="no" rowspan="2">' + m.no + '</td>' : '') + '<td class="' + (m.winner && m.winner === m.p1 ? 'win' : '') + '">' + esc(hp[k]) + '</td><td class="nr">' + esc(nrOf(T, 'home', hp[k])) + '</td>' +
+          '<td class="' + (m.winner && m.winner === m.p2 ? 'win' : '') + '">' + esc(gp[k]) + '</td><td class="nr">' + esc(nrOf(T, 'guest', gp[k])) + '</td>' +
+          (k === 0 ? '<td class="res" rowspan="2">' + (m.legs ? m.legs[0] + ' : ' + m.legs[1] : ':') + '</td><td class="std" rowspan="2">' + (sc.running[m.no - 1] || '-') + '</td>' : '') + '</tr>';
+      }
+    }
+    h += '</table>';
+    h += singles(10, 15, 'Einzel');
+    // Bestleistungen aus den gespeicherten Spielen
+    var c180 = {}, fin = [], sl = [];
+    for (var j = 0; j < T.matches.length; j++) {
+      var r = rec(T.matches[j]); if (!r || r.doubles) continue;
+      for (var q = 0; q < 2; q++) {
+        var p = r.players[q];
+        if (p.c180) c180[p.name] = (c180[p.name] || 0) + p.c180;
+        if (p.hf >= 100) fin.push(esc(p.name) + ' ' + p.hf);
+        if (p.bl && p.bl <= 18) sl.push(esc(p.name) + ' ' + p.bl + ' Darts');
+      }
+    }
+    var l180 = []; for (var n in c180) l180.push(esc(n) + (c180[n] > 1 ? ' (' + c180[n] + 'x)' : ''));
+    var best = (l180.length ? '180: ' + l180.join(', ') + '<br>' : '') + (fin.length ? 'High Finish: ' + fin.join(', ') + '<br>' : '') + (sl.length ? 'Short Leg: ' + sl.join(', ') + '<br>' : '') + (T.notes ? esc(T.notes) : '');
+    var subs = ''; for (var s = 0; s < (T.subs || []).length; s++) { var u = T.subs[s]; subs += (u.team === 'home' ? 'A' : 'B') + u.slot + ': ' + esc(u.out) + ' → ' + esc(u.in) + ' ab Spiel ' + u.fromNo + '<br>'; }
+    h += '<div class="end"><div style="flex:1 1 auto"><div class="box" style="margin-top:0"><b>Bestleistungen (ggf. Protest)</b>' + (best || '&nbsp;') + '</div><div class="box"><b>Auswechslungen</b>' + (subs || '&nbsp;') + '</div></div>' +
+      '<div class="tot"><b>Endergebnis</b><div>' + sc.legsHome + ' : ' + sc.legsGuest + '</div><b style="margin-top:2mm">Sätze</b><div>' + sc.home + ' - ' + sc.guest + '</div><b>Spiele</b></div></div>';
+    h += '<div class="sig"><div>Unterschrift Heimteam</div><div>Unterschrift Gastteam</div></div><div class="foot">erstellt mit Dart Live</div>';
+    document.getElementById('page').innerHTML = h;
+  }
+  get('/api/state', function (d) { S = d; get('/api/matches', function (m) { M = (m && m.matches) || []; render(); }); });
+})();
+</script>
+</body>
+</html>

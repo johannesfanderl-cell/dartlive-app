@@ -36,3 +36,13 @@ Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
 - Die Tablets zeigen das zugeteilte Spiel automatisch an („… beginnt“ nach dem Ausbullen antippen).
   Das Ergebnis geht nach Spielende automatisch an die Turnierleitung, danach wird das nächste Spiel zugeteilt.
 - Ergebnisse können in der Turnierleitung korrigiert oder Spiele zurückgesetzt werden.
+
+## Liga-Heimspiel (6 Einzel, 3 Doppel, 6 Einzel – Spielbericht Bezirk Niederbayern)
+- Verwaltung: http://192.168.68.222:3000/liga  (Teams, 6 Spieler je Team mit Pass-Nr., Doppel festlegen, Auswechslungen)
+- Fernseher: http://192.168.68.222:3000/liga-tv   ·   Spielbericht zum Drucken/PDF: http://192.168.68.222:3000/liga-bericht
+- Die Tablets bekommen die Spiele automatisch zugeteilt (Doppel erst nach Spiel 1–6, Spiele 10–15 nach den Doppeln).
+
+## Statistik
+- http://192.168.68.222:3000/statistik  (Average, 100+/140+/180, High Finish, bestes Leg, Saison/Spielart filtern)
+- Ehrentafel für den Fernseher: http://192.168.68.222:3000/statistik-tv
+- Beim Checkout fragt das Tablet, mit dem wievielten Dart gecheckt wurde (für den genauen Average).

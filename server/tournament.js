@@ -80,6 +80,85 @@ function movePlayer(T, player, toGroup) {
   to.players.push(player);
 }
 
+/* ---------- Liga-Spieltag (Bezirk Niederbayern: 6 Einzel, 3 Doppel, 6 Einzel) ---------- */
+const LEAGUE_SINGLES = [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5], [6, 6]];
+const LEAGUE_SINGLES2 = [[1, 2], [2, 1], [3, 4], [4, 3], [5, 6], [6, 5]];
+
+function cleanList(a, n) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push({ name: String((a && a[i] && a[i].name) || (a && typeof a[i] === 'string' ? a[i] : '') || '').replace(/[<>]/g, '').trim().slice(0, 24), nr: String((a && a[i] && a[i].nr) || '').slice(0, 12) });
+  return out;
+}
+
+function createLeague(opts) {
+  const home = cleanList(opts.home, 6), guest = cleanList(opts.guest, 6);
+  const missing = home.concat(guest).filter(p => !p.name).length;
+  if (missing) throw new Error('Bitte alle 12 Spieler eintragen (' + missing + ' fehlen)');
+  const all = home.concat(guest).map(p => p.name.toLowerCase());
+  if (all.some((n, i) => all.indexOf(n) !== i)) throw new Error('Jeder Name darf nur einmal vorkommen (z. B. Nachnamen ergänzen)');
+  const legs = Math.max(1, Math.min(9, Number(opts.legs) || 3));
+  const T = {
+    id: uid(), type: 'league', status: 'league',
+    name: String(opts.homeTeam || 'Heim') + ' – ' + String(opts.guestTeam || 'Gast'),
+    homeTeam: String(opts.homeTeam || 'Heim').slice(0, 40), guestTeam: String(opts.guestTeam || 'Gast').slice(0, 40),
+    place: String(opts.place || '').slice(0, 60), date: String(opts.date || '').slice(0, 20),
+    cfg: { start: [301, 501].indexOf(Number(opts.start)) >= 0 ? Number(opts.start) : 501, legs: legs, doubleOut: opts.doubleOut !== false, strict: opts.strict !== false,
+      boards: Array.isArray(opts.boards) && opts.boards.length ? opts.boards.map(Number).filter(n => n >= 1 && n <= 5) : [1, 2, 3, 4, 5] },
+    home: home, guest: guest, subs: [], notes: '', groups: [], matches: [], created: new Date().toISOString()
+  };
+  let order = 0;
+  LEAGUE_SINGLES.forEach((p, i) => T.matches.push(leagueMatch(T, i + 1, 1, p, order++)));
+  for (let d = 0; d < 3; d++) T.matches.push({ id: uid(), phase: 'league', no: 7 + d, sec: 2, label: 'Spiel ' + (7 + d) + ' · Doppel', doubles: true,
+    hp: null, gp: null, p1: null, p2: null, status: 'pending', board: null, legs: null, winner: null, order: order++, legsToWin: legs });
+  LEAGUE_SINGLES2.forEach((p, i) => T.matches.push(leagueMatch(T, 10 + i, 3, p, order++)));
+  return T;
+}
+
+function leagueMatch(T, no, sec, pair, order) {
+  return { id: uid(), phase: 'league', no: no, sec: sec, label: 'Spiel ' + no + ' · A' + pair[0] + '–B' + pair[1], hs: pair[0], gs: pair[1],
+    p1: T.home[pair[0] - 1].name, p2: T.guest[pair[1] - 1].name, status: 'pending', board: null, legs: null, winner: null, order: order, legsToWin: T.cfg.legs };
+}
+
+function setDoubles(T, no, hp, gp) {
+  const m = T.matches.filter(x => x.no === Number(no))[0];
+  if (!m || !m.doubles) throw new Error('Doppel nicht gefunden');
+  if (m.status === 'running' || m.status === 'done') throw new Error('Das Doppel läuft schon oder ist beendet');
+  const hn = T.home.map(p => p.name), gn = T.guest.map(p => p.name);
+  hp = (hp || []).filter(Boolean); gp = (gp || []).filter(Boolean);
+  if (hp.length !== 2 || gp.length !== 2 || hp[0] === hp[1] || gp[0] === gp[1]) throw new Error('Pro Team 2 verschiedene Spieler wählen');
+  if (hp.some(n => hn.indexOf(n) < 0) || gp.some(n => gn.indexOf(n) < 0)) throw new Error('Spieler gehört nicht zum Team');
+  m.hp = hp; m.gp = gp;
+  m.p1 = hp.join(' / '); m.p2 = gp.join(' / ');
+  if (m.status === 'assigned') { m.status = 'pending'; m.board = null; }
+}
+
+function substitute(T, team, slot, name, nr, fromNo) {
+  const list = team === 'home' ? T.home : T.guest;
+  const i = Number(slot) - 1;
+  if (!list[i]) throw new Error('Position unbekannt');
+  name = String(name || '').replace(/[<>]/g, '').trim().slice(0, 24);
+  if (!name) throw new Error('Name fehlt');
+  const old = list[i].name, oldNr = list[i].nr;
+  fromNo = Number(fromNo) || 1;
+  T.matches.forEach(m => {
+    if (m.no < fromNo || m.doubles || m.status === 'done' || m.status === 'running') return;
+    if (team === 'home' && m.hs === i + 1) m.p1 = name;
+    if (team === 'guest' && m.gs === i + 1) m.p2 = name;
+  });
+  list[i] = { name: name, nr: String(nr || '').slice(0, 12) };
+  T.subs.push({ team: team, slot: i + 1, out: old, outNr: oldNr, in: name, fromNo: fromNo });
+}
+
+function leagueScore(T) {
+  let h = 0, g = 0, lh = 0, lg = 0;
+  const run = [];
+  T.matches.slice().sort((a, b) => a.no - b.no).forEach(m => {
+    if (m.status === 'done') { if (m.winner === m.p1) h++; else g++; lh += m.legs[0]; lg += m.legs[1]; }
+    run.push(m.status === 'done' ? h + '-' + g : '');
+  });
+  return { home: h, guest: g, legsHome: lh, legsGuest: lg, running: run };
+}
+
 /* ---------- Spielplan ---------- */
 function roundRobin(players) {
   // Kreisverfahren; bei ungerader Zahl spielfreier Platzhalter
@@ -309,6 +388,7 @@ function resetMatch(T, id) {
 }
 
 function afterChange(T) {
+  if (T.type === 'league') { if (T.matches.every(m => m.status === 'done')) T.status = 'done'; else T.status = 'league'; schedule(T); return; }
   propagate(T);
   if (T.status === 'groups' && groupsDone(T)) buildKO(T);
   schedule(T);
@@ -317,7 +397,10 @@ function afterChange(T) {
 /* ---------- Scheiben zuteilen ---------- */
 function busyPlayers(T) {
   const b = {};
-  T.matches.forEach(m => { if (m.status === 'assigned' || m.status === 'running') { b[m.p1] = 1; b[m.p2] = 1; } });
+  T.matches.forEach(m => {
+    if (m.status !== 'assigned' && m.status !== 'running') return;
+    (m.doubles && m.hp ? m.hp.concat(m.gp) : [m.p1, m.p2]).forEach(n => { b[n] = 1; });
+  });
   return b;
 }
 
@@ -328,7 +411,7 @@ function lastEnd(T, p) {
 }
 
 function schedule(T, boardsState) {
-  if (T.status !== 'groups' && T.status !== 'ko') return;
+  if (T.status !== 'groups' && T.status !== 'ko' && T.status !== 'league') return;
   const used = {};
   T.matches.forEach(m => { if ((m.status === 'assigned' || m.status === 'running') && m.board) used[m.board] = 1; });
   const free = T.cfg.boards.filter(n => !used[n] && !(boardsState && boardsState[n] && boardsState[n].status === 'play' && !boardsState[n].tmatch));
@@ -336,14 +419,19 @@ function schedule(T, boardsState) {
     const busy = busyPlayers(T);
     const remaining = {};
     T.matches.forEach(m => { if (m.phase === 'group' && m.status === 'pending') remaining[m.group] = (remaining[m.group] || 0) + 1; });
-    const cands = T.matches.filter(m => m.status === 'pending' && m.p1 && m.p2 && !busy[m.p1] && !busy[m.p2]);
+    const isBusy = m => (m.doubles ? m.hp.concat(m.gp) : [m.p1, m.p2]).some(n => busy[n]);
+    const openSec = {};
+    T.matches.forEach(m => { if (m.sec && m.status !== 'done') openSec[m.sec] = 1; });
+    const cands = T.matches.filter(m => m.status === 'pending' && m.p1 && m.p2 && !isBusy(m) &&
+      !(T.type === 'league' && T.cfg.strict && Object.keys(openSec).some(s => Number(s) < m.sec)));
     if (!cands.length) return;
     cands.sort((a, b) => {
       if (a.phase !== b.phase) return a.phase === 'group' ? -1 : 1;
       if (a.phase === 'ko' && a.koRound !== b.koRound) return b.koRound - a.koRound;
       if (a.phase === 'ko' && a.koRound === 3) return 1;
       if (b.phase === 'ko' && b.koRound === 3) return -1;
-      if (a.round !== b.round) return (a.round || 0) - (b.round || 0);
+      if (a.no && b.no) return a.no - b.no;
+    if (a.round !== b.round) return (a.round || 0) - (b.round || 0);
       const ra = remaining[a.group] || 0, rb = remaining[b.group] || 0;
       if (ra !== rb) return rb - ra;
       const la = Math.max(lastEnd(T, a.p1), lastEnd(T, a.p2)), lb = Math.max(lastEnd(T, b.p1), lastEnd(T, b.p2));
@@ -397,7 +485,7 @@ function assign(T, id, board) {
   T.matches.forEach(x => { if (x.status === 'assigned' && x.board === board) { x.status = 'pending'; x.board = null; } });
   if (T.matches.some(x => x.status === 'running' && x.board === board)) throw new Error('Auf Scheibe ' + board + ' läuft gerade ein Spiel');
   const busy = busyPlayers(T);
-  if (m.status !== 'assigned' && (busy[m.p1] || busy[m.p2])) throw new Error('Ein Spieler ist gerade beschäftigt');
+  if (m.status !== 'assigned' && (m.doubles && m.hp ? m.hp.concat(m.gp) : [m.p1, m.p2]).some(n => busy[n])) throw new Error('Ein Spieler ist gerade beschäftigt');
   m.status = 'assigned'; m.board = board; m.assigned = Date.now();
 }
 
@@ -407,4 +495,4 @@ function unassign(T, id) {
   m.status = 'pending'; m.board = null;
 }
 
-module.exports = { create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };
+module.exports = { createLeague, setDoubles, substitute, leagueScore, create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };

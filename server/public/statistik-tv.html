@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ehrentafel – Dart Live</title>
+<style>
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.8em; line-height: 1.8em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #fff; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#bar .r { float: right; color: #8cc4ff; }
+table.cols { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0.5em; }
+table.cols > tbody > tr > td { vertical-align: top; background: #0b2d6b; border: 0.08em solid #3f6fbf; }
+.h { background: #10377f; padding: 0.3em 0.5em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; overflow: hidden; }
+.sub { font-size: 0.6em; color: #b7d3ff; padding: 0.2em 0.8em; text-transform: none; letter-spacing: 0; }
+table.l { width: 100%; border-collapse: collapse; }
+table.l td { padding: 0.25em 0.5em; border-top: 0.05em solid #23498f; white-space: nowrap; overflow: hidden; }
+table.l td.r { text-align: right; font-weight: bold; }
+table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; font-size: 1.15em; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+</style>
+</head>
+<body>
+<div id="bar"><span class="r" id="pg"></span>TV Riedenburg · Ehrentafel <span id="yr"></span></div>
+<div id="wrap"><div class="empty">Lade …</div></div>
+<script>
+(function () {
+  var all = [], page = 0, version = 0, year = new Date().getFullYear();
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function f1(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function boards() {
+    var S = {}, fins = [], legs = [], k, i;
+    for (k = 0; k < all.length; k++) {
+      var m = all[k];
+      if (new Date(m.date).getFullYear() !== year || m.doubles) continue;
+      for (i = 0; i < 2; i++) {
+        var p = m.players[i], key = p.name.toLowerCase();
+        var s = S[key] || (S[key] = { name: p.name, games: 0, wins: 0, sum: 0, darts: 0, c180: 0, c140: 0 });
+        s.games++; if (m.winner === i) s.wins++;
+        s.sum += p.sum; s.darts += p.darts || p.visits * 3; s.c180 += p.c180; s.c140 += p.c140;
+        if (p.hf >= 60) fins.push({ name: p.name, v: p.hf });
+        if (p.bl) legs.push({ name: p.name, v: p.bl });
+      }
+    }
+    var arr = []; for (k in S) arr.push(S[k]);
+    var avg = arr.filter(function (a) { return a.games >= 3 && a.darts; }).map(function (a) { return { name: a.name, v: a.sum / a.darts * 3, t: f1(a.sum / a.darts * 3) }; }).sort(function (a, b) { return b.v - a.v; });
+    var c180 = arr.filter(function (a) { return a.c180; }).map(function (a) { return { name: a.name, v: a.c180, t: a.c180 }; }).sort(function (a, b) { return b.v - a.v; });
+    var quote = arr.filter(function (a) { return a.games >= 5; }).map(function (a) { return { name: a.name, v: a.wins / a.games, t: Math.round(a.wins / a.games * 100) + ' %' }; }).sort(function (a, b) { return b.v - a.v; });
+    var wins = arr.filter(function (a) { return a.wins; }).map(function (a) { return { name: a.name, v: a.wins, t: a.wins }; }).sort(function (a, b) { return b.v - a.v; });
+    fins.sort(function (a, b) { return b.v - a.v; }); fins.forEach(function (f) { f.t = f.v; });
+    legs.sort(function (a, b) { return a.v - b.v; }); legs.forEach(function (f) { f.t = f.v + ' Darts'; });
+    return [
+      { title: 'Bester Average', sub: 'Ø pro 3 Darts · ab 3 Spielen', list: avg },
+      { title: 'Meiste 180er', sub: '', list: c180 },
+      { title: 'Höchste Finishes', sub: 'ab 60', list: fins },
+      { title: 'Bestes Leg', sub: 'wenigste Darts', list: legs },
+      { title: 'Siegquote', sub: 'ab 5 Spielen', list: quote },
+      { title: 'Meiste Siege', sub: '', list: wins }
+    ].filter(function (b) { return b.list.length; });
+  }
+  function render() {
+    var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
+    var per = w > h ? 3 : 1;
+    document.body.style.fontSize = Math.max(9, Math.floor(Math.min(w / per / 15, h / 17))) + 'px';
+    el('yr').innerHTML = year;
+    var bs = boards(), pages = Math.max(1, Math.ceil(bs.length / per));
+    if (page >= pages) page = 0;
+    el('pg').innerHTML = pages > 1 ? (page + 1) + ' / ' + pages : '';
+    if (!bs.length) { el('wrap').innerHTML = '<div class="empty">Noch keine Spiele in ' + year + '</div>'; return; }
+    var out = '<table class="cols"><tr>';
+    for (var i = page * per; i < page * per + per; i++) {
+      if (!bs[i]) { out += '<td style="background:none;border:0"></td>'; continue; }
+      out += '<td><div class="h">' + esc(bs[i].title) + '<div class="sub">' + (bs[i].sub ? esc(bs[i].sub) : '&nbsp;') + '</div>' + '</div><table class="l">';
+      for (var j = 0; j < bs[i].list.length && j < 10; j++) out += '<tr' + (j === 0 ? ' class="f"' : '') + '><td>' + (j + 1) + '. ' + esc(bs[i].list[j].name) + '</td><td class="r">' + esc(bs[i].list[j].t) + '</td></tr>';
+      out += '</table></td>';
+    }
+    el('wrap').innerHTML = out + '</tr></table>';
+  }
+  function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true); r.send(); }
+  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); }
+  function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+  setInterval(function () { page++; render(); }, 12000);
+  window.onresize = render;
+  load(); wait();
+})();
+</script>
+</body>
+</html>

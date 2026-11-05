@@ -26,6 +26,31 @@ try {
   if (s && s.boards) { state = s; for (let i = 1; i <= BOARDS; i++) if (!state.boards[i]) state.boards[i] = { status: 'idle' }; if (!Array.isArray(state.names)) state.names = []; }
 } catch (e) { /* noch keine Datei */ }
 
+// Archiv beendeter Spiele (für Statistiken)
+const MFILE = path.join(DATA, 'matches.json');
+let archive = [];
+try { archive = JSON.parse(fs.readFileSync(MFILE, 'utf8')); if (!Array.isArray(archive)) archive = []; } catch (e) { archive = []; }
+function saveArchive() {
+  try { fs.mkdirSync(DATA, { recursive: true }); fs.writeFileSync(MFILE + '.tmp', JSON.stringify(archive)); fs.renameSync(MFILE + '.tmp', MFILE); }
+  catch (e) { console.error('Archiv speichern fehlgeschlagen:', e.message); }
+}
+function archiveBoard(n, b) {
+  if (!b || !b.mid || !Array.isArray(b.players) || b.players.length !== 2) return;
+  const i = archive.findIndex(function (a) { return a.mid === b.mid; });
+  if (b.status === 'done') {
+    const rec = {
+      mid: b.mid, date: new Date().toISOString(), started: b.started || null, board: n, start: b.start, legsToWin: b.legsToWin, doubleOut: b.doubleOut,
+      winner: b.winner, tmatch: b.tmatch || null, tlabel: b.tlabel || null, league: b.league || null, doubles: !!b.doubles,
+      players: b.players.map(function (p) { return { name: p.name, legs: p.legs, sum: p.sum || 0, darts: p.darts || 0, visits: p.visits || 0, c100: p.c100 || 0, c140: p.c140 || 0, c180: p.c180 || 0, hf: p.hf || 0, bl: p.bl || 0 }; })
+    };
+    if (i >= 0) archive[i] = rec; else archive.push(rec);
+    saveArchive();
+  } else if (b.status === 'play' && i >= 0) {
+    // Rückgängig nach Spielende: Eintrag wieder entfernen
+    archive.splice(i, 1); saveArchive();
+  }
+}
+
 let results = [];
 try { results = JSON.parse(fs.readFileSync(RFILE, 'utf8')); if (!Array.isArray(results)) results = []; } catch (e) { results = []; }
 function saveResults() {
@@ -43,6 +68,8 @@ let waiting = [];
 // Tabellen fürs Turnier mitschicken (berechnet, nicht gespeichert)
 function decorate() {
   const T = state.tournament;
+  delete state.leagueScore;
+  if (T && T.type === 'league') { delete state.standings; state.leagueScore = TN.leagueScore(T); return; }
   if (!T || T.status === 'setup') { delete state.standings; return; }
   const q = {};
   try { TN.qualifiers(T).forEach(function (x) { q[x.name] = 1; }); } catch (e) { /* noch keine Ergebnisse */ }
@@ -70,6 +97,11 @@ const PAGES = {
   '/t1': 'training.html', '/t2': 'training.html', '/t3': 'training.html', '/t4': 'training.html', '/t5': 'training.html',
   '/bestenliste': 'best.html',
   '/turnier': 'turnier.html',
+  '/statistik': 'statistik.html',
+  '/liga': 'liga.html',
+  '/liga-tv': 'liga-tv.html',
+  '/liga-bericht': 'liga-bericht.html',
+  '/statistik-tv': 'statistik-tv.html',
   '/turnier-tv': 'turnier-tv.html',
   '/diag': 'diag.html',
 };
@@ -114,6 +146,7 @@ const server = http.createServer(function (req, res) {
         });
       }
       state.boards[m[1]] = b;
+      archiveBoard(Number(m[1]), b);
       if (state.tournament) {
         try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); }
         catch (e) { console.error('Turnier:', e.message); }
@@ -133,6 +166,7 @@ const server = http.createServer(function (req, res) {
       try {
         switch (q.action) {
           case 'create': state.tournament = TN.create(q); break;
+          case 'league': state.tournament = TN.createLeague(q); TN.schedule(state.tournament, state.boards); break;
           case 'delete': state.tournament = null; break;
           default:
             if (!T) throw new Error('Kein Turnier angelegt');
@@ -145,12 +179,23 @@ const server = http.createServer(function (req, res) {
             else if (q.action === 'unassign') { TN.unassign(T, q.id); }
             else if (q.action === 'boards') { T.cfg.boards = (q.boards || []).map(Number).filter(n => n >= 1 && n <= 5); TN.schedule(T, state.boards); }
             else if (q.action === 'schedule') TN.schedule(T, state.boards);
+            else if (q.action === 'doubles') { TN.setDoubles(T, q.no, q.hp, q.gp); TN.schedule(T, state.boards); }
+            else if (q.action === 'sub') { TN.substitute(T, q.team, q.slot, q.name, q.nr, q.fromNo); TN.schedule(T, state.boards); }
+            else if (q.action === 'notes') { T.notes = String(q.notes || '').slice(0, 2000); }
             else throw new Error('Unbekannte Aktion');
         }
       } catch (e) { return sendJSON(res, 400, { error: e.message }); }
       state.v++; save(); notify();
       sendJSON(res, 200, { ok: true, tournament: state.tournament });
     });
+  }
+
+  if (req.method === 'GET' && p === '/api/matches') return sendJSON(res, 200, { matches: archive });
+
+  const dm = p.match(/^\/api\/matches\/([a-z0-9]+)$/);
+  if (dm && req.method === 'DELETE') {
+    archive = archive.filter(function (a) { return a.mid !== dm[1]; }); saveArchive(); state.v++; notify();
+    return sendJSON(res, 200, { ok: true });
   }
 
   if (req.method === 'GET' && p === '/api/results') return sendJSON(res, 200, { results: results });
@@ -212,6 +257,7 @@ server.listen(PORT, '0.0.0.0', function () {
   console.log('Monitor an Scheibe (nur Spielstand): http://<IP>:' + PORT + '/m1  bis  /m5');
   console.log('Training am Tablet: http://<IP>:' + PORT + '/t1  bis  /t5     Bestenliste: http://<IP>:' + PORT + '/bestenliste');
   console.log('Turnierleitung: http://<IP>:' + PORT + '/turnier     Turnier am Fernseher: http://<IP>:' + PORT + '/turnier-tv');
+  console.log('Liga-Spieltag: http://<IP>:' + PORT + '/liga     am Fernseher: http://<IP>:' + PORT + '/liga-tv');
   console.log('Fernseher:  http://<IP>:' + PORT + '/tv1  (Scheiben 1-3)   /tv2  (Scheiben 4-5)');
   if (ips.length) console.log('Eigene IP(s) hier: ' + ips.join(', ') + '  (am Chromebook gilt die WLAN-IP aus den ChromeOS-Einstellungen)');
 });

@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Statistik – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, select { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
+#top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 1150px; margin: 0 auto; padding: 14px 16px 60px; }
+h2 { font-size: 20px; margin: 4px 0 10px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 8px 6px; border-bottom: 1px solid #23498f; text-align: right; white-space: nowrap; }
+td:first-child, th:first-child, td.l, th.l { text-align: left; }
+th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; cursor: pointer; user-select: none; }
+th.s { color: #fff; font-weight: bold; }
+tr.pl { cursor: pointer; } tr.pl:hover td { background: #10377f; }
+td.b { font-weight: bold; }
+.tiles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.tile { flex: 1 1 150px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; }
+.tile small { display: block; color: #b7d3ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.tile b { display: block; font-size: 26px; margin-top: 4px; }
+.tile span { display: block; font-size: 13px; color: #b7d3ff; margin-top: 2px; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
+.back { display: inline-block; margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; }
+.del { padding: 3px 8px; border-radius: 5px; background: #3a1f4f; font-size: 13px; }
+.win { color: #8cff9e; font-weight: bold; } .loss { color: #ffb3b3; }
+svg text { fill: #b7d3ff; font-size: 11px; }
+</style>
+</head>
+<body>
+<div id="top"><b>Statistik</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<script>
+(function () {
+  'use strict';
+  var all = [], season = String(new Date().getFullYear()), kind = 'alle', sortKey = 'avg', sortDir = -1, player = null, version = 0;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function f1(x) { return x == null || isNaN(x) ? '–' : x.toFixed(1).replace('.', ','); }
+  function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true); r.send(); }
+  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); }
+  function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+
+  function kindOf(m) { return m.league ? 'liga' : (m.tmatch ? 'turnier' : 'frei'); }
+  function filtered() {
+    return all.filter(function (m) {
+      if (season !== 'alle' && String(new Date(m.date).getFullYear()) !== season) return false;
+      if (kind !== 'alle' && kindOf(m) !== kind) return false;
+      if (m.doubles) return false; // Doppel zählen nicht in die Einzelstatistik
+      return true;
+    });
+  }
+  function aggregate(ms) {
+    var S = {};
+    ms.forEach(function (m) {
+      for (var i = 0; i < 2; i++) {
+        var p = m.players[i], o = m.players[1 - i], k = p.name.toLowerCase();
+        var s = S[k] || (S[k] = { name: p.name, games: 0, wins: 0, lw: 0, ll: 0, sum: 0, darts: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0, list: [] });
+        s.games++; if (m.winner === i) s.wins++;
+        s.lw += p.legs; s.ll += o.legs; s.sum += p.sum; s.darts += p.darts || (p.visits * 3);
+        s.c100 += p.c100; s.c140 += p.c140; s.c180 += p.c180;
+        if (p.hf > s.hf) s.hf = p.hf;
+        if (p.bl && (!s.bl || p.bl < s.bl)) s.bl = p.bl;
+        s.list.push({ m: m, i: i });
+      }
+    });
+    var arr = [];
+    for (var k in S) { var s = S[k]; s.avg = s.darts ? s.sum / s.darts * 3 : 0; s.quote = s.games ? s.wins / s.games * 100 : 0; arr.push(s); }
+    return arr;
+  }
+
+  function seasons() {
+    var y = {}; all.forEach(function (m) { y[new Date(m.date).getFullYear()] = 1; });
+    y[new Date().getFullYear()] = 1;
+    return Object.keys(y).sort().reverse();
+  }
+
+  function render() { $('main').innerHTML = player ? playerHTML() : overviewHTML(); }
+
+  function filterBar() {
+    var h = '<div class="bar"><div class="seg">';
+    var ys = seasons().concat(['alle']);
+    for (var i = 0; i < ys.length; i++) h += '<button data-season="' + ys[i] + '"' + (season === ys[i] ? ' class="on"' : '') + '>' + (ys[i] === 'alle' ? 'Alle Jahre' : 'Saison ' + ys[i]) + '</button>';
+    h += '</div><div class="seg">';
+    var ks = [['alle', 'Alle Spiele'], ['frei', 'Freie Spiele'], ['turnier', 'Turnier'], ['liga', 'Liga']];
+    for (var j = 0; j < ks.length; j++) h += '<button data-kind="' + ks[j][0] + '"' + (kind === ks[j][0] ? ' class="on"' : '') + '>' + ks[j][1] + '</button>';
+    return h + '</div></div>';
+  }
+
+  var COLS = [['name', 'Spieler', 1], ['games', 'Spiele'], ['wins', 'Siege'], ['quote', 'Quote'], ['lw', 'Legs'], ['avg', 'Ø 3 Darts'], ['c100', '100+'], ['c140', '140+'], ['c180', '180'], ['hf', 'High Finish'], ['bl', 'Bestes Leg']];
+
+  function overviewHTML() {
+    var ms = filtered(), arr = aggregate(ms);
+    arr.sort(function (a, b) {
+      var x = a[sortKey], y = b[sortKey];
+      if (sortKey === 'name') return x.localeCompare(y) * sortDir;
+      if (sortKey === 'bl') { x = x || 999; y = y || 999; }
+      return (x - y) * sortDir || b.games - a.games;
+    });
+    var h = '<h2>Spielerstatistik</h2>' + filterBar();
+    // Kacheln
+    var t180 = arr.slice().sort(function (a, b) { return b.c180 - a.c180; })[0];
+    var tavg = arr.filter(function (a) { return a.games >= 3; }).sort(function (a, b) { return b.avg - a.avg; })[0];
+    var thf = arr.slice().sort(function (a, b) { return b.hf - a.hf; })[0];
+    var tbl = arr.filter(function (a) { return a.bl; }).sort(function (a, b) { return a.bl - b.bl; })[0];
+    var tot180 = 0; arr.forEach(function (a) { tot180 += a.c180; });
+    h += '<div class="tiles">' +
+      tile('Spiele', ms.length, arr.length + ' Spieler') +
+      tile('Bester Average', tavg ? f1(tavg.avg) : '–', tavg ? tavg.name + ' (ab 3 Spielen)' : 'ab 3 Spielen') +
+      tile('180er gesamt', tot180, t180 && t180.c180 ? 'meiste: ' + t180.name + ' (' + t180.c180 + ')' : '') +
+      tile('Höchstes Finish', thf && thf.hf ? thf.hf : '–', thf && thf.hf ? thf.name : '') +
+      tile('Bestes Leg', tbl ? tbl.bl + ' Darts' : '–', tbl ? tbl.name : '') + '</div>';
+    if (!arr.length) return h + '<div class="card"><p class="note">Noch keine Spiele in dieser Auswahl. Statistiken entstehen automatisch aus allen Spielen, die an den Tablets zu Ende gespielt werden.</p></div>';
+    h += '<div class="card"><table><tr>';
+    for (var c = 0; c < COLS.length; c++) h += '<th data-sort="' + COLS[c][0] + '" class="' + (COLS[c][2] ? 'l ' : '') + (sortKey === COLS[c][0] ? 's' : '') + '">' + COLS[c][1] + (sortKey === COLS[c][0] ? (sortDir < 0 ? ' ▼' : ' ▲') : '') + '</th>';
+    h += '</tr>';
+    for (var i = 0; i < arr.length; i++) {
+      var s = arr[i];
+      h += '<tr class="pl" data-player="' + esc(s.name) + '"><td class="b">' + esc(s.name) + '</td><td>' + s.games + '</td><td>' + s.wins + '</td><td>' + Math.round(s.quote) + ' %</td><td>' + s.lw + ':' + s.ll + '</td><td class="b">' + f1(s.avg) + '</td><td>' + s.c100 + '</td><td>' + s.c140 + '</td><td class="b">' + s.c180 + '</td><td>' + (s.hf || '–') + '</td><td>' + (s.bl ? s.bl + ' D.' : '–') + '</td></tr>';
+    }
+    h += '</table></div><p class="note">Ø = Punkte pro 3 Darts. 100+ = 100–139, 140+ = 140–179. Spieler antippen für Details. Ältere Spiele ohne Dart-Zählung werden mit 3 Darts pro Aufnahme gerechnet.</p>';
+    return h;
+  }
+  function tile(a, b, c) { return '<div class="tile"><small>' + esc(a) + '</small><b>' + esc(b) + '</b><span>' + esc(c) + '</span></div>'; }
+
+  function playerHTML() {
+    var ms = filtered(), arr = aggregate(ms), s = null;
+    for (var i = 0; i < arr.length; i++) if (arr[i].name.toLowerCase() === player.toLowerCase()) s = arr[i];
+    var h = '<button class="back" data-back="1">← Alle Spieler</button><h2>' + esc(player) + '</h2>' + filterBar();
+    if (!s) return h + '<p class="note">Keine Spiele in dieser Auswahl.</p>';
+    h += '<div class="tiles">' + tile('Spiele', s.games, s.wins + ' Siege · ' + Math.round(s.quote) + ' %') + tile('Ø 3 Darts', f1(s.avg), 'Legs ' + s.lw + ':' + s.ll) +
+      tile('180er', s.c180, '140+: ' + s.c140 + ' · 100+: ' + s.c100) + tile('High Finish', s.hf || '–', '') + tile('Bestes Leg', s.bl ? s.bl + ' Darts' : '–', '') + '</div>';
+    var list = s.list.slice().sort(function (a, b) { return a.m.date < b.m.date ? -1 : 1; });
+    h += '<h3>Average-Verlauf</h3><div class="card">' + spark(list) + '</div>';
+    h += '<h3>Spiele</h3><div class="card"><table><tr><th class="l">Datum</th><th class="l">Gegner</th><th class="l">Art</th><th>Ergebnis</th><th>Ø</th><th>180</th><th>Finish</th><th></th></tr>';
+    for (var j = list.length - 1; j >= 0; j--) {
+      var m = list[j].m, me = m.players[list[j].i], op = m.players[1 - list[j].i], d = new Date(m.date), won = m.winner === list[j].i;
+      var av = me.darts ? me.sum / me.darts * 3 : (me.visits ? me.sum / me.visits : 0);
+      h += '<tr><td>' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + '</td><td class="l">' + esc(op.name) + '</td><td class="l">' + esc(m.tlabel || (m.league ? 'Liga' : 'freies Spiel')) + '</td>' +
+        '<td class="' + (won ? 'win' : 'loss') + '">' + me.legs + ':' + op.legs + '</td><td>' + f1(av) + '</td><td>' + me.c180 + '</td><td>' + (me.hf || '–') + '</td><td><button class="del" data-del="' + esc(m.mid) + '">löschen</button></td></tr>';
+    }
+    return h + '</table></div><p class="note">„löschen“ nur für Fehl- oder Testspiele – das Spiel verschwindet für beide Spieler aus der Statistik.</p>';
+  }
+
+  function spark(list) {
+    if (list.length < 2) return '<p class="note">Ab 2 Spielen erscheint hier der Verlauf.</p>';
+    var W = 1000, H = 160, pad = 30, vals = list.map(function (x) { var p = x.m.players[x.i]; return p.darts ? p.sum / p.darts * 3 : (p.visits ? p.sum / p.visits : 0); });
+    var mx = Math.max.apply(null, vals), mn = Math.min.apply(null, vals);
+    if (mx === mn) { mx += 5; mn -= 5; }
+    var pts = vals.map(function (v, k) { return (pad + k * (W - 2 * pad) / (vals.length - 1)).toFixed(1) + ',' + (H - pad - (v - mn) / (mx - mn) * (H - 2 * pad)).toFixed(1); });
+    var h = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
+    h += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#8cc4ff" stroke-width="3"/>';
+    pts.forEach(function (p) { var xy = p.split(','); h += '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="4" fill="#fff"/>'; });
+    h += '<text x="4" y="' + (pad - 8) + '">' + f1(mx) + '</text><text x="4" y="' + (H - 8) + '">' + f1(mn) + '</text>';
+    return h + '</svg>';
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.hasAttribute && (t.hasAttribute('data-season') || t.hasAttribute('data-kind') || t.hasAttribute('data-sort') || t.hasAttribute('data-player') || t.hasAttribute('data-back') || t.hasAttribute('data-del')))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    if (t.hasAttribute('data-season')) season = t.getAttribute('data-season');
+    else if (t.hasAttribute('data-kind')) kind = t.getAttribute('data-kind');
+    else if (t.hasAttribute('data-sort')) { var k = t.getAttribute('data-sort'); if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = k === 'name' || k === 'bl' ? 1 : -1; } }
+    else if (t.hasAttribute('data-player')) { player = t.getAttribute('data-player'); window.scrollTo(0, 0); }
+    else if (t.hasAttribute('data-back')) player = null;
+    else if (t.hasAttribute('data-del')) {
+      if (!confirm('Dieses Spiel endgültig aus der Statistik löschen?')) return;
+      var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) load(); };
+      r.open('DELETE', '/api/matches/' + t.getAttribute('data-del'), true); r.send(); return;
+    }
+    render();
+  }, false);
+
+  load(); wait();
+})();
+</script>
+</body>
+</html>

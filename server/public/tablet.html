@@ -126,7 +126,10 @@ input { font-family: inherit; }
   /* ---------- Hilfen ---------- */
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
-  function avg(p) { return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–'; }
+  function avg(p) {
+    if (p.darts) return (p.sum / p.darts * 3).toFixed(1).replace('.', ',');
+    return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–';
+  }
   function $(id) { return document.getElementById(id); }
 
   function xhr(method, url, body, cb) {
@@ -239,12 +242,31 @@ input { font-family: inherit; }
   }
 
   /* ---------- Spiellogik ---------- */
-  function newPlayer(name, start) { return { name: name, legs: 0, rem: start, sum: 0, visits: 0, last: [] }; }
+  function newPlayer(name, start) { return { name: name, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0 }; }
+
+  // Statistik einer Aufnahme mitschreiben
+  function record(p, score, darts) {
+    p.sum += score; p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + darts; p.ld = (p.ld || 0) + darts;
+    if (score === 180) p.c180 = (p.c180 || 0) + 1;
+    else if (score >= 140) p.c140 = (p.c140 || 0) + 1;
+    else if (score >= 100) p.c100 = (p.c100 || 0) + 1;
+  }
+  function flash(t) { board.banner = t; board.bannerId = new Date().getTime(); }
+  // Mit wie vielen Darts ist ein Checkout überhaupt möglich?
+  function minDarts(score) {
+    if (score <= 40 && score % 2 === 0) return 1;
+    if (score === 50) return 1;
+    if (score <= 110 && [99, 102, 103, 105, 106, 108, 109].indexOf(score) < 0) return 2;
+    return 3;
+  }
 
   function startMatch(n1, n2, start, legs, dout, first, tm) {
     board = {
       tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : undefined,
+      league: tm && tour && tour.type === 'league' ? tour.homeTeam + ' – ' + tour.guestTeam : undefined,
+      doubles: tm && tm.doubles ? true : undefined, members: tm && tm.doubles ? [tm.hp, tm.gp] : undefined,
       status: 'play', start: start, legsToWin: legs, doubleOut: dout,
+      mid: new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 6), started: new Date().toISOString(),
       players: [newPlayer(n1, start), newPlayer(n2, start)],
       turn: first, legStarter: first, leg: 1, winner: null,
       banner: 'Game on!', bannerId: new Date().getTime()
@@ -265,17 +287,18 @@ input { font-family: inherit; }
     if (rest < 0 || (board.doubleOut && rest === 1)) { bust(score); return; }
     if (rest === 0) {
       if (board.doubleOut) {
-        dialog('Checkout?', p.name + ' wirft ' + score + '. Mit einem Doppel beendet?', [
-          { label: 'Ja, Leg gewonnen', fn: function () { checkout(score); } },
-          { label: 'Nein – überworfen', sec: true, fn: function () { bust(score); } },
-          { label: 'Abbrechen', sec: true, fn: function () { typed = ''; render(); } }
-        ]);
+        var btns = [], md = minDarts(score);
+        for (var dd = md; dd <= 3; dd++) (function (n) { btns.push({ label: 'Ja – mit dem ' + n + '. Dart', fn: function () { checkout(score, n); } }); })(dd);
+        btns.push({ label: 'Nein – überworfen', sec: true, fn: function () { bust(score); } });
+        btns.push({ label: 'Abbrechen', sec: true, fn: function () { typed = ''; render(); } });
+        dialog('Checkout ' + score + '?', p.name + ' – mit einem Doppel beendet? Mit welchem Dart?', btns);
         return;
       }
-      checkout(score); return;
+      checkout(score, 3); return;
     }
     pushUndo();
-    p.rem = rest; p.sum += score; p.visits++; addLast(p, score);
+    p.rem = rest; record(p, score, 3); addLast(p, score);
+    if (score === 180) flash('180! ' + p.name);
     board.turn = 1 - board.turn;
     typed = ''; msg = '';
     save(); render();
@@ -284,25 +307,29 @@ input { font-family: inherit; }
   function bust(score) {
     pushUndo();
     var p = board.players[board.turn];
-    p.visits++; addLast(p, 'Bust');
+    p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + 3; p.ld = (p.ld || 0) + 3; addLast(p, 'Bust');
     board.turn = 1 - board.turn;
     typed = ''; msg = '';
     toast(p.name + ': überworfen (' + score + ')');
     save(); render();
   }
 
-  function checkout(score) {
+  function checkout(score, darts) {
     pushUndo();
     var p = board.players[board.turn];
     var o = board.players[1 - board.turn];
-    p.sum += score; p.visits++; addLast(p, score); p.rem = 0;
+    record(p, score, darts || 3); addLast(p, score); p.rem = 0;
+    if (score > (p.hf || 0)) p.hf = score;
+    if (!p.bl || p.ld < p.bl) p.bl = p.ld;
+    var legDarts = p.ld;
+    p.ld = 0; o.ld = 0; p.lv = 0; o.lv = 0;
     p.legs++;
     typed = ''; msg = '';
     if (p.legs >= board.legsToWin) {
       board.status = 'done'; board.winner = board.turn;
-      board.banner = p.name + ' gewinnt ' + p.legs + ':' + o.legs;
+      board.banner = (score >= 100 ? 'High Finish ' + score + '! ' : '') + p.name + ' gewinnt ' + p.legs + ':' + o.legs;
     } else {
-      board.banner = 'Leg an ' + p.name + ' (' + score + ' Check)';
+      board.banner = score >= 100 ? 'High Finish ' + score + '! ' + p.name : 'Leg an ' + p.name + ' (' + score + ' Check, ' + legDarts + ' Darts)';
       board.leg++;
       board.legStarter = 1 - board.legStarter;
       board.turn = board.legStarter;
@@ -371,6 +398,7 @@ input { font-family: inherit; }
     var p = board.players[i], on = board.turn === i;
     return '<div class="pl' + (on ? ' on' : '') + '">' +
       '<div class="nm">' + esc(p.name) + '</div>' +
+      (board.doubles && board.members ? '<div class="st" style="opacity:1;font-weight:bold">wirft: ' + esc(board.members[i][(p.lv || 0) % 2]) + '</div>' : '') +
       '<div class="lg">Legs ' + p.legs + '</div>' +
       '<div class="rm">' + p.rem + '</div>' +
       '<div class="st">Ø ' + avg(p) + (p.last.length ? ' · Letzte: ' + esc(p.last.join(', ')) : '') + '</div>' +
