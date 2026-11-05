@@ -109,8 +109,15 @@ function createLeague(opts) {
     name: String(opts.homeTeam || 'Heim') + ' – ' + String(opts.guestTeam || 'Gast'),
     homeTeam: String(opts.homeTeam || 'Heim').slice(0, 40), guestTeam: String(opts.guestTeam || 'Gast').slice(0, 40),
     place: String(opts.place || '').slice(0, 60), date: String(opts.date || '').slice(0, 20),
-    cfg: { start: [301, 501].indexOf(Number(opts.start)) >= 0 ? Number(opts.start) : 501, legs: legs, doubleOut: opts.doubleOut !== false, strict: opts.strict !== false,
-      boards: Array.isArray(opts.boards) && opts.boards.length ? opts.boards.map(Number).filter(n => n >= 1 && n <= 5) : [1, 2, 3, 4, 5] },
+    cfg: (function () {
+      // Liga: Auf der Heim-Scheibe beginnt das Heimteam, auf der Gast-Scheibe der Gastverein
+      const hb = Number(opts.homeBoard) >= 1 && Number(opts.homeBoard) <= 5 ? Number(opts.homeBoard) : 2;
+      let gb = Number(opts.guestBoard) >= 1 && Number(opts.guestBoard) <= 5 ? Number(opts.guestBoard) : 4;
+      if (gb === hb) throw new Error('Heim- und Gast-Scheibe müssen verschieden sein');
+      const startBy = {}; startBy[hb] = 'home'; startBy[gb] = 'guest';
+      return { start: [301, 501].indexOf(Number(opts.start)) >= 0 ? Number(opts.start) : 501, legs: legs, doubleOut: opts.doubleOut !== false, strict: opts.strict !== false,
+        boards: [hb, gb], homeBoard: hb, guestBoard: gb, startBy: startBy };
+    })(),
     home: home, guest: guest, subs: [], notes: '', groups: [], matches: [], created: new Date().toISOString()
   };
   let order = 0;

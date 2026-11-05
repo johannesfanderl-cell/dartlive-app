@@ -78,7 +78,7 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
   'use strict';
   var S = null, version = 0;
   var today = new Date();
-  var form = { homeTeam: 'TV Riedenburg', guestTeam: '', place: 'Riedenburg', date: today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2), legs: 3, start: 501, strict: true, home: [], guest: [] };
+  var form = { homeTeam: 'TV Riedenburg', guestTeam: '', place: 'Riedenburg', date: today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2), legs: 3, start: 501, strict: true, homeBoard: 2, guestBoard: 4, home: [], guest: [] };
   for (var i = 0; i < 6; i++) { form.home.push({ name: '', nr: '' }); form.guest.push({ name: '', nr: '' }); }
 
   function $(id) { return document.getElementById(id); }
@@ -131,6 +131,9 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
       '<div class="row"><div><label class="f">Pro Spiel: First to</label>' + seg('legs', [2, 3, 4, 5], form.legs) + '</div>' +
       '<div><label class="f">Punkte</label>' + seg('start', [301, 501], form.start) + '</div>' +
       '<div><label class="f">Reihenfolge</label>' + seg('strict', ['true', 'false'], String(form.strict), ['Blockweise', 'Frei']) + '</div></div>' +
+      '<div class="row"><div><label class="f">Scheibe: Heimteam beginnt</label>' + seg('homeBoard', [1, 2, 3, 4, 5], form.homeBoard) + '</div>' +
+      '<div><label class="f">Scheibe: Gastverein beginnt</label>' + seg('guestBoard', [1, 2, 3, 4, 5], form.guestBoard) + '</div></div>' +
+      '<p class="note">Gespielt wird auf diesen 2 Scheiben gleichzeitig. Auf der Heim-Scheibe wirft immer der Heimspieler zuerst, auf der Gast-Scheibe immer der Gastspieler.</p>' +
       '<p class="note">Blockweise: Doppel starten erst, wenn Spiel 1–6 fertig sind, und Spiel 10–15 erst nach den Doppeln (wie auf dem Spielbericht).</p></div>';
     h += '<div class="teams">' + teamHTML('home', 'Heim (A1–A6)', names) + teamHTML('guest', 'Gast (B1–B6)', []) + '</div>';
     h += '<datalist id="known">'; for (var k = 0; k < names.length; k++) h += '<option value="' + esc(names[k]) + '">'; h += '</datalist>';
@@ -150,12 +153,12 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
     var h = '<div class="score"><div class="t">' + esc(T.homeTeam) + '</div><div class="n">' + sc.home + ' : ' + sc.guest + '<small>Spiele · Sätze ' + sc.legsHome + ':' + sc.legsGuest + '</small></div><div class="t">' + esc(T.guestTeam) + '</div></div>';
     if (T.status === 'done') h += '<div class="card" style="text-align:center;font-weight:bold">Spieltag beendet – ' + (sc.home > sc.guest ? esc(T.homeTeam) + ' gewinnt' : esc(T.guestTeam) + ' gewinnt') + ' ' + sc.home + ':' + sc.guest + '</div>';
     h += '<div class="boards">';
-    for (var b = 1; b <= 5; b++) {
-      var m = null;
+    for (var bi = 0; bi < T.cfg.boards.length; bi++) {
+      var b = T.cfg.boards[bi], m = null;
       for (var k = 0; k < T.matches.length; k++) if ((T.matches[k].status === 'running' || T.matches[k].status === 'assigned') && T.matches[k].board === b) m = T.matches[k];
       var bs = S.boards && S.boards[b], live = '';
       if (m && m.status === 'running' && bs && bs.tmatch === m.id && bs.players) live = bs.players[0].legs + ' : ' + bs.players[1].legs;
-      h += '<div class="bd' + (m && m.status === 'running' ? ' run' : '') + '"><b>Scheibe ' + b + '</b>' + (m ? '<div class="m">' + esc(m.p1) + ' – ' + esc(m.p2) + '</div><div class="s">Spiel ' + m.no + ' · ' + (m.status === 'running' ? (live || 'läuft') : 'wartet auf Start') + '</div>' : '<div class="s">frei</div>') + '</div>';
+      h += '<div class="bd' + (m && m.status === 'running' ? ' run' : '') + '"><b>Scheibe ' + b + (T.cfg.startBy ? ' · ' + (T.cfg.startBy[b] === 'home' ? 'Heim' : 'Gast') + ' beginnt' : '') + '</b>' + (m ? '<div class="m">' + esc(m.p1) + ' – ' + esc(m.p2) + '</div><div class="s">Spiel ' + m.no + ' · ' + (m.status === 'running' ? (live || 'läuft') : 'wartet auf Start') + '</div>' : '<div class="s">frei</div>') + '</div>';
     }
     h += '</div><div class="card" style="overflow-x:auto"><table><tr><th>Nr</th><th>Heim</th><th class="n">Sätze</th><th>Gast</th><th class="n">Stand</th><th>Status</th><th></th></tr>';
     var secs = { 1: 'Einzel', 2: 'Doppel', 3: 'Einzel' }, last = 0;
@@ -247,7 +250,7 @@ tr.sec td { background: #10377f; color: #b7d3ff; font-size: 13px; text-transform
       if (!form.guestTeam) form.guestTeam = 'Testgegner'; render(); return;
     }
     if (a === 'create') {
-      act({ action: 'league', homeTeam: form.homeTeam, guestTeam: form.guestTeam || 'Gast', place: form.place, date: form.date, legs: form.legs, start: form.start, strict: form.strict, home: form.home, guest: form.guest }, 'Spieltag angelegt – Spiele werden zugeteilt');
+      act({ action: 'league', homeTeam: form.homeTeam, guestTeam: form.guestTeam || 'Gast', place: form.place, date: form.date, legs: form.legs, start: form.start, strict: form.strict, homeBoard: form.homeBoard, guestBoard: form.guestBoard, home: form.home, guest: form.guest }, 'Spieltag angelegt – Spiele werden zugeteilt');
     } else if (a === 'sub') {
       act({ action: 'sub', team: $('sub-team').value, slot: $('sub-slot').value, name: $('sub-name').value, nr: $('sub-nr').value, fromNo: $('sub-from').value }, 'Ausgewechselt');
     } else if (a === 'notes') act({ action: 'notes', notes: $('notes').value }, 'Gespeichert');

@@ -348,6 +348,18 @@ input { font-family: inherit; }
     else m.innerHTML = setupHTML();
   }
 
+  // Liga: fester Beginner je Scheibe; sonst nach dem Ausbullen wählen
+  function startButtons(tm) {
+    var by = tour && tour.type === 'league' && tour.cfg && tour.cfg.startBy ? tour.cfg.startBy[N] : null;
+    var st = 'background:#0b2d6b;color:#fff;font-weight:bold';
+    if (by) {
+      var f = by === 'home' ? 0 : 1, who = f === 0 ? tm.p1 : tm.p2, team = f === 0 ? tour.homeTeam : tour.guestTeam;
+      return '<div class="seg"><button data-tstart="' + f + '" style="' + st + '">Spiel starten – ' + esc(who) + ' beginnt (' + esc(team) + ')</button></div>';
+    }
+    return '<div class="seg"><button data-tstart="0" style="' + st + '">' + esc(tm.p1) + ' beginnt</button>' +
+      '<button data-tstart="1" style="' + st + '">' + esc(tm.p2) + ' beginnt</button></div>';
+  }
+
   function setupHTML() {
     var h = '<div class="setup">';
     var tm = myMatch();
@@ -355,10 +367,12 @@ input { font-family: inherit; }
       h += '<div style="background:#fff;color:#071d47;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem">' +
         '<div style="font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:#3f5f99">' + esc(tour.name) + ' · ' + esc(tLabel(tm)) + '</div>' +
         '<div style="font-size:2rem;font-weight:bold;margin:.2rem 0">' + esc(tm.p1) + ' – ' + esc(tm.p2) + '</div>' +
-        '<div style="font-size:1rem;margin-bottom:.4rem">' + tour.cfg.start + (tour.cfg.doubleOut ? ' Double Out' : '') + ' · First to ' + tm.legsToWin + ' Legs · Ausbullen: Wer beginnt?</div>' +
-        '<div class="seg"><button data-tstart="0" style="background:#0b2d6b;color:#fff;font-weight:bold">' + esc(tm.p1) + ' beginnt</button>' +
-        '<button data-tstart="1" style="background:#0b2d6b;color:#fff;font-weight:bold">' + esc(tm.p2) + ' beginnt</button></div></div>';
-    } else if (tour && (tour.status === 'groups' || tour.status === 'ko')) {
+        '<div style="font-size:1rem;margin-bottom:.4rem">' + tour.cfg.start + (tour.cfg.doubleOut ? ' Double Out' : '') + ' · First to ' + tm.legsToWin + ' Legs' + (tour.type === 'league' && tour.cfg.startBy && tour.cfg.startBy[N] ? '' : ' · Ausbullen: Wer beginnt?') + '</div>' +
+        startButtons(tm) + '</div>';
+    } else if (tour && tour.type === 'league' && tour.status === 'league') {
+      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': ' + (tour.cfg.boards.indexOf(N) >= 0 ? 'Das nächste Spiel für diese Scheibe erscheint hier automatisch.' : 'Im Ligabetrieb wird auf Scheibe ' + tour.cfg.boards.join(' und ') + ' gespielt.') + '</p>';
+    }
+    else if (tour && (tour.status === 'groups' || tour.status === 'ko')) {
       h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
     }
     h += '<h2>' + (tm ? 'Oder freies Spiel' : 'Neues Spiel') + '</h2>';
