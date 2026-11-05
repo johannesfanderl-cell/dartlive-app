@@ -57,6 +57,7 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = createWebView(this, true);
+        LocalServer.get(this);
         setContentView(web);
         hideSystemBars();
 
@@ -67,7 +68,10 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean offline() { return prefs.getBoolean("offline", getResources().getBoolean(R.bool.offline_default)); }
+
     private String server() {
+        if (offline()) return LocalServer.BASE;
         String s = prefs.getString("server", DEFAULT_SERVER).trim();
         if (!s.startsWith("http://") && !s.startsWith("https://")) s = "http://" + s;
         while (s.endsWith("/")) s = s.substring(0, s.length() - 1);
@@ -81,6 +85,8 @@ public class MainActivity extends Activity {
     private String scoreUrl() { return server() + "/m" + board(); }
 
     private void loadAll() {
+        if (offline()) web.addJavascriptInterface(LocalServer.get(this), "DartLocal");
+        else web.removeJavascriptInterface("DartLocal");
         open(web, inputUrl(), true);
         if (scoreDisplay != null) { scoreDisplay.dismiss(); scoreDisplay = null; }
         updateScoreDisplay();
@@ -184,8 +190,15 @@ public class MainActivity extends Activity {
         boards.check(1000 + board());
         box.addView(boards);
 
+        final android.widget.CheckBox offlineBox = new android.widget.CheckBox(this);
+        offlineBox.setText("Ohne Server – nur dieses Tablet\n(Bestenliste wird auf dem Tablet gespeichert)");
+        offlineBox.setTextSize(17);
+        offlineBox.setChecked(offline());
+        offlineBox.setPadding(0, dp(10), 0, dp(4));
+        box.addView(offlineBox);
+
         TextView l2 = new TextView(this);
-        l2.setText("\nAdresse des Servers (Chromebook):");
+        l2.setText("\nAdresse des Servers (Chromebook), wenn mit Server:");
         l2.setTextSize(18);
         box.addView(l2);
 
@@ -206,7 +219,7 @@ public class MainActivity extends Activity {
                         int n = checked >= 1001 && checked <= 1005 ? checked - 1000 : 1;
                         String s = serverField.getText().toString().trim();
                         if (s.isEmpty()) s = DEFAULT_SERVER;
-                        prefs.edit().putInt("board", n).putString("server", s).apply();
+                        prefs.edit().putInt("board", n).putString("server", s).putBoolean("offline", offlineBox.isChecked()).apply();
                         Toast.makeText(MainActivity.this, "Scheibe " + n + " gespeichert", Toast.LENGTH_SHORT).show();
                         loadAll();
                     }
@@ -229,7 +242,7 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
         s.setUseWideViewPort(true);
         s.setLoadWithOverviewMode(true);
-        w.setWebViewClient(new Client(input));
+        w.setWebViewClient(new Client(ctx.getApplicationContext(), input));
         return w;
     }
 
@@ -254,10 +267,17 @@ public class MainActivity extends Activity {
 
     static class Client extends WebViewClient {
         private final boolean input;
+        private final Context app;
         private final Handler timer = new Handler(Looper.getMainLooper());
         private Runnable pending;
 
-        Client(boolean input) { this.input = input; }
+        Client(Context app, boolean input) { this.app = app; this.input = input; }
+
+        @Override
+        public android.webkit.WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+            if (!LocalServer.HOST.equals(request.getUrl().getHost())) return null;
+            return LocalServer.get(app).intercept(request.getUrl(), request.getMethod());
+        }
 
         private void cancel() { if (pending != null) { timer.removeCallbacks(pending); pending = null; } }
 

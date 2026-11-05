@@ -129,6 +129,13 @@ input { font-family: inherit; }
   function $(id) { return document.getElementById(id); }
 
   function xhr(method, url, body, cb) {
+    // App ohne Server: Schreibzugriffe gehen direkt an die App
+    if (window.DartLocal && method !== 'GET') {
+      var t = null;
+      try { t = window.DartLocal.call(method, url, body != null ? JSON.stringify(body) : ''); } catch (e) { t = null; }
+      setTimeout(function () { var d = null; try { d = JSON.parse(t); } catch (e) { d = null; } cb(d && !d.error ? null : 'lokal', d); }, 0);
+      return;
+    }
     var r = new XMLHttpRequest();
     r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
     r.timeout = 8000;
@@ -189,9 +196,9 @@ input { font-family: inherit; }
       if (!loaded) {
         loaded = true;
         var b = data.boards && data.boards[N];
-        if (b && b.status === 'training') { location.replace('/t' + N); return; }
+        if (b && b.status === 'training' && b.g && !b.g.finished) { location.replace('/t' + N); return; }
         if (b && (b.status === 'play' || b.status === 'done')) board = b;
-        if (b && b.players) { setup.n1 = b.players[0].name; setup.n2 = b.players[1].name; setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false; }
+        if (b && (b.status === 'play' || b.status === 'done') && b.players && b.players.length === 2) { setup.n1 = b.players[0].name; setup.n2 = b.players[1].name; setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false; }
       }
       render();
     });

@@ -40,12 +40,21 @@ android {
             dimension 'modus'
             resValue 'string', 'app_name', 'Dart Live'
             resValue 'string', 'start_prefix', ''
+            resValue 'bool', 'offline_default', 'false'
         }
         training {
             dimension 'modus'
             applicationIdSuffix '.training'
             resValue 'string', 'app_name', 'Dart Training'
             resValue 'string', 'start_prefix', 't'
+            resValue 'bool', 'offline_default', 'true'
+        }
+    }
+
+    // Die Webseiten des Servers werden zusätzlich in die App gepackt (Betrieb ohne Server)
+    sourceSets {
+        main {
+            assets.srcDirs += ['../server/public']
         }
     }
 
