@@ -34,6 +34,21 @@ android {
         }
     }
 
+    flavorDimensions 'modus'
+    productFlavors {
+        live {
+            dimension 'modus'
+            resValue 'string', 'app_name', 'Dart Live'
+            resValue 'string', 'start_prefix', ''
+        }
+        training {
+            dimension 'modus'
+            applicationIdSuffix '.training'
+            resValue 'string', 'app_name', 'Dart Training'
+            resValue 'string', 'start_prefix', 't'
+        }
+    }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17

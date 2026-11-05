@@ -24,18 +24,23 @@ jobs:
           gradle-version: '8.9'
 
       - name: APK bauen
-        run: gradle :app:assembleRelease --no-daemon --stacktrace
+        run: gradle :app:assembleLiveRelease :app:assembleTrainingRelease --no-daemon --stacktrace
 
       - name: APK umbenennen
-        run: cp app/build/outputs/apk/release/app-release.apk DartLive.apk
+        run: |
+          cp app/build/outputs/apk/live/release/app-live-release.apk DartLive.apk
+          cp app/build/outputs/apk/training/release/app-training-release.apk DartTraining.apk
 
       - name: Als Download veröffentlichen
         uses: softprops/action-gh-release@v2
         with:
           tag_name: app
-          name: Dart Live App
+          name: Dart Live & Dart Training
           body: |
-            Neueste Version der Dart-Live-App für die Tablets.
-            Auf dem Tablet herunterladen und installieren: DartLive.apk
-          files: DartLive.apk
+            Neueste Versionen der Apps für die Tablets.
+            DartLive.apk – Spielbetrieb (Eingabe am Tablet, Spielstand am HDMI-Monitor)
+            DartTraining.apk – Trainingsmodus mit Bestenliste
+          files: |
+            DartLive.apk
+            DartTraining.apk
           make_latest: true

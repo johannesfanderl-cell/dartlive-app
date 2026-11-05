@@ -76,7 +76,7 @@ public class MainActivity extends Activity {
 
     private int board() { return prefs.getInt("board", 1); }
 
-    private String inputUrl() { return server() + "/" + board(); }
+    private String inputUrl() { return server() + "/" + getString(R.string.start_prefix) + board(); }
 
     private String scoreUrl() { return server() + "/m" + board(); }
 
@@ -148,7 +148,7 @@ public class MainActivity extends Activity {
     public void onBackPressed() {
         String[] items = { "Neu laden", "Einstellungen (Scheibe / Server)", "App beenden" };
         new AlertDialog.Builder(this)
-                .setTitle("Dart Live – Scheibe " + board())
+                .setTitle(getString(R.string.app_name) + " – Scheibe " + board())
                 .setItems(items, new DialogInterface.OnClickListener() {
                     @Override public void onClick(DialogInterface d, int which) {
                         if (which == 0) loadAll();
