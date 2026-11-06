@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Anmeldelisten – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, input { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 900px; margin: 0 auto; padding: 12px 12px 60px; }
+h2 { font-size: 20px; margin: 6px 0 4px; } h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.ev { display: block; width: 100%; text-align: left; } .ev b { font-size: 18px; } .ev .note { margin: 4px 0 0; }
+.btn { display: inline-block; padding: 9px 14px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; text-decoration: none; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; } .btn.warn { background: #6b1d2d; color: #fff; }
+input[type=text], input[type=date] { width: 100%; padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; margin-bottom: 8px; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
+.pr { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid #23498f; }
+.pr b { flex: 1 1 auto; } .pr .s button { padding: 7px 10px; margin-left: 4px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; font-size: 14px; }
+.pr .s button.ja.on { background: #2e9d5b; border-color: #2e9d5b; } .pr .s button.vl.on { background: #c9a227; color: #071d47; border-color: #c9a227; } .pr .s button.nein.on { background: #6b1d2d; border-color: #a33; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 13px; font-weight: bold; margin-right: 6px; }
+.pill.ja { background: #2e9d5b; } .pill.vl { background: #c9a227; color: #071d47; } .pill.nein { background: #6b1d2d; }
+</style>
+</head>
+<body>
+<div id="top"><b>Anmeldelisten</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<script>
+(function () {
+  'use strict';
+  var D = null, names = [], version = 0, open = null;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest(); r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true);
+    r.onreadystatechange = function () { if (r.readyState !== 4) return; var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d); };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function act(body) { req('POST', '/api/x/events', body, function (e, d) { if (e) return alert(e); if (d && d.data) D = d.data; render(); }); }
+  function load() { req('GET', '/api/x/events', null, function (e, d) { if (!e && d) { D = d; var a = document.activeElement; if (!(a && a.tagName === 'INPUT')) render(); } }); }
+  function wait() { req('GET', '/api/wait?v=' + version, null, function (e, d) { if (d) { names = d.names || []; if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+  function fmtDate(s) { if (!s) return 'ohne Datum'; var p = s.split('-'); return p.length === 3 ? p[2] + '.' + p[1] + '.' + p[0] : s; }
+  function counts(ev) { var c = { ja: 0, vielleicht: 0, nein: 0 }; ev.entries.forEach(function (e) { c[e.status]++; }); return c; }
+  function render() {
+    if (!D) return;
+    var ev = open && D.events.filter(function (e) { return e.id === open; })[0];
+    $('main').innerHTML = ev ? detailHTML(ev) : listHTML();
+  }
+  function listHTML() {
+    var h = '<h3>Termine</h3>';
+    if (!D.events.length) h += '<p class="note">Noch keine Termine.</p>';
+    D.events.forEach(function (e) { var c = counts(e); h += '<div class="card"><button class="ev" data-open="' + e.id + '"><b>' + esc(e.title) + '</b><div class="note">' + fmtDate(e.date) + (e.note ? ' · ' + esc(e.note) : '') + '</div><div style="margin-top:6px"><span class="pill ja">' + c.ja + ' Zusagen</span><span class="pill vl">' + c.vielleicht + ' vielleicht</span><span class="pill nein">' + c.nein + ' Absagen</span></div></button></div>'; });
+    h += '<h3>Neuer Termin</h3><div class="card"><input type="text" id="t-title" placeholder="z. B. Vereinsmeisterschaft"><input type="date" id="t-date"><input type="text" id="t-note" placeholder="Hinweis (optional), z. B. Beginn 18 Uhr, Startgeld 5 €"><button class="btn" data-a="create">Termin anlegen</button></div>' +
+      '<p class="note">Die Listen liegen auf dem Vereins-Server und sind nur im WLAN „TVR Dart“ erreichbar – zum Eintragen bei Training oder Spielabend. Für Zusagen von zu Hause eignet sich weiterhin eine WhatsApp-Umfrage; die Namen kannst du hier nachtragen.</p>';
+    return h;
+  }
+  function detailHTML(ev) {
+    var c = counts(ev), st = {};
+    ev.entries.forEach(function (e) { st[e.name] = e.status; });
+    var all = ev.entries.map(function (e) { return e.name; });
+    names.forEach(function (n) { if (all.map(function (x) { return x.toLowerCase(); }).indexOf(n.toLowerCase()) < 0) all.push(n); });
+    var h = '<button class="btn sec" data-back="1">← Alle Termine</button><h2>' + esc(ev.title) + '</h2><p class="note">' + fmtDate(ev.date) + (ev.note ? ' · ' + esc(ev.note) : '') + '</p>' +
+      '<p><span class="pill ja">' + c.ja + ' Zusagen</span><span class="pill vl">' + c.vielleicht + ' vielleicht</span><span class="pill nein">' + c.nein + ' Absagen</span></p>';
+    h += '<div class="card" style="margin-top:10px">';
+    all.forEach(function (n) {
+      var s = st[n];
+      h += '<div class="pr"><b>' + esc(n) + '</b><span class="s"><button class="ja' + (s === 'ja' ? ' on' : '') + '" data-r="ja" data-n="' + esc(n) + '">Ja</button><button class="vl' + (s === 'vielleicht' ? ' on' : '') + '" data-r="vielleicht" data-n="' + esc(n) + '">Vielleicht</button><button class="nein' + (s === 'nein' ? ' on' : '') + '" data-r="nein" data-n="' + esc(n) + '">Nein</button></span></div>';
+    });
+    h += '<div style="display:flex;gap:6px;margin-top:10px"><input type="text" id="newname" placeholder="Weiterer Name" style="margin:0"><button class="btn" data-a="add">Zusage</button></div></div>';
+    if (c.ja >= 4) h += '<button class="btn" data-a="turnier">Turnier mit den ' + c.ja + ' Zusagen anlegen</button>';
+    h += '<button class="btn warn" data-a="delete">Termin löschen</button>';
+    return h;
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target; while (t && t !== document.body && !(t.attributes && Array.prototype.some.call(t.attributes, function (a) { return /^data-/.test(a.name); }))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    var g = function (k) { return t.getAttribute(k); };
+    if (g('data-open')) { open = g('data-open'); return render(); }
+    if (g('data-back')) { open = null; return render(); }
+    if (g('data-r')) {
+      var ev = D.events.filter(function (x) { return x.id === open; })[0], cur = ev.entries.filter(function (x) { return x.name === g('data-n'); })[0];
+      if (cur && cur.status === g('data-r')) return act({ action: 'remove', id: open, name: g('data-n') });
+      return act({ action: 'respond', id: open, name: g('data-n'), status: g('data-r') });
+    }
+    var a = g('data-a');
+    if (a === 'create') { if (!$('t-title').value.replace(/\s/g, '')) return alert('Bitte einen Titel eingeben'); act({ action: 'create', title: $('t-title').value, date: $('t-date').value, note: $('t-note').value }); }
+    else if (a === 'add') { var n = $('newname').value; if (n.replace(/\s/g, '')) act({ action: 'respond', id: open, name: n, status: 'ja' }); }
+    else if (a === 'delete') { if (confirm('Termin löschen?')) { act({ action: 'delete', id: open }); open = null; } }
+    else if (a === 'turnier') {
+      var evx = D.events.filter(function (x) { return x.id === open; })[0];
+      var yes = evx.entries.filter(function (x) { return x.status === 'ja'; }).map(function (x) { return x.name; });
+      location.href = '/turnier?spieler=' + encodeURIComponent(yes.join('\n')) + '&name=' + encodeURIComponent(evx.title);
+    }
+  }, false);
+  load(); wait();
+})();
+</script>
+</body>
+</html>

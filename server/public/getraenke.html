@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Strichliste – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, input { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; touch-action: manipulation; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 1000px; margin: 0 auto; padding: 12px 12px 70px; }
+.tabs { display: flex; margin-bottom: 12px; } .tabs button { flex: 1 1 0; padding: 11px 6px; margin-right: 6px; border-radius: 8px; background: #10377f; border: 1px solid #3f6fbf; font-weight: bold; }
+.tabs button:last-child { margin-right: 0; } .tabs button.on { background: #fff; color: #071d47; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+.grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.person { flex: 1 1 140px; min-height: 70px; padding: 10px; border-radius: 10px; background: #10377f; border: 1px solid #3f6fbf; text-align: left; }
+.person b { display: block; font-size: 18px; } .person small { display: block; color: #b7d3ff; margin-top: 4px; }
+.person.add { background: none; border-style: dashed; text-align: center; color: #b7d3ff; }
+.prod { flex: 1 1 150px; min-height: 86px; padding: 10px; border-radius: 10px; background: #fff; color: #071d47; font-weight: bold; }
+.prod b { display: block; font-size: 20px; } .prod small { display: block; font-size: 15px; color: #3f5f99; margin-top: 4px; }
+.who { display: flex; align-items: center; justify-content: space-between; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.who b { font-size: 22px; } .who span { color: #b7d3ff; }
+.cnt { display: flex; align-items: center; gap: 8px; } .cnt button { width: 44px; height: 40px; border-radius: 8px; background: #10377f; border: 1px solid #3f6fbf; font-size: 22px; } .cnt b { min-width: 30px; text-align: center; font-size: 20px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; } td, th { padding: 8px 5px; border-bottom: 1px solid #23498f; text-align: left; } th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; } td.r, th.r { text-align: right; white-space: nowrap; }
+.btn { display: inline-block; padding: 9px 14px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 3px 5px 3px 0; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; } .btn.warn { background: #6b1d2d; color: #fff; } .btn.sm { padding: 5px 9px; font-size: 13px; }
+input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; } .sum { font-size: 22px; font-weight: bold; }
+#toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 14px; border-radius: 10px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); white-space: nowrap; }
+#toast button { margin-left: 12px; padding: 6px 10px; border-radius: 6px; background: #0b2d6b; color: #fff; font-weight: bold; }
+#toast.bad { background: #ffd6d6; color: #6b1d2d; }
+</style>
+</head>
+<body>
+<div id="top"><b>Strichliste</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<div id="toast"></div>
+<script>
+(function () {
+  'use strict';
+  var D = null, names = [], version = 0, tab = 'liste', person = null, count = 1;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function eur(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ',') + ' €'; }
+  var tt, lastIds = null;
+  function toast(t, bad, undo) {
+    var el = $('toast'); el.innerHTML = esc(t) + (undo ? '<button data-undo="1">Rückgängig</button>' : ''); el.className = bad ? 'bad' : ''; el.style.display = 'block';
+    clearTimeout(tt); tt = setTimeout(function () { el.style.display = 'none'; lastIds = null; }, undo ? 6000 : 3000);
+  }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest(); r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true);
+    r.onreadystatechange = function () { if (r.readyState !== 4) return; var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d); };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function act(body, cb) { req('POST', '/api/x/drinks', body, function (e, d) { if (e) return toast(e, true); if (d && d.data) D = d.data; else load(); if (cb) cb(d); render(); }); }
+  function load() { req('GET', '/api/x/drinks', null, function (e, d) { if (!e && d) { D = d; var a = document.activeElement; if (!(a && a.tagName === 'INPUT')) render(); } }); }
+  function wait() { req('GET', '/api/wait?v=' + version, null, function (e, d) { if (d) { names = d.names || []; if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+
+  function openOf(n) { var s = 0, c = 0; D.entries.forEach(function (e) { if (e.name === n && !e.settled) { s += e.price; c++; } }); return { sum: s, count: c }; }
+  function render() {
+    if (!D) return;
+    var h = '<div class="tabs"><button data-tab="liste"' + (tab === 'liste' ? ' class="on"' : '') + '>Strich machen</button><button data-tab="konto"' + (tab === 'konto' ? ' class="on"' : '') + '>Abrechnung</button><button data-tab="setup"' + (tab === 'setup' ? ' class="on"' : '') + '>Getränke &amp; Personen</button></div>';
+    if (tab === 'liste') h += person ? productsHTML() : peopleHTML();
+    else if (tab === 'konto') h += accountHTML();
+    else h += setupHTML();
+    $('main').innerHTML = h;
+  }
+  function peopleHTML() {
+    var ppl = D.people.slice().sort(function (a, b) { return a.localeCompare(b); });
+    var h = '<h3>Wer bestellt?</h3><div class="grid">';
+    ppl.forEach(function (p) { var o = openOf(p); h += '<button class="person" data-person="' + esc(p) + '"><b>' + esc(p) + '</b><small>' + (o.count ? o.count + ' Striche · ' + eur(o.sum) : 'nichts offen') + '</small></button>'; });
+    h += '<button class="person add" data-a="newperson">+ Person</button></div>';
+    var known = names.filter(function (n) { return D.people.map(function (x) { return x.toLowerCase(); }).indexOf(n.toLowerCase()) < 0; });
+    if (known.length) { h += '<p class="note" style="margin-top:12px">Spieler aus Dart Live übernehmen:</p><div class="grid">'; known.slice(0, 12).forEach(function (k) { h += '<button class="btn sec sm" data-addp="' + esc(k) + '">+ ' + esc(k) + '</button>'; }); h += '</div>'; }
+    return h;
+  }
+  function productsHTML() {
+    var o = openOf(person);
+    var h = '<div class="who"><div><b>' + esc(person) + '</b><br><span>offen: ' + o.count + ' Striche · ' + eur(o.sum) + '</span></div><button class="btn sec" data-a="back">← Andere Person</button></div>';
+    h += '<div class="cnt" style="margin-bottom:10px"><span class="note">Anzahl</span><button data-cnt="-1">−</button><b>' + count + '</b><button data-cnt="1">+</button></div><div class="grid">';
+    D.products.forEach(function (p) { h += '<button class="prod" data-prod="' + p.id + '"><b>' + esc(p.name) + '</b><small>' + eur(p.price) + '</small></button>'; });
+    h += '</div>';
+    var mine = D.entries.filter(function (e) { return e.name === person && !e.settled; }).slice(-8).reverse();
+    if (mine.length) {
+      h += '<h3>Letzte Striche</h3><div class="card"><table>';
+      mine.forEach(function (e) { var d = new Date(e.date); h += '<tr><td>' + esc(e.product) + '</td><td class="note">' + d.getDate() + '.' + (d.getMonth() + 1) + '. ' + d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2) + '</td><td class="r">' + eur(e.price) + '</td><td class="r"><button class="btn warn sm" data-del="' + e.id + '">löschen</button></td></tr>'; });
+      h += '</table></div>';
+    }
+    return h;
+  }
+  function accountHTML() {
+    var rows = D.people.map(function (p) { var o = openOf(p); return { name: p, sum: o.sum, count: o.count }; }).filter(function (r) { return r.count; }).sort(function (a, b) { return b.sum - a.sum; });
+    var total = 0; rows.forEach(function (r) { total += r.sum; });
+    var h = '<div class="card"><span class="note">Offen gesamt</span><div class="sum">' + eur(total) + '</div></div>';
+    h += '<h3>Offene Beträge</h3><div class="card"><table><tr><th>Name</th><th class="r">Striche</th><th class="r">Betrag</th><th></th></tr>';
+    if (!rows.length) h += '<tr><td colspan="4" class="note">Alles bezahlt.</td></tr>';
+    rows.forEach(function (r) { h += '<tr><td><b>' + esc(r.name) + '</b><br><span class="note">' + detail(r.name) + '</span></td><td class="r">' + r.count + '</td><td class="r"><b>' + eur(r.sum) + '</b></td><td class="r"><button class="btn sm" data-settle="' + esc(r.name) + '">Bezahlt</button></td></tr>'; });
+    h += '</table></div><h3>Bezahlt</h3><div class="card"><table>';
+    var st = D.settlements.slice(-30).reverse();
+    if (!st.length) h += '<tr><td class="note">Noch keine Abrechnungen.</td></tr>';
+    st.forEach(function (s) { var d = new Date(s.date); h += '<tr><td>' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + '</td><td>' + esc(s.name) + '</td><td class="r">' + s.count + ' Striche</td><td class="r"><b>' + eur(s.amount) + '</b></td><td class="r"><button class="btn sec sm" data-unsettle="' + s.id + '">zurücknehmen</button></td></tr>'; });
+    return h + '</table></div>';
+  }
+  function detail(n) {
+    var c = {}; D.entries.forEach(function (e) { if (e.name === n && !e.settled) c[e.product] = (c[e.product] || 0) + 1; });
+    return Object.keys(c).map(function (k) { return c[k] + '× ' + esc(k); }).join(', ');
+  }
+  function setupHTML() {
+    var h = '<h3>Getränke &amp; Preise</h3><div class="card"><table>';
+    D.products.forEach(function (p) { h += '<tr><td><input type="text" data-pn="' + p.id + '" value="' + esc(p.name) + '" style="width:100%"></td><td class="r"><input type="text" data-pp="' + p.id + '" value="' + String(p.price).replace('.', ',') + '" style="width:80px;text-align:right"> €</td><td class="r"><button class="btn sm" data-save="' + p.id + '">Speichern</button><button class="btn warn sm" data-rmprod="' + p.id + '">✕</button></td></tr>'; });
+    h += '<tr><td><input type="text" id="np-name" placeholder="Neues Getränk" style="width:100%"></td><td class="r"><input type="text" id="np-price" placeholder="0,00" style="width:80px;text-align:right"> €</td><td class="r"><button class="btn sm" data-a="addprod">Hinzufügen</button></td></tr></table>' +
+      '<p class="note">Preisänderungen gelten für neue Striche – bereits gemachte Striche behalten ihren Preis.</p></div>';
+    h += '<h3>Personen</h3><div class="card"><table>';
+    D.people.forEach(function (p) { h += '<tr><td>' + esc(p) + '</td><td class="r"><button class="btn warn sm" data-rmperson="' + esc(p) + '">entfernen</button></td></tr>'; });
+    return h + '</table></div>';
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.attributes && Array.prototype.some.call(t.attributes, function (a) { return /^data-/.test(a.name); }))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    var g = function (k) { return t.getAttribute(k); };
+    if (g('data-undo')) { if (lastIds) act({ action: 'undo', ids: lastIds }, function () { toast('Strich entfernt'); lastIds = null; }); return; }
+    if (g('data-tab')) { tab = g('data-tab'); person = null; return render(); }
+    if (g('data-person')) { person = g('data-person'); count = 1; window.scrollTo(0, 0); return render(); }
+    if (g('data-a') === 'back') { person = null; return render(); }
+    if (g('data-cnt')) { count = Math.max(1, Math.min(20, count + (+g('data-cnt')))); return render(); }
+    if (g('data-prod')) {
+      var pid = g('data-prod'), pr = D.products.filter(function (p) { return p.id === pid; })[0];
+      return act({ action: 'add', name: person, product: pid, count: count }, function (d) { lastIds = d && d.ids; toast(count + '× ' + pr.name + ' für ' + person + ' ✓', false, true); count = 1; render(); });
+    }
+    if (g('data-del')) return act({ action: 'undo', id: g('data-del') }, function () { toast('Strich gelöscht'); });
+    if (g('data-addp')) return act({ action: 'person', name: g('data-addp') });
+    if (g('data-a') === 'newperson') { var n = prompt('Name der Person:'); if (n && n.replace(/\s/g, '')) act({ action: 'person', name: n }); return; }
+    if (g('data-settle')) { var nm = g('data-settle'), o = openOf(nm); if (confirm(nm + ' hat ' + eur(o.sum) + ' bezahlt?')) act({ action: 'settle', name: nm }, function (d) { toast(nm + ': ' + eur(d.amount) + ' bezahlt ✓'); }); return; }
+    if (g('data-unsettle')) { if (confirm('Abrechnung zurücknehmen? Die Striche sind dann wieder offen.')) act({ action: 'unsettle', id: g('data-unsettle') }); return; }
+    if (g('data-save')) { var id = g('data-save'); return act({ action: 'product', id: id, name: document.querySelector('[data-pn="' + id + '"]').value, price: document.querySelector('[data-pp="' + id + '"]').value }, function () { toast('Gespeichert'); }); }
+    if (g('data-rmprod')) { if (confirm('Getränk entfernen?')) act({ action: 'removeProduct', id: g('data-rmprod') }); return; }
+    if (g('data-a') === 'addprod') return act({ action: 'product', name: $('np-name').value, price: $('np-price').value }, function () { toast('Hinzugefügt'); });
+    if (g('data-rmperson')) { if (confirm(g('data-rmperson') + ' entfernen?')) act({ action: 'removePerson', name: g('data-rmperson') }); return; }
+  }, false);
+  load(); wait();
+})();
+</script>
+</body>
+</html>

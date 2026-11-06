@@ -83,6 +83,13 @@ tr.q td { background: rgba(140,196,255,.12); }
   var S = null, version = 0, tab = 'spiele';
   var form = { name: 'Vereinsmeisterschaft ' + new Date().getFullYear(), players: '', seeds: [], groups: 3, koSize: 8, legs: 3, koLegs: 3, finalLegs: 3, start: 501, third: false, boards: [1, 2, 3, 4, 5] };
   var err = '';
+  // Spieler aus einer Anmeldeliste übernehmen (/turnier?spieler=...&name=...)
+  (function () {
+    var q = location.search;
+    var m = q.match(/[?&]spieler=([^&]*)/), n = q.match(/[?&]name=([^&]*)/);
+    if (m) form.players = decodeURIComponent(m[1].replace(/\+/g, ' '));
+    if (n) form.name = decodeURIComponent(n[1].replace(/\+/g, ' '));
+  })();
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }

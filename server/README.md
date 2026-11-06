@@ -62,3 +62,10 @@ Im Browser ausprobieren: http://<IP>:3000/?lokal=1  (zurück zum Server-Betrieb:
 - Vereinsrangliste (Elo/Punkte/Siegquote) aus allen Einzelspielen: /rangliste, Fernseher: /rangliste-tv
 - Caller: Lautsprecher-Knopf oben am Tablet schaltet die Ansagen ein/aus.
 - Handicap: im Spiel-Setup „Unterschiedliche Startpunkte“, Vorschlag aus dem Average.
+
+## Weitere Funktionen
+- Einlauf: Vor Turnier-, Liga- und Vereinsliga-Spielen zeigt der Monitor beide Spieler mit Statistik.
+- Vereinsliga (jeder gegen jeden über die Saison): /vereinsliga – gespielt über „Vereinsliga-Spiel“ am Tablet.
+- Blind-Doppel mit zugelosten Partnern: /blind (Fernseher: /turnier-tv)
+- Getränke-Strichliste mit Abrechnung: /getraenke
+- Anmeldelisten für Termine (mit „Turnier aus Zusagen anlegen“): /termine
