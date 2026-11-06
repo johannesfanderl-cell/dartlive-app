@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.hardware.display.DisplayManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -42,6 +43,16 @@ public class MainActivity extends Activity {
     private ScoreDisplay scoreDisplay;
     private DisplayManager displayManager;
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private android.webkit.ValueCallback<Uri[]> fileCallback;
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 4711 && fileCallback != null) {
+            fileCallback.onReceiveValue(android.webkit.WebChromeClient.FileChooserParams.parseResult(resultCode, data));
+            fileCallback = null;
+        }
+    }
 
     private final DisplayManager.DisplayListener displayListener = new DisplayManager.DisplayListener() {
         @Override public void onDisplayAdded(int displayId) { updateScoreDisplay(); }
@@ -57,6 +68,17 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = createWebView(this, true);
+        web.addJavascriptInterface(new DartApp(this), "DartApp");
+        web.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView view, android.webkit.ValueCallback<Uri[]> cb, FileChooserParams params) {
+                if (fileCallback != null) fileCallback.onReceiveValue(null);
+                fileCallback = cb;
+                try { startActivityForResult(params.createIntent(), 4711); }
+                catch (Exception e) { fileCallback = null; return false; }
+                return true;
+            }
+        });
         LocalServer.get(this);
         setContentView(web);
         hideSystemBars();

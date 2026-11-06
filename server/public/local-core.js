@@ -520,6 +520,9 @@ __mods.tournament = __mods.tournament.exports;
 'use strict';
 const TN = require('./tournament');
 
+// Erweiterungen: name -> { empty(), act(daten, anfrage, ctx) }
+const EXT = {};
+
 function createCore(storage) {
   const BOARDS = 5;
 
@@ -534,11 +537,31 @@ function createCore(storage) {
   if (s && s.boards) { state = s; for (let i = 1; i <= BOARDS; i++) if (!state.boards[i]) state.boards[i] = { status: 'idle' }; if (!Array.isArray(state.names)) state.names = []; }
   let archive = storage.load('matches'); if (!Array.isArray(archive)) archive = [];
   let results = storage.load('results'); if (!Array.isArray(results)) results = [];
+  // Weitere Daten (Getränke, Anmeldelisten, Vereinsliga …) in einem gemeinsamen Speicher
+  let extra = storage.load('extra'); if (!extra || typeof extra !== 'object' || Array.isArray(extra)) extra = {};
 
   const listeners = [];
   function save() { storage.save('live', state); }
   function saveArchive() { storage.save('matches', archive); }
   function saveResults() { storage.save('results', results); }
+  function saveExtra() { storage.save('extra', extra); }
+
+  function backup() {
+    const live = JSON.parse(JSON.stringify(state));
+    delete live.standings; delete live.leagueScore;
+    return { app: 'Dart Live', format: 1, date: new Date().toISOString(), live: live, matches: archive, results: results, extra: extra };
+  }
+  function restore(b) {
+    if (!b || b.app !== 'Dart Live' || !b.live || !b.live.boards) throw new Error('Das ist keine Dart-Live-Sicherung');
+    const v = state.v;
+    state = b.live; state.v = Math.max(v, state.v || 0);
+    if (!Array.isArray(state.names)) state.names = [];
+    for (let i = 1; i <= BOARDS; i++) if (!state.boards[i]) state.boards[i] = { status: 'idle' };
+    archive = Array.isArray(b.matches) ? b.matches : [];
+    results = Array.isArray(b.results) ? b.results : [];
+    extra = b.extra && typeof b.extra === 'object' ? b.extra : {};
+    saveArchive(); saveResults(); saveExtra();
+  }
 
   // Tabellen fürs Turnier mitschicken (berechnet, nicht gespeichert)
   function decorate() {
@@ -567,7 +590,8 @@ function createCore(storage) {
       const rec = {
         mid: b.mid, date: new Date().toISOString(), started: b.started || null, board: n, start: b.start, legsToWin: b.legsToWin, doubleOut: b.doubleOut,
         winner: b.winner, tmatch: b.tmatch || null, tlabel: b.tlabel || null, league: b.league || null, doubles: !!b.doubles,
-        players: b.players.map(function (p) { return { name: p.name, legs: p.legs, sum: p.sum || 0, darts: p.darts || 0, visits: p.visits || 0, c100: p.c100 || 0, c140: p.c140 || 0, c180: p.c180 || 0, hf: p.hf || 0, bl: p.bl || 0 }; })
+        handicap: !!b.handicap,
+        players: b.players.map(function (p) { return { name: p.name, start: p.start || b.start, legs: p.legs, sum: p.sum || 0, darts: p.darts || 0, visits: p.visits || 0, c100: p.c100 || 0, c140: p.c140 || 0, c180: p.c180 || 0, hf: p.hf || 0, bl: p.bl || 0 }; })
       };
       if (i >= 0) archive[i] = rec; else archive.push(rec);
       saveArchive();
@@ -602,6 +626,11 @@ function createCore(storage) {
         try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); }
         catch (e) { /* Turnierfehler nicht an das Tablet melden */ }
       }
+      let extChanged = false;
+      Object.keys(EXT).forEach(function (k) {
+        if (EXT[k].onBoard && extra[k]) { try { EXT[k].onBoard(extra[k], Number(m[1]), b); extChanged = true; } catch (e) { /* egal */ } }
+      });
+      if (extChanged) saveExtra();
       changed(); save();
       return ok({ ok: true, v: state.v });
     }
@@ -661,6 +690,27 @@ function createCore(storage) {
     m = p.match(/^\/api\/results\/([a-z0-9]+)$/);
     if (m && method === 'DELETE') { const id = m[1]; results = results.filter(function (r) { return r.id !== id; }); saveResults(); changed(); save(); return ok({ ok: true }); }
 
+    if (method === 'GET' && p === '/api/backup') return ok(backup());
+    if (method === 'POST' && p === '/api/restore') {
+      const b = parse(body);
+      try { restore(b); } catch (e) { return bad(e.message); }
+      changed(); save();
+      return ok({ ok: true, matches: archive.length, results: results.length });
+    }
+
+    // Weitere Module (Getränke, Termine, Vereinsliga, Blind-Doppel) melden sich hier an
+    m = p.match(/^\/api\/x\/([a-z]+)$/);
+    if (m && EXT[m[1]]) {
+      if (method === 'GET') return ok(extra[m[1]] || EXT[m[1]].empty());
+      const q = parse(body);
+      if (!q) return bad('Ungültige Daten');
+      const cur = extra[m[1]] || EXT[m[1]].empty();
+      let out;
+      try { out = EXT[m[1]].act(cur, q, { state: state, archive: archive, TN: TN }); } catch (e) { return bad(e.message); }
+      extra[m[1]] = cur; saveExtra(); changed(); save();
+      return ok(out || { ok: true, data: cur });
+    }
+
     if (method === 'DELETE' && p === '/api/names') { state.names = []; changed(); save(); return ok({ ok: true }); }
 
     return { code: 404, json: { error: 'Nicht gefunden' } };
@@ -677,17 +727,169 @@ function createCore(storage) {
       const s2 = storage.load('live'); if (s2 && s2.boards) state = s2;
       const a2 = storage.load('matches'); if (Array.isArray(a2)) archive = a2;
       const r2 = storage.load('results'); if (Array.isArray(r2)) results = r2;
+      const e2 = storage.load('extra'); if (e2 && typeof e2 === 'object') extra = e2;
       decorate();
     }
   };
 }
 
-module.exports = { createCore: createCore };
+module.exports = { createCore: createCore, EXT: EXT };
 
 })(__mods.core = { exports: {} }, undefined, __req);
 __mods.core = __mods.core.exports;
+/* extensions */
+(function (module, exports, require) {
+// Dart Live – Erweiterungen: Vereinsliga, Getränke-Strichliste, Anmeldelisten
+// Jede Erweiterung: empty() liefert leere Daten, act(daten, anfrage, ctx) ändert sie (Fehler per throw),
+// optional onBoard(daten, scheibe, board) wird bei jeder Änderung an einer Scheibe aufgerufen.
+'use strict';
+const EXT = require('./core').EXT;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function clean(s, n) { return String(s == null ? '' : s).replace(/[<>]/g, '').trim().slice(0, n || 40); }
+function money(x) { const v = Math.round(Number(String(x).replace(',', '.')) * 100) / 100; return isFinite(v) ? v : NaN; }
+
+/* ---------- Vereinsliga: jeder gegen jeden über die Saison ---------- */
+EXT.vliga = {
+  empty: function () { return { season: null, games: [] }; },
+  act: function (d, q) {
+    if (q.action === 'create') {
+      const seen = {};
+      const players = (q.players || []).map(p => clean(p, 24)).filter(p => p && !seen[p.toLowerCase()] && (seen[p.toLowerCase()] = 1));
+      if (players.length < 3) throw new Error('Mindestens 3 Spieler eintragen');
+      d.season = { name: clean(q.name || ('Vereinsliga ' + new Date().getFullYear()), 50), players: players, legs: Math.max(1, Math.min(9, Number(q.legs) || 3)),
+        start: Number(q.start) === 301 ? 301 : 501, twice: !!q.twice, created: new Date().toISOString() };
+      d.games = [];
+      for (let i = 0; i < players.length; i++) for (let j = i + 1; j < players.length; j++) {
+        d.games.push({ id: uid(), p1: players[i], p2: players[j], status: 'open', legs: null, winner: null });
+        if (d.season.twice) d.games.push({ id: uid(), p1: players[j], p2: players[i], status: 'open', legs: null, winner: null });
+      }
+      return;
+    }
+    if (q.action === 'delete') { d.season = null; d.games = []; return; }
+    const g = d.games.filter(x => x.id === q.id)[0];
+    if (!g) throw new Error('Spiel nicht gefunden');
+    if (q.action === 'result') {
+      const a = Math.floor(Number(q.legs && q.legs[0]) || 0), b = Math.floor(Number(q.legs && q.legs[1]) || 0), need = d.season.legs;
+      if (!((a === need && b < need) || (b === need && a < need))) throw new Error('Ergebnis muss ' + need + ':x oder x:' + need + ' sein');
+      g.legs = [a, b]; g.winner = a > b ? g.p1 : g.p2; g.status = 'done'; g.date = new Date().toISOString(); g.board = null;
+    } else if (q.action === 'reset') { g.legs = null; g.winner = null; g.status = 'open'; g.board = null; g.date = null; }
+    else if (q.action === 'claim') {
+      // Tablet hat das Spiel gestartet
+      if (g.status === 'done') throw new Error('Spiel ist schon gespielt');
+      g.status = 'running'; g.board = Number(q.board) || null;
+    } else if (q.action === 'release') { if (g.status === 'running') { g.status = 'open'; g.board = null; } }
+    else throw new Error('Unbekannte Aktion');
+  },
+  onBoard: function (d, n, b) {
+    if (!b || !b.vliga || !d.games) return;
+    const g = d.games.filter(x => x.id === b.vliga)[0];
+    if (!g) return;
+    if (b.status === 'play') { if (g.status !== 'done' || g.board === n) { g.status = 'running'; g.board = n; g.legs = null; g.winner = null; } }
+    else if (b.status === 'done' && b.players) {
+      g.legs = [b.players[0].legs, b.players[1].legs]; g.winner = g.legs[0] > g.legs[1] ? g.p1 : g.p2;
+      g.status = 'done'; g.date = new Date().toISOString(); g.mid = b.mid;
+    } else if (b.status === 'idle' && g.status === 'running') { g.status = 'open'; g.board = null; }
+  }
+};
+
+/* ---------- Getränke-Strichliste ---------- */
+EXT.drinks = {
+  empty: function () {
+    return {
+      products: [
+        { id: 'p1', name: 'Bier 0,5', price: 3.5 }, { id: 'p2', name: 'Radler 0,5', price: 3.5 }, { id: 'p3', name: 'Spezi', price: 2.5 },
+        { id: 'p4', name: 'Wasser', price: 2 }, { id: 'p5', name: 'Kaffee', price: 1.5 }, { id: 'p6', name: 'Schnaps', price: 2 }
+      ],
+      people: [], entries: [], settlements: []
+    };
+  },
+  act: function (d, q) {
+    if (q.action === 'add') {
+      const name = clean(q.name, 24), pr = d.products.filter(p => p.id === q.product)[0];
+      if (!name) throw new Error('Name fehlt');
+      if (!pr) throw new Error('Getränk nicht gefunden');
+      const n = Math.max(1, Math.min(20, Number(q.count) || 1));
+      const ids = [];
+      for (let i = 0; i < n; i++) { const id = uid() + i; ids.push(id); d.entries.push({ id: id, name: name, product: pr.name, price: pr.price, date: new Date().toISOString(), settled: false }); }
+      if (d.people.map(x => x.toLowerCase()).indexOf(name.toLowerCase()) < 0) d.people.push(name);
+      return { ok: true, ids: ids };
+    }
+    if (q.action === 'undo') {
+      const ids = q.ids || [q.id];
+      d.entries = d.entries.filter(e => ids.indexOf(e.id) < 0 || e.settled);
+      return;
+    }
+    if (q.action === 'person') {
+      const name = clean(q.name, 24);
+      if (!name) throw new Error('Name fehlt');
+      if (d.people.map(x => x.toLowerCase()).indexOf(name.toLowerCase()) < 0) d.people.push(name);
+      d.people.sort((a, b) => a.localeCompare(b));
+      return;
+    }
+    if (q.action === 'removePerson') {
+      if (d.entries.some(e => e.name === q.name && !e.settled)) throw new Error(q.name + ' hat noch offene Striche');
+      d.people = d.people.filter(p => p !== q.name);
+      return;
+    }
+    if (q.action === 'product') {
+      const name = clean(q.name, 30), price = money(q.price);
+      if (!name || !(price >= 0)) throw new Error('Name und Preis eingeben');
+      if (q.id) { const p = d.products.filter(x => x.id === q.id)[0]; if (!p) throw new Error('Getränk nicht gefunden'); p.name = name; p.price = price; }
+      else d.products.push({ id: uid(), name: name, price: price });
+      return;
+    }
+    if (q.action === 'removeProduct') { d.products = d.products.filter(p => p.id !== q.id); return; }
+    if (q.action === 'settle') {
+      const open = d.entries.filter(e => e.name === q.name && !e.settled);
+      if (!open.length) throw new Error('Nichts offen');
+      const sum = Math.round(open.reduce((s, e) => s + e.price, 0) * 100) / 100;
+      const sid = uid();
+      open.forEach(e => { e.settled = sid; });
+      d.settlements.push({ id: sid, name: q.name, amount: sum, count: open.length, date: new Date().toISOString() });
+      return { ok: true, amount: sum };
+    }
+    if (q.action === 'unsettle') {
+      d.entries.forEach(e => { if (e.settled === q.id) e.settled = false; });
+      d.settlements = d.settlements.filter(s => s.id !== q.id);
+      return;
+    }
+    throw new Error('Unbekannte Aktion');
+  }
+};
+
+/* ---------- Anmeldelisten für Termine ---------- */
+EXT.events = {
+  empty: function () { return { events: [] }; },
+  act: function (d, q) {
+    if (q.action === 'create') {
+      const title = clean(q.title, 60);
+      if (!title) throw new Error('Titel fehlt');
+      d.events.push({ id: uid(), title: title, date: clean(q.date, 20), note: clean(q.note, 200), entries: [], created: new Date().toISOString() });
+      d.events.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      return;
+    }
+    const ev = d.events.filter(e => e.id === q.id)[0];
+    if (!ev) throw new Error('Termin nicht gefunden');
+    if (q.action === 'delete') { d.events = d.events.filter(e => e !== ev); return; }
+    if (q.action === 'respond') {
+      const name = clean(q.name, 24), st = ['ja', 'nein', 'vielleicht'].indexOf(q.status) >= 0 ? q.status : 'ja';
+      if (!name) throw new Error('Name fehlt');
+      const ex = ev.entries.filter(e => e.name.toLowerCase() === name.toLowerCase())[0];
+      if (ex) { ex.status = st; ex.date = new Date().toISOString(); } else ev.entries.push({ name: name, status: st, date: new Date().toISOString() });
+      return;
+    }
+    if (q.action === 'remove') { ev.entries = ev.entries.filter(e => e.name !== q.name); return; }
+    throw new Error('Unbekannte Aktion');
+  }
+};
+
+module.exports = EXT;
+
+})(__mods.extensions = { exports: {} }, undefined, __req);
+__mods.extensions = __mods.extensions.exports;
 /* Ersatz für XMLHttpRequest: /api/... wird direkt im Handy beantwortet, Daten im Gerätespeicher */
-var KEYS = { live: 'dl_live', matches: 'dl_matches', results: 'dl_results' };
+var KEYS = { live: 'dl_live', matches: 'dl_matches', results: 'dl_results', extra: 'dl_extra' };
 var core = __mods.core.createCore({
   load: function (name) { try { var t = window.localStorage.getItem(KEYS[name]); return t ? JSON.parse(t) : null; } catch (e) { return null; } },
   save: function (name, obj) { try { window.localStorage.setItem(KEYS[name], JSON.stringify(obj)); } catch (e) { /* Speicher voll */ } }
@@ -741,6 +943,6 @@ FakeXHR.prototype.send = function (body) {
   setTimeout(function () { finish(r); }, 0);
 };
 window.XMLHttpRequest = FakeXHR;
-window.DartLokal = { aktiv: true, reset: function () { try { localStorage.removeItem(KEYS.live); localStorage.removeItem(KEYS.matches); localStorage.removeItem(KEYS.results); } catch (e) {} } };
+window.DartLokal = { aktiv: true, reset: function () { try { localStorage.removeItem(KEYS.live); localStorage.removeItem(KEYS.matches); localStorage.removeItem(KEYS.results); localStorage.removeItem(KEYS.extra); } catch (e) {} } };
 
 })();

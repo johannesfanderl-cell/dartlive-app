@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Vereinsrangliste – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 900px; margin: 0 auto; padding: 14px 12px 60px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 6px 10px; margin: 8px 0 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 9px 6px; border-bottom: 1px solid #23498f; text-align: right; white-space: nowrap; }
+td.l, th.l { text-align: left; }
+th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; }
+tr.top1 td { background: #fff; color: #071d47; font-weight: bold; }
+td.big { font-size: 20px; font-weight: bold; }
+.up { color: #8cff9e; } .down { color: #ffb3b3; } tr.top1 .up { color: #1a7a3a; } tr.top1 .down { color: #a33; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; line-height: 1.4; }
+</style>
+</head>
+<body>
+<div id="top"><b>Vereinsrangliste</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<script>
+(function () {
+  var all = [], mode = 'elo', season = String(new Date().getFullYear()), version = 0;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true); r.send(); }
+  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); }
+  function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+
+  // Elo: Start 1000, K = 32, chronologisch über alle Einzelspiele (Doppel zählen nicht)
+  function compute() {
+    var ms = all.filter(function (m) { return !m.doubles && (season === 'alle' || String(new Date(m.date).getFullYear()) === season); })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var P = {};
+    function pl(n) { var k = n.toLowerCase(); return P[k] || (P[k] = { name: n, elo: 1000, last: 0, games: 0, wins: 0, sum: 0, darts: 0, pts: 0 }); }
+    ms.forEach(function (m) {
+      var a = pl(m.players[0].name), b = pl(m.players[1].name);
+      var ea = 1 / (1 + Math.pow(10, (b.elo - a.elo) / 400)), sa = m.winner === 0 ? 1 : 0;
+      var d = Math.round(32 * (sa - ea));
+      a.elo += d; b.elo -= d; a.last = d; b.last = -d;
+      [a, b].forEach(function (p, i) { p.games++; if (m.winner === i) { p.wins++; p.pts += 2; } var x = m.players[i]; p.sum += x.sum; p.darts += x.darts || x.visits * 3; });
+    });
+    var arr = []; for (var k in P) arr.push(P[k]);
+    arr.forEach(function (p) { p.quote = p.games ? p.wins / p.games : 0; p.avg = p.darts ? p.sum / p.darts * 3 : 0; });
+    if (mode === 'elo') arr.sort(function (x, y) { return y.elo - x.elo || y.games - x.games; });
+    else if (mode === 'pts') arr.sort(function (x, y) { return y.pts - x.pts || y.quote - x.quote; });
+    else arr = arr.filter(function (p) { return p.games >= 5; }).sort(function (x, y) { return y.quote - x.quote || y.games - x.games; });
+    return { list: arr, n: ms.length };
+  }
+  function seasons() { var y = {}; all.forEach(function (m) { y[new Date(m.date).getFullYear()] = 1; }); y[new Date().getFullYear()] = 1; return Object.keys(y).sort().reverse(); }
+  function render() {
+    var r = compute(), h = '<div class="seg">';
+    [['elo', 'Elo'], ['pts', 'Punkte'], ['quote', 'Siegquote']].forEach(function (x) { h += '<button data-mode="' + x[0] + '"' + (mode === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>'; });
+    h += '</div><div class="seg">';
+    seasons().concat(['alle']).forEach(function (y) { h += '<button data-season="' + y + '"' + (season === y ? ' class="on"' : '') + '>' + (y === 'alle' ? 'Alle Jahre' : 'Saison ' + y) + '</button>'; });
+    h += '</div>';
+    if (!r.list.length) { $('main').innerHTML = h + '<p class="note">' + (mode === 'quote' ? 'Siegquote erst ab 5 Spielen pro Spieler. ' : '') + 'Noch keine Einzelspiele in dieser Auswahl – die Rangliste entsteht automatisch aus allen Spielen an den Tablets.</p>'; return; }
+    h += '<div class="card"><table><tr><th>#</th><th class="l">Spieler</th><th>' + (mode === 'elo' ? 'Elo' : mode === 'pts' ? 'Punkte' : 'Quote') + '</th>' + (mode === 'elo' ? '<th>zuletzt</th>' : '') + '<th>Spiele</th><th>S–N</th><th>Ø</th></tr>';
+    r.list.forEach(function (p, i) {
+      var main = mode === 'elo' ? p.elo : mode === 'pts' ? p.pts : Math.round(p.quote * 100) + ' %';
+      h += '<tr' + (i === 0 ? ' class="top1"' : '') + '><td>' + (i + 1) + '.</td><td class="l"><b>' + esc(p.name) + '</b></td><td class="big">' + main + '</td>' +
+        (mode === 'elo' ? '<td class="' + (p.last > 0 ? 'up' : p.last < 0 ? 'down' : '') + '">' + (p.last > 0 ? '▲ +' + p.last : p.last < 0 ? '▼ ' + p.last : '–') + '</td>' : '') +
+        '<td>' + p.games + '</td><td>' + p.wins + '–' + (p.games - p.wins) + '</td><td>' + (p.avg ? p.avg.toFixed(1).replace('.', ',') : '–') + '</td></tr>';
+    });
+    h += '</table></div><p class="note">' + r.n + ' Einzelspiele ausgewertet. <b>Elo:</b> Jeder startet mit 1000; wer gegen Stärkere gewinnt, bekommt mehr Punkte (bis 32 pro Spiel). <b>Punkte:</b> Sieg = 2. <b>Siegquote:</b> ab 5 Spielen. Doppel zählen nicht.</p>';
+    $('main').innerHTML = h;
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target; while (t && t !== document.body && !(t.hasAttribute && (t.hasAttribute('data-mode') || t.hasAttribute('data-season')))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    if (t.hasAttribute('data-mode')) mode = t.getAttribute('data-mode'); else season = t.getAttribute('data-season');
+    render();
+  }, false);
+  load(); wait();
+})();
+</script>
+</body>
+</html>

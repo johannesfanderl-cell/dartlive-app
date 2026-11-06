@@ -98,7 +98,7 @@ input { font-family: inherit; }
 </head>
 <body>
 <div id="app">
-  <div id="top"><b>Scheibe <span id="bn">?</span></b><span id="net">verbinde …</span></div>
+  <div id="top"><b>Scheibe <span id="bn">?</span></b><span><button id="caller" style="color:#fff;font-size:1.1rem;margin-right:.8rem" title="Caller ein/aus">🔊</button><span id="net">verbinde …</span></span></div>
   <div id="main"></div>
 </div>
 <div id="dlg"><div class="box" id="dlgbox"></div></div>
@@ -120,7 +120,31 @@ input { font-family: inherit; }
   var undo = [];
   var typed = '';
   var msg = '';
-  var setup = { n1: '', n2: '', start: 501, legs: 2, dout: true, first: 0, active: 0 };
+  var setup = { n1: '', n2: '', start: 501, legs: 2, dout: true, first: 0, active: 0, hc: false, s1: 501, s2: 501 };
+
+  /* ---------- Caller (Sprachausgabe) ---------- */
+  var callerOn = true;
+  try { callerOn = localStorage.getItem('caller') !== 'aus'; } catch (e) {}
+  function say(text) {
+    if (!callerOn || !text) return;
+    try {
+      if (window.DartApp && window.DartApp.say) { window.DartApp.say(text); return; }
+      if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.rate = 1.05;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) { /* keine Sprachausgabe verfügbar */ }
+  }
+  function showCaller() { var b = document.getElementById('caller'); if (b) b.innerHTML = callerOn ? '🔊' : '🔇'; }
+  // Ansage nach einer Aufnahme: Punkte und Rest des nächsten Spielers (nur der Rest – keine Checkout-Wege)
+  function callVisit(score, bust) {
+    var nx = board.players[board.turn];
+    var t = bust ? 'Überworfen' : (score === 0 ? 'Kein Score' : String(score) + (score === 180 ? '!' : ''));
+    if (board.status === 'play' && nx && nx.rem <= 170) t += '. ' + firstName(nx) + ', du brauchst ' + nx.rem;
+    say(t);
+  }
+  function firstName(p) { return board.doubles && board.members ? board.members[board.turn][(p.lv || 0) % 2] : p.name; }
   var dirty = false, saving = false, loaded = false;
   var tour = null, ver = 0, lastAssign = '';
 
@@ -235,7 +259,7 @@ input { font-family: inherit; }
   }
 
   /* ---------- Spiellogik ---------- */
-  function newPlayer(name, start) { return { name: name, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0 }; }
+  function newPlayer(name, start) { return { name: name, start: start, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0 }; }
 
   // Statistik einer Aufnahme mitschreiben
   function record(p, score, darts) {
@@ -253,19 +277,21 @@ input { font-family: inherit; }
     return 3;
   }
 
-  function startMatch(n1, n2, start, legs, dout, first, tm) {
+  function startMatch(n1, n2, start, legs, dout, first, tm, starts) {
     board = {
       tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : undefined,
       league: tm && tour && tour.type === 'league' ? tour.homeTeam + ' – ' + tour.guestTeam : undefined,
       doubles: tm && tm.doubles ? true : undefined, members: tm && tm.doubles ? [tm.hp, tm.gp] : undefined,
       status: 'play', start: start, legsToWin: legs, doubleOut: dout,
       mid: new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 6), started: new Date().toISOString(),
-      players: [newPlayer(n1, start), newPlayer(n2, start)],
+      players: [newPlayer(n1, starts ? starts[0] : start), newPlayer(n2, starts ? starts[1] : start)],
+      handicap: starts && starts[0] !== starts[1] ? true : undefined,
       turn: first, legStarter: first, leg: 1, winner: null,
       banner: 'Game on!', bannerId: new Date().getTime()
     };
     undo = []; typed = ''; msg = '';
     save(); render();
+    say(board.players[first].name + ' beginnt. Game on!');
   }
 
   function pushUndo() { undo.push(JSON.stringify(board)); if (undo.length > 60) undo.shift(); }
@@ -295,6 +321,7 @@ input { font-family: inherit; }
     board.turn = 1 - board.turn;
     typed = ''; msg = '';
     save(); render();
+    callVisit(score, false);
   }
 
   function bust(score) {
@@ -305,6 +332,7 @@ input { font-family: inherit; }
     typed = ''; msg = '';
     toast(p.name + ': überworfen (' + score + ')');
     save(); render();
+    callVisit(score, true);
   }
 
   function checkout(score, darts) {
@@ -326,10 +354,12 @@ input { font-family: inherit; }
       board.leg++;
       board.legStarter = 1 - board.legStarter;
       board.turn = board.legStarter;
-      p.rem = board.start; o.rem = board.start; p.last = []; o.last = [];
+      p.rem = p.start || board.start; o.rem = o.start || board.start; p.last = []; o.last = [];
     }
     board.bannerId = new Date().getTime();
     save(); render();
+    if (board.status === 'done') say('Game shot and the match! ' + p.name + ' gewinnt ' + p.legs + ' zu ' + o.legs);
+    else say('Game shot! Leg an ' + p.name + '. ' + board.players[board.turn].name + ' beginnt.');
   }
 
   function doUndo() {
@@ -392,6 +422,14 @@ input { font-family: inherit; }
     h += '<div class="row"><label>Double Out</label><div class="seg">' +
       '<button data-dout="1"' + (setup.dout ? ' class="on"' : '') + '>Ja</button>' +
       '<button data-dout="0"' + (!setup.dout ? ' class="on"' : '') + '>Nein</button></div></div>';
+    h += '<div class="row"><label>Handicap</label><div class="seg">' +
+      '<button data-hc="0"' + (!setup.hc ? ' class="on"' : '') + '>Aus</button>' +
+      '<button data-hc="1"' + (setup.hc ? ' class="on"' : '') + '>Unterschiedliche Startpunkte</button></div></div>';
+    if (setup.hc) {
+      h += '<div class="row"><label>' + esc(setup.n1 || 'Spieler 1') + '</label><div class="step"><button data-hs="1" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s1 + '</span><button data-hs="1" data-d="25">+</button></div>' +
+        '<span style="margin-left:1.2rem;color:#b7d3ff">' + esc(setup.n2 || 'Spieler 2') + '</span><div class="step" style="margin-left:.6rem"><button data-hs="2" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s2 + '</span><button data-hs="2" data-d="25">+</button></div></div>' +
+        '<div class="row"><label></label><button class="big sec" style="margin:0;padding:.5rem;font-size:1rem;width:auto" data-a="hcsuggest">Vorschlag aus dem Average</button><span id="hcinfo" style="margin-left:.8rem;color:#b7d3ff">' + esc(hcInfo) + '</span></div>';
+    }
     h += '<div class="row"><label>Beginnt</label><div class="seg">' +
       '<button data-first="0"' + (setup.first === 0 ? ' class="on"' : '') + '>' + esc(setup.n1 || 'Spieler 1') + '</button>' +
       '<button data-first="1"' + (setup.first === 1 ? ' class="on"' : '') + '>' + esc(setup.n2 || 'Spieler 2') + '</button></div></div>';
@@ -457,7 +495,7 @@ input { font-family: inherit; }
   function onTap(e) {
     var t = e.target;
     while (t && t !== document.body && !(t.getAttribute && (t.getAttribute('data-k') || t.getAttribute('data-q') || t.getAttribute('data-a') || t.getAttribute('data-dlg') ||
-      t.getAttribute('data-name') || t.getAttribute('data-tstart') || t.getAttribute('data-start') || t.getAttribute('data-legs') || t.getAttribute('data-dout') || t.getAttribute('data-first')))) t = t.parentNode;
+      t.getAttribute('data-name') || t.getAttribute('data-tstart') || t.getAttribute('data-hc') || t.getAttribute('data-hs') || t.getAttribute('data-start') || t.getAttribute('data-legs') || t.getAttribute('data-dout') || t.getAttribute('data-first')))) t = t.parentNode;
     if (!t || t === document.body || !t.getAttribute) return;
     var a;
 
@@ -482,10 +520,12 @@ input { font-family: inherit; }
       else { setup.n2 = a; if (!setup.n1) setup.active = 0; }
       msg = ''; render(); return;
     }
-    if ((a = t.getAttribute('data-start')) !== null) { readNames(); setup.start = +a; render(); return; }
+    if ((a = t.getAttribute('data-start')) !== null) { readNames(); setup.start = +a; setup.s1 = setup.s2 = +a; hcInfo = ''; render(); return; }
     if ((a = t.getAttribute('data-legs')) !== null) { readNames(); setup.legs = Math.max(1, Math.min(9, setup.legs + (+a))); render(); return; }
     if ((a = t.getAttribute('data-dout')) !== null) { readNames(); setup.dout = a === '1'; render(); return; }
     if ((a = t.getAttribute('data-first')) !== null) { readNames(); setup.first = +a; render(); return; }
+    if ((a = t.getAttribute('data-hc')) !== null) { readNames(); setup.hc = a === '1'; setup.s1 = setup.s2 = setup.start; hcInfo = ''; render(); return; }
+    if ((a = t.getAttribute('data-hs')) !== null) { readNames(); var k = a === '1' ? 's1' : 's2'; setup[k] = Math.max(101, Math.min(1001, setup[k] + (+t.getAttribute('data-d')))); render(); return; }
 
     a = t.getAttribute('data-a');
     if (a === 'start') {
@@ -493,7 +533,7 @@ input { font-family: inherit; }
       var n1 = setup.n1.replace(/^\s+|\s+$/g, ''), n2 = setup.n2.replace(/^\s+|\s+$/g, '');
       if (!n1 || !n2) { msg = 'Bitte beide Namen eingeben'; render(); return; }
       if (n1.toLowerCase() === n2.toLowerCase()) { msg = 'Die Namen müssen verschieden sein'; render(); return; }
-      startMatch(n1, n2, setup.start, setup.legs, setup.dout, setup.first);
+      startMatch(n1, n2, setup.start, setup.legs, setup.dout, setup.first, null, setup.hc ? [setup.s1, setup.s2] : null);
     } else if (a === 'undo') doUndo();
     else if (a === 'menu') {
       dialog('Menü', board.players[0].name + ' gegen ' + board.players[1].name, [
@@ -510,6 +550,7 @@ input { font-family: inherit; }
       startMatch(p[1].name, p[0].name, board.start, board.legsToWin, board.doubleOut, 0);
     } else if (a === 'new') { board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
     else if (a === 'training') { location.href = '/t' + N; }
+    else if (a === 'hcsuggest') { readNames(); suggestHandicap(); }
     else if (a === 'free') { setup.n1 = ''; setup.n2 = ''; board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
   }
 
@@ -535,6 +576,35 @@ input { font-family: inherit; }
   }, false);
   window.addEventListener('resize', scale, false);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && dirty) save(); }, false);
+
+  /* Handicap-Vorschlag: der Stärkere startet mit den normalen Punkten, der Schwächere mit
+     so viel weniger, dass beide im Schnitt gleich viele Darts brauchen (gerundet auf 25). */
+  var hcInfo = '';
+  function suggestHandicap() {
+    var n1 = setup.n1.replace(/^\s+|\s+$/g, ''), n2 = setup.n2.replace(/^\s+|\s+$/g, '');
+    if (!n1 || !n2) { hcInfo = 'Erst beide Namen eingeben'; render(); return; }
+    xhr('GET', '/api/matches', null, function (err, d) {
+      if (err || !d) { hcInfo = 'Keine Daten'; render(); return; }
+      function avgOf(n) {
+        var sum = 0, darts = 0, k = n.toLowerCase();
+        (d.matches || []).forEach(function (m) { if (m.doubles) return; m.players.forEach(function (p) { if (p.name.toLowerCase() === k) { sum += p.sum; darts += p.darts || p.visits * 3; } }); });
+        return darts >= 30 ? sum / darts * 3 : 0;
+      }
+      var a1 = avgOf(n1), a2 = avgOf(n2);
+      if (!a1 || !a2) { hcInfo = 'Zu wenige Spiele für ' + (!a1 ? n1 : n2) + ' (mind. 10 Aufnahmen)'; render(); return; }
+      var base = setup.start, strongIs1 = a1 >= a2, ratio = Math.min(a1, a2) / Math.max(a1, a2);
+      var weak = Math.max(101, Math.round(base * ratio / 25) * 25);
+      setup.s1 = strongIs1 ? base : weak; setup.s2 = strongIs1 ? weak : base;
+      hcInfo = 'Ø ' + a1.toFixed(1).replace('.', ',') + ' / ' + a2.toFixed(1).replace('.', ',');
+      render();
+    });
+  }
+
+  document.getElementById('caller').onclick = function () {
+    callerOn = !callerOn; try { localStorage.setItem('caller', callerOn ? 'an' : 'aus'); } catch (e) {}
+    showCaller(); if (callerOn) say('Caller an');
+  };
+  showCaller();
 
   scale();
   render();

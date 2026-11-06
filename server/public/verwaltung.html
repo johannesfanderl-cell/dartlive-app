@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Verwaltung – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; }
+#top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 800px; margin: 0 auto; padding: 14px 16px 60px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.btn { display: inline-block; padding: 11px 16px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; text-decoration: none; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; }
+.btn.warn { background: #6b1d2d; color: #fff; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; line-height: 1.4; }
+.msg { margin-top: 8px; font-weight: bold; min-height: 20px; }
+.msg.bad { color: #ffb3b3; } .msg.good { color: #8cff9e; }
+table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-bottom: 1px solid #23498f; } td.r { text-align: right; font-weight: bold; }
+</style>
+</head>
+<body>
+<div id="top"><b>Verwaltung</b><a href="/">Start</a></div>
+<div id="main">
+  <h3>Datensicherung</h3>
+  <div class="card">
+    <p class="note">Sichert alles: Spielstände, Turnier/Spieltag, Statistik, Trainings-Bestenliste, Vereinsliga, Strichliste und Anmeldelisten – in einer Datei.</p>
+    <div id="stats" class="note"></div>
+    <button class="btn" id="dl">Sicherung herunterladen</button>
+    <div class="msg" id="m1"></div>
+  </div>
+  <div class="card">
+    <p class="note"><b>Sicherung einspielen:</b> Ersetzt alle Daten auf diesem Gerät bzw. Server durch die Daten aus der Datei.</p>
+    <input type="file" id="file" accept=".json,application/json" style="display:none">
+    <button class="btn warn" id="up">Sicherung einspielen …</button>
+    <div class="msg" id="m2"></div>
+  </div>
+  <div class="card" id="auto">
+    <p class="note"><b>Automatisch:</b> Der Server am Chromebook speichert jeden Tag eine Sicherung im Ordner <code>dartlive/data/sicherungen</code> (die letzten 30 Tage).
+    Wenn du in den ChromeOS-Einstellungen den Ordner „Downloads“ für Linux freigibst, liegt zusätzlich eine Kopie in <b>Downloads/Dart-Sicherungen</b> – von dort kannst du sie z. B. in Google Drive ablegen.</p>
+  </div>
+  <h3>Spielabend</h3>
+  <div class="card"><a class="btn sec" href="/checkliste">Checkliste für den Spielabend</a></div>
+</div>
+<script>
+(function () {
+  function $(id) { return document.getElementById(id); }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + '?_=' + new Date().getTime(), true);
+    r.onreadystatechange = function () { if (r.readyState !== 4) return; var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung'), d); };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(body); } else r.send();
+  }
+  function msg(id, t, good) { $(id).innerHTML = t; $(id).className = 'msg ' + (good ? 'good' : 'bad'); }
+  function stats() {
+    req('GET', '/api/backup', null, function (e, b) {
+      if (e || !b) return;
+      var ex = b.extra || {};
+      $('stats').innerHTML = (b.matches || []).length + ' gespeicherte Spiele · ' + (b.results || []).length + ' Trainingsergebnisse · ' +
+        ((ex.drinks && ex.drinks.entries) ? ex.drinks.entries.length : 0) + ' Striche · ' + (b.live.tournament ? '1 Turnier/Spieltag' : 'kein Turnier');
+    });
+  }
+  if (window.DartLokal) $('auto').style.display = 'none';
+  $('dl').onclick = function () {
+    req('GET', '/api/backup', null, function (e, b) {
+      if (e) return msg('m1', e);
+      var name = 'dartlive-sicherung-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-') + '.json', txt = JSON.stringify(b);
+      if (window.DartApp && window.DartApp.saveFile) {
+        var res = window.DartApp.saveFile(name, txt);
+        return msg('m1', res === 'ok' ? 'Gespeichert in „Downloads“: ' + name : 'Speichern fehlgeschlagen: ' + res, res === 'ok');
+      }
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([txt], { type: 'application/json' }));
+      a.download = name; document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+      msg('m1', 'Sicherung heruntergeladen: ' + name, true);
+    });
+  };
+  $('up').onclick = function () { $('file').value = ''; $('file').click(); };
+  $('file').onchange = function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var b; try { b = JSON.parse(rd.result); } catch (e) { return msg('m2', 'Die Datei ist keine gültige Sicherung.'); }
+      if (!confirm('Alle aktuellen Daten durch die Sicherung vom ' + (b.date ? new Date(b.date).toLocaleString('de-DE') : '?') + ' ersetzen?')) return;
+      req('POST', '/api/restore', rd.result, function (e, d) {
+        if (e) return msg('m2', e);
+        msg('m2', 'Sicherung eingespielt: ' + d.matches + ' Spiele, ' + d.results + ' Trainingsergebnisse.', true); stats();
+      });
+    };
+    rd.readAsText(f);
+  };
+  stats();
+})();
+</script>
+</body>
+</html>

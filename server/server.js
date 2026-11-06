@@ -10,9 +10,10 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUB = path.join(__dirname, 'public');
 const DATA = path.join(__dirname, 'data');
 const { createCore } = require('./core');
+require('./extensions');
 
 // Daten liegen als JSON-Dateien im Ordner data/
-const FILES = { live: 'live.json', matches: 'matches.json', results: 'results.json' };
+const FILES = { live: 'live.json', matches: 'matches.json', results: 'results.json', extra: 'extra.json' };
 const core = createCore({
   load: function (name) { try { return JSON.parse(fs.readFileSync(path.join(DATA, FILES[name]), 'utf8')); } catch (e) { return null; } },
   save: function (name, obj) {
@@ -21,6 +22,25 @@ const core = createCore({
     catch (e) { console.error('Speichern fehlgeschlagen (' + name + '):', e.message); }
   }
 });
+
+// Tägliche automatische Sicherung (data/sicherungen, die letzten 30 Tage)
+// Ist der Downloads-Ordner des Chromebooks für Linux freigegeben, landet dort zusätzlich eine Kopie.
+const BACKUPS = path.join(DATA, 'sicherungen');
+function dailyBackup() {
+  try {
+    const day = new Date().toISOString().slice(0, 10), name = 'dartlive-sicherung-' + day + '.json';
+    fs.mkdirSync(BACKUPS, { recursive: true });
+    const r = core.handle('GET', '/api/backup', '');
+    const txt = JSON.stringify(r.json);
+    fs.writeFileSync(path.join(BACKUPS, name), txt);
+    const files = fs.readdirSync(BACKUPS).filter(f => /^dartlive-sicherung-.*\.json$/.test(f)).sort();
+    while (files.length > 30) fs.unlinkSync(path.join(BACKUPS, files.shift()));
+    const dl = '/mnt/chromeos/MyFiles/Downloads';
+    if (fs.existsSync(dl)) { fs.mkdirSync(path.join(dl, 'Dart-Sicherungen'), { recursive: true }); fs.writeFileSync(path.join(dl, 'Dart-Sicherungen', name), txt); }
+  } catch (e) { console.error('Sicherung fehlgeschlagen:', e.message); }
+}
+setTimeout(dailyBackup, 5000);
+setInterval(dailyBackup, 60 * 60 * 1000);
 
 // Wartende Anzeigen (Long-Polling)
 let waiting = [];
@@ -49,6 +69,10 @@ const PAGES = {
   '/liga-bericht': 'liga-bericht.html',
   '/statistik-tv': 'statistik-tv.html',
   '/turnier-tv': 'turnier-tv.html',
+  '/verwaltung': 'verwaltung.html', '/checkliste': 'checkliste.html',
+  '/rangliste': 'rangliste.html', '/rangliste-tv': 'rangliste-tv.html',
+  '/getraenke': 'getraenke.html', '/termine': 'termine.html',
+  '/vereinsliga': 'vereinsliga.html', '/blind': 'blind.html',
   '/diag': 'diag.html',
 };
 const TYPES = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml', '.js': 'application/javascript; charset=utf-8' };

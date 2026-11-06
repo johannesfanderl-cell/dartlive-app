@@ -1,5 +1,5 @@
 /* Ersatz für XMLHttpRequest: /api/... wird direkt im Handy beantwortet, Daten im Gerätespeicher */
-var KEYS = { live: 'dl_live', matches: 'dl_matches', results: 'dl_results' };
+var KEYS = { live: 'dl_live', matches: 'dl_matches', results: 'dl_results', extra: 'dl_extra' };
 var core = __mods.core.createCore({
   load: function (name) { try { var t = window.localStorage.getItem(KEYS[name]); return t ? JSON.parse(t) : null; } catch (e) { return null; } },
   save: function (name, obj) { try { window.localStorage.setItem(KEYS[name], JSON.stringify(obj)); } catch (e) { /* Speicher voll */ } }
@@ -53,4 +53,4 @@ FakeXHR.prototype.send = function (body) {
   setTimeout(function () { finish(r); }, 0);
 };
 window.XMLHttpRequest = FakeXHR;
-window.DartLokal = { aktiv: true, reset: function () { try { localStorage.removeItem(KEYS.live); localStorage.removeItem(KEYS.matches); localStorage.removeItem(KEYS.results); } catch (e) {} } };
+window.DartLokal = { aktiv: true, reset: function () { try { localStorage.removeItem(KEYS.live); localStorage.removeItem(KEYS.matches); localStorage.removeItem(KEYS.results); localStorage.removeItem(KEYS.extra); } catch (e) {} } };

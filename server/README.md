@@ -2,6 +2,10 @@
 
 Live-Eingabe an 5 Tablets und Anzeige auf den Fernsehern. Läuft ohne Internet im WLAN „TVR Dart“.
 
+## Einmalig: Startbefehl einrichten
+    bash ~/dartlive/einrichten.sh
+Danach Terminal neu öffnen – ab dann startet alles mit:  dart   (startet nach Absturz automatisch neu)
+
 ## Server starten (Chromebook, Linux-Terminal)
 
     cd ~/dartlive
@@ -51,3 +55,10 @@ Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
 Enthält alles (Spiel, Training, Turnier, Liga, Statistik) und läuft komplett ohne Server – Daten bleiben auf dem Handy.
 Technik: public/local-core.js (erzeugt mit `node build-local.js` aus core.js + tournament.js) beantwortet die Anfragen im Gerät.
 Im Browser ausprobieren: http://<IP>:3000/?lokal=1  (zurück zum Server-Betrieb: ?lokal=0)
+
+## Datensicherung, Rangliste, Caller, Handicap
+- Verwaltung: /verwaltung – Sicherung herunterladen/einspielen. Automatisch täglich in data/sicherungen (und Downloads/Dart-Sicherungen, wenn freigegeben).
+- Checkliste für den Spielabend zum Drucken: /checkliste
+- Vereinsrangliste (Elo/Punkte/Siegquote) aus allen Einzelspielen: /rangliste, Fernseher: /rangliste-tv
+- Caller: Lautsprecher-Knopf oben am Tablet schaltet die Ansagen ein/aus.
+- Handicap: im Spiel-Setup „Unterschiedliche Startpunkte“, Vorschlag aus dem Average.
