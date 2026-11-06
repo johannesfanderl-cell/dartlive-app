@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sponsoren</title>
+<style>
+* { margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
+body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.8em; line-height: 1.8em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #fff; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#bar .r { float: right; color: #8cc4ff; }
+#wrap { position: absolute; left: 0.6em; right: 0.6em; bottom: 0.6em; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+</style>
+</head>
+<body>
+<div id="bar"><span class="r" id="clock"></span>TV Riedenburg · Danke an unsere Sponsoren</div>
+<div id="wrap"></div>
+<script src="/sponsor.js"></script>
+<script>
+(function () {
+  var version = 0;
+  function el(id) { return document.getElementById(id); }
+  function render() {
+    var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
+    var base = Math.max(10, Math.floor(Math.min(w / 30, h / 18)));
+    document.body.style.fontSize = base + 'px';
+    var wr = el('wrap'); wr.style.top = (el('bar').offsetHeight + Math.round(base * 0.6)) + 'px';
+    var it = Sponsor.current();
+    wr.innerHTML = it ? Sponsor.slide(it, '') : '<div class="empty">Noch keine Sponsoren eingetragen – Startseite → Sponsoren</div>';
+  }
+  function poll() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(poll, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (d) { version = d.v; Sponsor.update(d.sponsorsRev || 0); setTimeout(poll, 50); } else setTimeout(poll, 2500);
+    };
+    r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
+  }
+  function clock() { var d = new Date(), m = d.getMinutes(); el('clock').innerHTML = d.getHours() + ':' + (m < 10 ? '0' : '') + m; }
+  Sponsor.onChange = render;
+  setInterval(clock, 15000); clock();
+  window.onresize = render;
+  render(); poll();
+})();
+</script>
+</body>
+</html>

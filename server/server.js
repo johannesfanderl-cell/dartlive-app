@@ -71,7 +71,7 @@ const PAGES = {
   '/turnier-tv': 'turnier-tv.html',
   '/verwaltung': 'verwaltung.html', '/checkliste': 'checkliste.html',
   '/rangliste': 'rangliste.html', '/rangliste-tv': 'rangliste-tv.html',
-  '/getraenke': 'getraenke.html', '/termine': 'termine.html',
+  '/getraenke': 'getraenke.html', '/sponsoren': 'sponsoren.html', '/sponsoren-tv': 'sponsoren-tv.html', '/kurzanleitung': 'kurzanleitung.html', '/termine': 'termine.html',
   '/vereinsliga': 'vereinsliga.html', '/blind': 'blind.html',
   '/diag': 'diag.html',
 };
@@ -79,7 +79,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml', '.
 
 function readBody(req, cb) {
   let size = 0; const chunks = [];
-  req.on('data', function (c) { size += c.length; if (size > 50000) { req.destroy(); return; } chunks.push(c); });
+  req.on('data', function (c) { size += c.length; if (size > 20 * 1024 * 1024) { req.destroy(); return; } chunks.push(c); });
   req.on('end', function () { cb(Buffer.concat(chunks).toString('utf8')); });
 }
 
@@ -105,7 +105,7 @@ const server = http.createServer(function (req, res) {
     });
   }
 
-  const isFile = /^\/(icon\.svg|local\.js|local-core\.js)$/.test(p);
+  const isFile = /^\/(icon\.svg|local\.js|local-core\.js|sponsor\.js)$/.test(p);
   if (req.method === 'GET' && (PAGES[p] || isFile)) {
     const file = PAGES[p] || p.slice(1);
     return fs.readFile(path.join(PUB, file), function (err, data) {

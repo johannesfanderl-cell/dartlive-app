@@ -28,6 +28,7 @@ table.grid td { vertical-align: top; }
 .rm { font-size: 5.2em; font-weight: bold; line-height: 1; }
 .st { font-size: 0.95em; white-space: nowrap; overflow: hidden; opacity: 0.85; }
 .idle { display: table; width: 100%; text-align: center; }
+.idle.spon { display: block; overflow: hidden; }
 .idle div { display: table-cell; vertical-align: middle; }
 .idle b { display: block; font-size: 2em; letter-spacing: 0.06em; text-transform: uppercase; }
 .idle span { display: block; font-size: 1.2em; color: #b7d3ff; margin-top: 0.3em; }
@@ -67,6 +68,8 @@ body.single .intro .st { font-size: 1.6em; }
 <body>
 <div id="bar"><span class="r"><span class="net" id="net"></span><span id="clock"></span></span>TV Riedenburg · Dart Live</div>
 <div id="wrap"></div>
+<div id="spbar" style="position:absolute;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<script src="/sponsor.js"></script>
 
 <script>
 (function () {
@@ -176,7 +179,9 @@ body.single .intro .st { font-size: 1.6em; }
       h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
         '<small>gegen ' + esc(l.name) + '</small></div></div>';
     } else {
-      h += '<div class="idle"><div><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
+      var spIt = window.Sponsor && Sponsor.data && Sponsor.data.idle ? Sponsor.current(n) : null;
+      if (spIt) h += '<div class="idle spon">' + Sponsor.slide(spIt, 'Scheibe frei') + '</div>';
+      else h += '<div class="idle"><div><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
     }
     if (!showIntro && b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
     h += '</div>';
@@ -190,7 +195,10 @@ body.single .intro .st { font-size: 1.6em; }
     h += '</tr></table>';
     el('wrap').innerHTML = h;
     // Höhen in Pixeln setzen (zuverlässiger als CSS-Höhen in alten Browsern)
-    var avail = s.h - el('bar').offsetHeight - Math.round(base * 0.8) - 4;
+    var spb = el('spbar'), barH = 0;
+    if (window.Sponsor && Sponsor.barOn()) { barH = Math.round(base * 2.2); spb.style.height = barH + 'px'; spb.style.fontSize = base + 'px'; spb.innerHTML = Sponsor.bar(); spb.style.display = 'block'; }
+    else spb.style.display = 'none';
+    var avail = s.h - el('bar').offsetHeight - barH - Math.round(base * 0.8) - 4;
     for (var j = 0; j < list.length; j++) {
       var pn = el('pn' + list[j]);
       if (!pn) continue;
@@ -203,7 +211,7 @@ body.single .intro .st { font-size: 1.6em; }
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
         if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
-        else if (c === 'idle' || c === 'win' || /duo/.test(c)) kids[k].style.height = rest + 'px';
+        else if (/^idle/.test(c) || c === 'win' || /duo/.test(c)) kids[k].style.height = rest + 'px';
       }
     }
   }
@@ -229,6 +237,7 @@ body.single .intro .st { font-size: 1.6em; }
     }
     first = false;
     state = data; version = data.v;
+    if (window.Sponsor) Sponsor.update(data.sponsorsRev || 0);
     render();
   }
 
@@ -268,6 +277,7 @@ body.single .intro .st { font-size: 1.6em; }
   }, 1000);
   setInterval(clock, 15000);
   window.onresize = render;
+  if (window.Sponsor) Sponsor.onChange = render;
 
   clock();
   render();

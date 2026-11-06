@@ -31,13 +31,21 @@ td.l { color: #9fb4d6; }
 </head>
 <body>
 <div id="wrap"><div class="empty">Lade …</div></div>
+<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<script src="/sponsor.js"></script>
 <script>
 (function () {
   var S = null, version = 0;
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function spBar() {
+    var b = document.getElementById('spbar');
+    if (window.Sponsor && Sponsor.barOn()) { b.style.height = '2.2em'; b.innerHTML = Sponsor.bar(); b.style.display = 'block'; document.getElementById('wrap').style.paddingBottom = '2.4em'; }
+    else { b.style.display = 'none'; document.getElementById('wrap').style.paddingBottom = '0'; }
+  }
   function render() {
+    spBar();
     var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
-    document.body.style.fontSize = Math.max(9, Math.floor(Math.min(w / 42, h / 31))) + 'px';
+    document.body.style.fontSize = Math.max(9, Math.floor(Math.min(w / 42, h / (window.Sponsor && Sponsor.barOn() ? 33.5 : 31)))) + 'px';
     var T = S && S.tournament, el = document.getElementById('wrap');
     if (!T || T.type !== 'league') { el.innerHTML = '<div class="empty">Kein Liga-Spieltag angelegt</div>'; return; }
     var sc = S.leagueScore;
@@ -62,11 +70,12 @@ td.l { color: #9fb4d6; }
       if (r.readyState !== 4 || done) return;
       done = true; clearTimeout(guard);
       var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
-      if (d) { S = d; version = d.v; render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
+      if (d) { S = d; version = d.v; if (window.Sponsor) Sponsor.update(d.sponsorsRev || 0); render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
     };
     r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
   }
   window.onresize = render;
+  if (window.Sponsor) Sponsor.onChange = render;
   poll();
 })();
 </script>

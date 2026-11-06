@@ -41,6 +41,8 @@ table.t tr.q td.nm { font-weight: bold; }
 <body>
 <div id="bar"><span class="r" id="clock"></span><span id="title">Turnier</span></div>
 <div id="wrap"><div class="empty">Lade …</div></div>
+<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<script src="/sponsor.js"></script>
 <script>
 (function () {
   var S = null, version = 0;
@@ -55,7 +57,13 @@ table.t tr.q td.nm { font-weight: bold; }
     if (m.status === 'running' && b && b.tmatch === m.id && b.players) return b.players[0].legs + ':' + b.players[1].legs;
     return '';
   }
+  function spBar() {
+    var b = document.getElementById('spbar');
+    if (window.Sponsor && Sponsor.barOn()) { b.style.height = '2.2em'; b.innerHTML = Sponsor.bar(); b.style.display = 'block'; document.getElementById('wrap').style.paddingBottom = '2.4em'; }
+    else { b.style.display = 'none'; document.getElementById('wrap').style.paddingBottom = '0'; }
+  }
   function render() {
+    spBar();
     size();
     var T = S && S.tournament;
     if (T && T.type === 'league') { location.replace('/liga-tv'); return; }
@@ -156,13 +164,14 @@ table.t tr.q td.nm { font-weight: bold; }
       if (r.readyState !== 4 || done) return;
       done = true; clearTimeout(guard);
       var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
-      if (d) { S = d; version = d.v; render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
+      if (d) { S = d; version = d.v; if (window.Sponsor) Sponsor.update(d.sponsorsRev || 0); render(); setTimeout(poll, 50); } else setTimeout(poll, 2500);
     };
     r.open('GET', '/api/wait?v=' + version + '&_=' + new Date().getTime(), true); r.send();
   }
   function clock() { var d = new Date(), m = d.getMinutes(); el('clock').innerHTML = d.getHours() + ':' + (m < 10 ? '0' : '') + m; }
   setInterval(clock, 15000); clock();
   window.onresize = render;
+  if (window.Sponsor) Sponsor.onChange = render;
   poll();
 })();
 </script>

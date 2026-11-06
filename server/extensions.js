@@ -143,4 +143,37 @@ EXT.events = {
   }
 };
 
+/* ---------- Sponsoren für die Fernseher ---------- */
+EXT.sponsors = {
+  empty: function () { return { items: [], seconds: 10, bar: true, idle: true }; },
+  act: function (d, q, ctx) {
+    function img(x) {
+      if (!x) return '';
+      if (!/^data:image\/(png|jpeg|jpg|gif|webp);base64,/.test(x)) throw new Error('Bild muss PNG oder JPG sein');
+      if (x.length > 1500000) throw new Error('Bild zu groß');
+      return x;
+    }
+    if (q.action === 'add' || q.action === 'edit') {
+      const name = clean(q.name, 50), text = clean(q.text, 120);
+      if (!name && !q.img) throw new Error('Name oder Logo angeben');
+      if (q.action === 'add') d.items.push({ id: uid(), name: name, text: text, img: img(q.img), on: true });
+      else {
+        const it = d.items.filter(x => x.id === q.id)[0];
+        if (!it) throw new Error('Sponsor nicht gefunden');
+        it.name = name; it.text = text; if (q.img) it.img = img(q.img); if (q.noimg) it.img = '';
+      }
+    } else if (q.action === 'remove') d.items = d.items.filter(x => x.id !== q.id);
+    else if (q.action === 'toggle') { const it = d.items.filter(x => x.id === q.id)[0]; if (it) it.on = !it.on; }
+    else if (q.action === 'move') {
+      const i = d.items.findIndex(x => x.id === q.id), j = i + (q.dir < 0 ? -1 : 1);
+      if (i >= 0 && j >= 0 && j < d.items.length) { const t = d.items[i]; d.items[i] = d.items[j]; d.items[j] = t; }
+    } else if (q.action === 'settings') {
+      d.seconds = Math.max(4, Math.min(60, Number(q.seconds) || 10)); d.bar = !!q.bar; d.idle = !!q.idle;
+    } else throw new Error('Unbekannte Aktion');
+    // Fernseher laden die Bilder nur neu, wenn sich hier etwas geändert hat
+    if (ctx && ctx.state) ctx.state.sponsorsRev = Date.now();
+    return { ok: true };
+  }
+};
+
 module.exports = EXT;

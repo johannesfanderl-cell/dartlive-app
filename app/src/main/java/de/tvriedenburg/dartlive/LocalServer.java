@@ -187,6 +187,7 @@ public class LocalServer {
         PAGES.put("/icon.svg", "icon.svg");
         PAGES.put("/local.js", "local.js");
         PAGES.put("/local-core.js", "local-core.js");
+        PAGES.put("/sponsor.js", "sponsor.js");
         PAGES.put("/turnier", "turnier.html"); PAGES.put("/turnier-tv", "turnier-tv.html");
         PAGES.put("/liga", "liga.html"); PAGES.put("/liga-tv", "liga-tv.html"); PAGES.put("/liga-bericht", "liga-bericht.html");
         PAGES.put("/statistik", "statistik.html"); PAGES.put("/statistik-tv", "statistik-tv.html");

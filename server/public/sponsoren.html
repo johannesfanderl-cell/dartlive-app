@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Sponsoren – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, input { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 900px; margin: 0 auto; padding: 12px 12px 60px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.sp { display: flex; align-items: center; gap: 12px; } .sp .logo { flex: 0 0 140px; height: 80px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #3f5f99; font-size: 13px; }
+.sp .logo img { max-width: 130px; max-height: 70px; } .sp .t { flex: 1 1 auto; min-width: 0; } .sp .t b { font-size: 18px; } .sp.off { opacity: .45; }
+.btn { display: inline-block; padding: 8px 12px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 5px 0 0; font-size: 14px; text-decoration: none; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; } .btn.warn { background: #6b1d2d; color: #fff; }
+input[type=text] { width: 100%; padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; margin-bottom: 8px; }
+label.f { display: block; color: #b7d3ff; font-size: 14px; margin: 8px 0 4px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; } .seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; line-height: 1.4; }
+#prev { width: 220px; height: 110px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #3f5f99; font-size: 13px; overflow: hidden; margin-bottom: 8px; } #prev img { max-width: 210px; max-height: 100px; }
+#msg { font-weight: bold; min-height: 20px; color: #ffb3b3; }
+</style>
+</head>
+<body>
+<div id="top"><b>Sponsoren</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<script>
+(function () {
+  'use strict';
+  var D = null, edit = null, newImg = '', version = 0;
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest(); r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true);
+    r.onreadystatechange = function () { if (r.readyState !== 4) return; var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d); };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function act(body, cb) { req('POST', '/api/x/sponsors', body, function (e) { if (e) { if ($('msg')) $('msg').innerHTML = esc(e); else alert(e); return; } load(); if (cb) cb(); }); }
+  function load() { req('GET', '/api/x/sponsors', null, function (e, d) { if (!e && d) { D = d; render(); } }); }
+  function render() {
+    if (!D) return;
+    var h = '<h3>Anzeige</h3><div class="card"><label class="f">Wechsel alle</label><div class="seg">';
+    [6, 10, 15, 20, 30].forEach(function (s) { h += '<button data-sec="' + s + '"' + (D.seconds === s ? ' class="on"' : '') + '>' + s + ' s</button>'; });
+    h += '</div><label class="f">Wo erscheinen die Sponsoren?</label><div class="seg"><button data-opt="bar"' + (D.bar ? ' class="on"' : '') + '>Leiste unten am Fernseher</button><button data-opt="idle"' + (D.idle ? ' class="on"' : '') + '>Auf freien Scheiben</button></div>' +
+      '<p class="note">Zusätzlich gibt es eine Diashow nur mit Sponsoren für Pausen: <b>' + esc(location.host) + '/sponsoren-tv</b></p><a class="btn sec" href="/sponsoren-tv" target="_blank">Diashow ansehen</a></div>';
+    h += '<h3>Sponsoren (' + D.items.length + ')</h3>';
+    if (!D.items.length) h += '<p class="note">Noch keine Sponsoren eingetragen.</p>';
+    D.items.forEach(function (it, i) {
+      h += '<div class="card"><div class="sp' + (it.on === false ? ' off' : '') + '"><div class="logo">' + (it.img ? '<img src="' + it.img + '" alt="">' : 'kein Logo') + '</div><div class="t"><b>' + esc(it.name) + '</b><div class="note">' + esc(it.text) + '</div>' +
+        '<button class="btn sec" data-edit="' + it.id + '">Bearbeiten</button><button class="btn sec" data-toggle="' + it.id + '">' + (it.on === false ? 'Einblenden' : 'Ausblenden') + '</button>' +
+        (i > 0 ? '<button class="btn sec" data-up="' + it.id + '">▲</button>' : '') + (i < D.items.length - 1 ? '<button class="btn sec" data-down="' + it.id + '">▼</button>' : '') +
+        '<button class="btn warn" data-rm="' + it.id + '">Löschen</button></div></div></div>';
+    });
+    var e = edit && D.items.filter(function (x) { return x.id === edit; })[0];
+    h += '<h3>' + (e ? 'Sponsor bearbeiten' : 'Neuer Sponsor') + '</h3><div class="card"><label class="f">Name</label><input type="text" id="s-name" value="' + esc(e ? e.name : '') + '" placeholder="z. B. Gasthof zur Post">' +
+      '<label class="f">Text (optional)</label><input type="text" id="s-text" value="' + esc(e ? e.text : '') + '" placeholder="z. B. Danke für die Unterstützung!">' +
+      '<label class="f">Logo (PNG oder JPG, wird automatisch verkleinert)</label><div id="prev">' + (newImg ? '<img src="' + newImg + '">' : (e && e.img ? '<img src="' + e.img + '">' : 'kein Logo')) + '</div>' +
+      '<input type="file" id="s-file" accept="image/*" style="display:none"><button class="btn sec" data-a="pick">Logo auswählen …</button>' + (e && e.img ? '<button class="btn sec" data-a="noimg">Logo entfernen</button>' : '') +
+      '<div id="msg"></div><button class="btn" data-a="save">' + (e ? 'Speichern' : 'Sponsor hinzufügen') + '</button>' + (e ? '<button class="btn sec" data-a="cancel">Abbrechen</button>' : '') + '</div>';
+    $('main').innerHTML = h;
+  }
+  // Bild verkleinern: max. 800 × 400 Pixel, transparente PNGs bleiben PNG
+  function shrink(file, cb) {
+    var rd = new FileReader();
+    rd.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var sc = Math.min(1, 800 / im.width, 400 / im.height), w = Math.round(im.width * sc), hh = Math.round(im.height * sc);
+        var c = document.createElement('canvas'); c.width = w; c.height = hh;
+        var x = c.getContext('2d'); x.drawImage(im, 0, 0, w, hh);
+        var png = /png/i.test(file.type);
+        var out = png ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85);
+        if (png && out.length > 600000) out = c.toDataURL('image/jpeg', 0.85);
+        cb(out);
+      };
+      im.onerror = function () { cb(null); };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+  document.addEventListener('change', function (e) {
+    if (e.target.id !== 's-file' || !e.target.files[0]) return;
+    var keep = { name: $('s-name').value, text: $('s-text').value };
+    shrink(e.target.files[0], function (d) { if (!d) { $('msg').innerHTML = 'Bild konnte nicht gelesen werden'; return; } newImg = d; render(); $('s-name').value = keep.name; $('s-text').value = keep.text; });
+  }, false);
+  document.addEventListener('click', function (e) {
+    var t = e.target; while (t && t !== document.body && !(t.attributes && Array.prototype.some.call(t.attributes, function (a) { return /^data-/.test(a.name); }))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    var g = function (k) { return t.getAttribute(k); };
+    if (g('data-sec')) return act({ action: 'settings', seconds: +g('data-sec'), bar: D.bar, idle: D.idle });
+    if (g('data-opt')) { var o = { action: 'settings', seconds: D.seconds, bar: D.bar, idle: D.idle }; o[g('data-opt')] = !D[g('data-opt')]; return act(o); }
+    if (g('data-edit')) { edit = g('data-edit'); newImg = ''; render(); window.scrollTo(0, document.body.scrollHeight); return; }
+    if (g('data-toggle')) return act({ action: 'toggle', id: g('data-toggle') });
+    if (g('data-up')) return act({ action: 'move', id: g('data-up'), dir: -1 });
+    if (g('data-down')) return act({ action: 'move', id: g('data-down'), dir: 1 });
+    if (g('data-rm')) { if (confirm('Sponsor löschen?')) act({ action: 'remove', id: g('data-rm') }); return; }
+    var a = g('data-a');
+    if (a === 'pick') $('s-file').click();
+    else if (a === 'cancel') { edit = null; newImg = ''; render(); }
+    else if (a === 'noimg') act({ action: 'edit', id: edit, name: $('s-name').value, text: $('s-text').value, noimg: true });
+    else if (a === 'save') {
+      var body = edit ? { action: 'edit', id: edit, name: $('s-name').value, text: $('s-text').value, img: newImg } : { action: 'add', name: $('s-name').value, text: $('s-text').value, img: newImg };
+      act(body, function () { edit = null; newImg = ''; });
+    }
+  }, false);
+  load();
+})();
+</script>
+</body>
+</html>
