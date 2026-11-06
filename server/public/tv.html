@@ -56,6 +56,11 @@ body.single .hd span { font-size: 1.1em; }
 body.single .tr .nm { font-size: 1.9em; }
 body.single .tr .st { font-size: 1.2em; }
 .st.cur { font-weight: bold; opacity: 1; }
+.intro td { background: #10377f; }
+.intro .nm { font-size: 1.7em; margin-bottom: 0.3em; }
+.intro .st { font-size: 1.05em; opacity: 1; line-height: 1.5; }
+body.single .intro .nm { font-size: 3em; }
+body.single .intro .st { font-size: 1.6em; }
 .ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #ffffff; color: #071d47; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #3f6fbf; border-bottom: 0.15em solid #3f6fbf; }
 </style>
 </head>
@@ -76,6 +81,39 @@ body.single .tr .st { font-size: 1.2em; }
   if (qm) { list = []; for (var q = 0; q < qm[1].length; q++) list.push(parseInt(qm[1].charAt(q), 10)); }
 
   var state = null, version = 0, seenBanner = {}, bannerUntil = {}, first = true;
+  var seenMid = {}, intro = {}, stats = null;
+
+  /* Einlauf: Vor Turnier-, Liga- und Vereinsliga-Spielen erscheinen beide Spieler mit ihrer Statistik */
+  function loadStats() {
+    var r = new XMLHttpRequest();
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (!d) return;
+      var S = {}, ms = d.matches || [];
+      for (var i = 0; i < ms.length; i++) {
+        if (ms[i].doubles) continue;
+        for (var k = 0; k < 2; k++) {
+          var p = ms[i].players[k], key = p.name.toLowerCase();
+          var s = S[key] || (S[key] = { games: 0, wins: 0, sum: 0, darts: 0, hf: 0, c180: 0 });
+          s.games++; if (ms[i].winner === k) s.wins++;
+          s.sum += p.sum; s.darts += p.darts || p.visits * 3; s.c180 += p.c180 || 0; if (p.hf > s.hf) s.hf = p.hf;
+        }
+      }
+      stats = S; render();
+    };
+    r.open('GET', '/api/matches?_=' + new Date().getTime(), true); r.send();
+  }
+  function introBlock(n, b) {
+    var h = '<table class="duo intro"><tr>';
+    for (var i = 0; i < 2; i++) {
+      var p = b.players[i], s = stats && stats[p.name.toLowerCase()];
+      h += '<td class="' + (i === 0 ? 'l' : 'r') + '"><div class="nm">' + esc(p.name) + '</div>' +
+        (s ? '<div class="st">&Oslash; ' + (s.darts ? (s.sum / s.darts * 3).toFixed(1).replace('.', ',') : '–') + '</div><div class="st">' + s.games + ' Spiele &middot; ' + s.wins + ' Siege</div>' +
+          '<div class="st">High Finish ' + (s.hf || '–') + (s.c180 ? ' &middot; ' + s.c180 + '&times; 180' : '') + '</div>' : '<div class="st">' + (stats ? 'erstes Spiel' : '&nbsp;') + '</div>') + '</td>';
+    }
+    return h + '</tr></table>';
+  }
   var base = 20;
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -96,8 +134,12 @@ body.single .tr .st { font-size: 1.2em; }
     var h = '<div class="pn" id="pn' + n + '">';
     var info = '';
     if (b.status === 'play') info = 'Leg ' + b.leg + ' · FT' + b.legsToWin + ' · ' + b.start + (b.doubleOut ? ' DO' : '');
+    var showIntro = b.status === 'play' && b.players && intro[n] && intro[n] > new Date().getTime();
+    if (showIntro) info = (b.tlabel || 'Spiel') + ' · First to ' + b.legsToWin;
     h += '<div class="hd"><b>Scheibe ' + n + '</b><span>' + (esc(info) || '&nbsp;') + '</span></div>';
-    if (b.status === 'training' && b.view) {
+    if (showIntro) {
+      h += introBlock(n, b);
+    } else if (b.status === 'training' && b.view) {
       var vw = b.view, rows = vw.rows || [];
       h = '<div class="pn' + (rows.length > 2 ? ' many' : '') + (rows.length > 4 ? ' lots' : '') + '" id="pn' + n + '">';
       h += single ? '<div class="hd"><b>' + esc(vw.title) + '</b><span>' + esc(vw.sub || '') + '</span></div>'
@@ -136,7 +178,7 @@ body.single .tr .st { font-size: 1.2em; }
     } else {
       h += '<div class="idle"><div><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
     }
-    if (b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
+    if (!showIntro && b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
     h += '</div>';
     return h;
   }
@@ -161,12 +203,21 @@ body.single .tr .st { font-size: 1.2em; }
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
         if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
-        else if (c === 'idle' || c === 'win' || c === 'duo') kids[k].style.height = rest + 'px';
+        else if (c === 'idle' || c === 'win' || /duo/.test(c)) kids[k].style.height = rest + 'px';
       }
     }
   }
 
   function apply(data) {
+    var nowI = new Date().getTime();
+    for (var x = 0; x < list.length; x++) {
+      var nn = list[x], bb = data.boards && data.boards[nn];
+      if (bb && bb.status === 'play' && bb.mid && seenMid[nn] !== bb.mid) {
+        if (!first && (bb.tmatch || bb.vliga || bb.league) && bb.leg === 1 && bb.players && !bb.players[0].visits && !bb.players[1].visits) { intro[nn] = nowI + 9000; loadStats(); }
+        seenMid[nn] = bb.mid;
+      }
+      if (bb && bb.status === 'play' && bb.players && (bb.players[0].visits || bb.players[1].visits)) intro[nn] = 0;
+    }
     if (!data || !data.boards) return;
     var now = new Date().getTime();
     for (var i = 0; i < list.length; i++) {
@@ -212,6 +263,7 @@ body.single .tr .st { font-size: 1.2em; }
   setInterval(function () {
     var now = new Date().getTime(), redraw = false;
     for (var n in bannerUntil) if (bannerUntil[n] && bannerUntil[n] <= now) { bannerUntil[n] = 0; redraw = true; }
+    for (var n2 in intro) if (intro[n2] && intro[n2] <= now) { intro[n2] = 0; redraw = true; }
     if (redraw) render();
   }, 1000);
   setInterval(clock, 15000);

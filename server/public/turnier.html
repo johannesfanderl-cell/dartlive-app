@@ -123,7 +123,8 @@ tr.q td { background: rgba(140,196,255,.12); }
   function render() {
     var T = S && S.tournament;
     var h;
-    if (T && T.type === 'league') h = '<div class="card"><p>Gerade läuft ein Liga-Spieltag (' + esc(T.name) + '). Verwaltung unter <a href="/liga" style="color:#8cc4ff">/liga</a>. Ein Turnier kann erst angelegt werden, wenn der Spieltag dort gelöscht wurde.</p></div>';
+    if (T && T.type === 'blind') h = '<div class="card"><p>Gerade läuft ein Blind-Doppel (' + esc(T.name) + '). Verwaltung unter <a href="/blind" style="color:#8cc4ff">/blind</a>.</p></div>';
+    else if (T && T.type === 'league') h = '<div class="card"><p>Gerade läuft ein Liga-Spieltag (' + esc(T.name) + '). Verwaltung unter <a href="/liga" style="color:#8cc4ff">/liga</a>. Ein Turnier kann erst angelegt werden, wenn der Spieltag dort gelöscht wurde.</p></div>';
     else if (!T) h = createHTML();
     else if (T.status === 'setup') h = setupHTML(T);
     else h = runHTML(T);

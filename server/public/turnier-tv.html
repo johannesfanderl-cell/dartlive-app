@@ -62,9 +62,19 @@ table.t tr.q td.nm { font-weight: bold; }
     if (!T) { el('title').innerHTML = 'Dart Live · Turnier'; el('wrap').innerHTML = '<div class="empty">Kein Turnier angelegt</div>'; return; }
     var phase = { setup: 'Auslosung', groups: 'Gruppenphase', ko: 'K.-o.-Runde', done: 'Beendet' }[T.status];
     el('title').innerHTML = esc(T.name) + ' &middot; <span class="ph">' + phase + '</span>';
+    if (T.type === 'blind') { el('title').innerHTML = esc(T.name) + ' &middot; <span class="ph">' + (T.status === 'done' ? 'Beendet' : 'Runde ' + T.round + ' von ' + T.cfg.rounds) + '</span>'; el('wrap').innerHTML = blindView(T); return; }
     if (T.status === 'setup') el('wrap').innerHTML = setupView(T);
     else if (T.status === 'groups') el('wrap').innerHTML = groupView(T);
     else el('wrap').innerHTML = koView(T);
+  }
+  function blindView(T) {
+    var tab = S.blindTable || [], h = T.status === 'done' ? '<div class="champ">&#127942; ' + esc(T.champion) + '</div>' : '';
+    h += '<table class="cols"><tr><td style="width:45%"><div class="box"><div class="h">Wertung</div><table class="t"><tr><th style="width:1.6em">#</th><th style="text-align:left">Spieler</th><th style="width:2em">Sp</th><th style="width:2em">S</th><th style="width:3.2em">Quote</th></tr>';
+    for (var i = 0; i < tab.length && i < 16; i++) { var r = tab[i]; h += '<tr' + (i === 0 ? ' class="q"' : '') + '><td class="c">' + r.rank + '</td><td class="nm">' + esc(r.name) + '</td><td class="c">' + r.played + '</td><td class="c">' + r.won + '</td><td class="p">' + Math.round(r.quote * 100) + '%</td></tr>'; }
+    h += '</table></div></td><td><div class="h" style="margin-bottom:0.4em">Runde ' + T.round + '</div>';
+    for (var k = 0; k < T.matches.length; k++) if (T.matches[k].round === T.round) h += kmatch(T.matches[k]);
+    if (T.sitting && T.sitting.length && T.status !== 'done') h += '<div class="km"><div class="lab">Pause</div><table><tr><td>' + T.sitting.map(esc).join(', ') + '</td></tr></table></div>';
+    return h + '</td></tr></table>';
   }
   function setupView(T) {
     var h = '<table class="cols"><tr>';

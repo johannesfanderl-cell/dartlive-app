@@ -50,7 +50,9 @@ function createCore(storage) {
   function decorate() {
     const T = state.tournament;
     delete state.leagueScore;
+    delete state.blindTable;
     if (T && T.type === 'league') { delete state.standings; state.leagueScore = TN.leagueScore(T); return; }
+    if (T && T.type === 'blind') { delete state.standings; state.blindTable = TN.blindStandings(T); return; }
     if (!T || T.status === 'setup') { delete state.standings; return; }
     const q = {};
     try { TN.qualifiers(T).forEach(function (x) { q[x.name] = 1; }); } catch (e) { /* noch keine Ergebnisse */ }
@@ -126,6 +128,7 @@ function createCore(storage) {
         switch (q.action) {
           case 'create': state.tournament = TN.create(q); break;
           case 'league': state.tournament = TN.createLeague(q); TN.schedule(state.tournament, state.boards); break;
+          case 'blind': state.tournament = TN.createBlind(q); TN.schedule(state.tournament, state.boards); break;
           case 'delete': state.tournament = null; break;
           default:
             if (!T) throw new Error('Kein Turnier angelegt');

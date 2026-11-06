@@ -207,6 +207,10 @@ public class LocalServer {
                         new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
             }
             String file = PAGES.get(path);
+            if (file == null && path.matches("/[a-z0-9-]+")) {
+                // neue Seiten automatisch: /name -> name.html
+                try { ctx.getAssets().open(path.substring(1) + ".html").close(); file = path.substring(1) + ".html"; } catch (Exception ignored) { }
+            }
             if (file == null) return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", headers, new ByteArrayInputStream(new byte[0]));
             InputStream in = ctx.getAssets().open(file);
             String mime = file.endsWith(".svg") ? "image/svg+xml" : (file.endsWith(".js") ? "application/javascript" : "text/html");

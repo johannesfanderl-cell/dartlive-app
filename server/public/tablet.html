@@ -224,7 +224,7 @@ input { font-family: inherit; }
         if (b && (b.status === 'play' || b.status === 'done') && b.players && b.players.length === 2) { setup.n1 = b.players[0].name; setup.n2 = b.players[1].name; setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false; }
       }
       render();
-      if (!watching) { watching = true; setTimeout(watch, 500); }
+      if (!watching) { watching = true; setTimeout(watch, 500); loadVliga(function () { if (board.status !== 'play' && !(document.activeElement && document.activeElement.tagName === 'INPUT')) render(); }); }
     });
   }
 
@@ -277,9 +277,10 @@ input { font-family: inherit; }
     return 3;
   }
 
-  function startMatch(n1, n2, start, legs, dout, first, tm, starts) {
+  function startMatch(n1, n2, start, legs, dout, first, tm, starts, vl) {
     board = {
-      tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : undefined,
+      vliga: vl ? vl.id : undefined,
+      tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : (vl ? 'Vereinsliga' : undefined),
       league: tm && tour && tour.type === 'league' ? tour.homeTeam + ' – ' + tour.guestTeam : undefined,
       doubles: tm && tm.doubles ? true : undefined, members: tm && tm.doubles ? [tm.hp, tm.gp] : undefined,
       status: 'play', start: start, legsToWin: legs, doubleOut: dout,
@@ -402,7 +403,7 @@ input { font-family: inherit; }
     } else if (tour && tour.type === 'league' && tour.status === 'league') {
       h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': ' + (tour.cfg.boards.indexOf(N) >= 0 ? 'Das nächste Spiel für diese Scheibe erscheint hier automatisch.' : 'Im Ligabetrieb wird auf Scheibe ' + tour.cfg.boards.join(' und ') + ' gespielt.') + '</p>';
     }
-    else if (tour && (tour.status === 'groups' || tour.status === 'ko')) {
+    else if (tour && (tour.status === 'groups' || tour.status === 'ko' || tour.status === 'blind')) {
       h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
     }
     h += '<h2>' + (tm ? 'Oder freies Spiel' : 'Neues Spiel') + '</h2>';
@@ -435,6 +436,7 @@ input { font-family: inherit; }
       '<button data-first="1"' + (setup.first === 1 ? ' class="on"' : '') + '>' + esc(setup.n2 || 'Spieler 2') + '</button></div></div>';
     h += '<div class="hint">' + esc(msg) + '</div>';
     h += '<button class="big" data-a="start">Spiel starten</button>';
+    if (vliga && vliga.season) h += '<button class="big sec" data-a="vliga">Vereinsliga-Spiel (' + esc(vliga.season.name) + ')</button>';
     h += '<button class="big sec" data-a="training">Training &amp; Bestenliste</button></div>';
     return h;
   }
@@ -539,7 +541,7 @@ input { font-family: inherit; }
       dialog('Menü', board.players[0].name + ' gegen ' + board.players[1].name, [
         { label: 'Spiel abbrechen', fn: function () {
           dialog('Wirklich abbrechen?', 'Das laufende Spiel wird beendet und nicht gewertet.', [
-            { label: 'Ja, abbrechen', fn: function () { board = { status: 'idle', tmatch: board.tmatch }; undo = []; save(); render(); } },
+            { label: 'Ja, abbrechen', fn: function () { board = { status: 'idle', tmatch: board.tmatch, vliga: board.vliga }; undo = []; save(); render(); } },
             { label: 'Nein, weiterspielen', sec: true }
           ]);
         } },
@@ -551,6 +553,7 @@ input { font-family: inherit; }
     } else if (a === 'new') { board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
     else if (a === 'training') { location.href = '/t' + N; }
     else if (a === 'hcsuggest') { readNames(); suggestHandicap(); }
+    else if (a === 'vliga') { readNames(); chooseVliga(); }
     else if (a === 'free') { setup.n1 = ''; setup.n2 = ''; board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
   }
 
@@ -576,6 +579,31 @@ input { font-family: inherit; }
   }, false);
   window.addEventListener('resize', scale, false);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && dirty) save(); }, false);
+
+  /* ---------- Vereinsliga ---------- */
+  var vliga = null;
+  function loadVliga(cb) { xhr('GET', '/api/x/vliga', null, function (err, d) { if (!err && d) vliga = d; if (cb) cb(); }); }
+  function chooseVliga() {
+    loadVliga(function () {
+      if (!vliga || !vliga.season) { toast('Keine Vereinsliga angelegt'); return; }
+      var open = vliga.games.filter(function (g) { return g.status === 'open'; });
+      // Wenn oben Namen eingetragen sind: deren Paarungen zuerst
+      var n1 = setup.n1.toLowerCase(), n2 = setup.n2.toLowerCase();
+      function score(g) { var a = g.p1.toLowerCase(), b = g.p2.toLowerCase(); return (n1 && (a === n1 || b === n1) ? 2 : 0) + (n2 && (a === n2 || b === n2) ? 2 : 0); }
+      open.sort(function (x, y) { return score(y) - score(x); });
+      if (!open.length) { toast('Alle Vereinsliga-Spiele sind gespielt'); return; }
+      var btns = open.slice(0, 8).map(function (g) { return { label: g.p1 + ' – ' + g.p2, fn: function () { pickBegin(g); } }; });
+      btns.push({ label: 'Abbrechen', sec: true });
+      dialog('Vereinsliga: offene Paarungen', open.length + ' Spiele offen' + (open.length > 8 ? ' (Namen oben eintragen, um zu filtern)' : ''), btns);
+    });
+  }
+  function pickBegin(g) {
+    dialog('Wer beginnt?', g.p1 + ' – ' + g.p2 + ' · First to ' + vliga.season.legs, [
+      { label: g.p1 + ' beginnt', fn: function () { startMatch(g.p1, g.p2, vliga.season.start, vliga.season.legs, true, 0, null, null, g); } },
+      { label: g.p2 + ' beginnt', fn: function () { startMatch(g.p1, g.p2, vliga.season.start, vliga.season.legs, true, 1, null, null, g); } },
+      { label: 'Abbrechen', sec: true }
+    ]);
+  }
 
   /* Handicap-Vorschlag: der Stärkere startet mit den normalen Punkten, der Schwächere mit
      so viel weniger, dass beide im Schnitt gleich viele Darts brauchen (gerundet auf 25). */

@@ -166,6 +166,72 @@ function leagueScore(T) {
   return { home: h, guest: g, legsHome: lh, legsGuest: lg, running: run };
 }
 
+/* ---------- Blind-Doppel: jede Runde neue, zugeloste Partner ---------- */
+function createBlind(opts) {
+  const seen = {};
+  const players = (opts.players || []).map(p => String(p).replace(/[<>]/g, '').trim().slice(0, 24)).filter(p => p && !seen[p.toLowerCase()] && (seen[p.toLowerCase()] = 1));
+  if (players.length < 4) throw new Error('Mindestens 4 Spieler eintragen');
+  const T = {
+    id: uid(), type: 'blind', status: 'blind', name: String(opts.name || 'Blind-Doppel').slice(0, 60),
+    cfg: { start: Number(opts.start) === 301 ? 301 : 501, legs: Math.max(1, Math.min(9, Number(opts.legs) || 2)), doubleOut: opts.doubleOut !== false,
+      rounds: Math.max(1, Math.min(12, Number(opts.rounds) || 4)),
+      boards: Array.isArray(opts.boards) && opts.boards.length ? opts.boards.map(Number).filter(n => n >= 1 && n <= 5) : [1, 2, 3, 4, 5] },
+    players: players, round: 0, sitOut: {}, partners: {}, matches: [], groups: [], created: new Date().toISOString()
+  };
+  players.forEach(p => { T.sitOut[p] = 0; });
+  nextBlindRound(T);
+  return T;
+}
+
+function pairKey(a, b) { return a < b ? a + '|' + b : b + '|' + a; }
+
+function nextBlindRound(T) {
+  if (T.round >= T.cfg.rounds) throw new Error('Alle Runden sind gespielt');
+  if (T.matches.some(m => m.round === T.round && m.status !== 'done')) throw new Error('Die aktuelle Runde läuft noch');
+  const n = T.players.length, active = Math.floor(n / 4) * 4;
+  // Wer am seltensten Pause hatte, setzt zuerst aus
+  const order = shuffle(T.players).sort((a, b) => T.sitOut[a] - T.sitOut[b]);
+  const sitting = order.slice(0, n - active), play = order.slice(n - active);
+  let best = null, bestScore = Infinity;
+  for (let tries = 0; tries < 300; tries++) {
+    const sh = shuffle(play);
+    let score = 0;
+    for (let i = 0; i < sh.length; i += 2) score += (T.partners[pairKey(sh[i], sh[i + 1])] || 0) * 10;
+    for (let i = 0; i < sh.length; i += 4) { /* Gegner-Wiederholungen weniger schlimm */
+      [[0, 2], [0, 3], [1, 2], [1, 3]].forEach(x => { if (sh[i + x[0]] && sh[i + x[1]]) score += (T.partners['vs:' + pairKey(sh[i + x[0]], sh[i + x[1]])] || 0); });
+    }
+    if (score < bestScore) { bestScore = score; best = sh; if (!score) break; }
+  }
+  T.round++;
+  sitting.forEach(p => { T.sitOut[p]++; });
+  T.sitting = sitting;
+  let order2 = T.matches.length;
+  for (let i = 0; i < best.length; i += 4) {
+    const hp = [best[i], best[i + 1]], gp = [best[i + 2], best[i + 3]];
+    T.partners[pairKey(hp[0], hp[1])] = (T.partners[pairKey(hp[0], hp[1])] || 0) + 1;
+    T.partners[pairKey(gp[0], gp[1])] = (T.partners[pairKey(gp[0], gp[1])] || 0) + 1;
+    hp.forEach(a => gp.forEach(b => { T.partners['vs:' + pairKey(a, b)] = (T.partners['vs:' + pairKey(a, b)] || 0) + 1; }));
+    T.matches.push({ id: uid(), phase: 'blind', round: T.round, label: 'Runde ' + T.round + ' · Doppel ' + (i / 4 + 1), doubles: true, hp: hp, gp: gp,
+      p1: hp.join(' / '), p2: gp.join(' / '), status: 'pending', board: null, legs: null, winner: null, order: order2++, legsToWin: T.cfg.legs });
+  }
+}
+
+function blindStandings(T) {
+  const S = {};
+  T.players.forEach(p => { S[p] = { name: p, played: 0, won: 0, lost: 0, lf: 0, la: 0, pts: 0, sat: T.sitOut[p] || 0 }; });
+  T.matches.forEach(m => {
+    if (m.status !== 'done' || !m.legs) return;
+    m.hp.forEach(p => { const s = S[p]; if (!s) return; s.played++; s.lf += m.legs[0]; s.la += m.legs[1]; if (m.winner === m.p1) { s.won++; s.pts += 2; } else s.lost++; });
+    m.gp.forEach(p => { const s = S[p]; if (!s) return; s.played++; s.lf += m.legs[1]; s.la += m.legs[0]; if (m.winner === m.p2) { s.won++; s.pts += 2; } else s.lost++; });
+  });
+  const arr = Object.keys(S).map(k => S[k]);
+  arr.forEach(s => { s.diff = s.lf - s.la; s.quote = s.played ? s.won / s.played : 0; });
+  // Wer öfter aussetzen musste, wird über die Siegquote nicht benachteiligt
+  arr.sort((a, b) => (b.quote - a.quote) || (b.pts - a.pts) || (b.diff - a.diff) || a.name.localeCompare(b.name));
+  arr.forEach((s, i) => { s.rank = i + 1; });
+  return arr;
+}
+
 /* ---------- Spielplan ---------- */
 function roundRobin(players) {
   // Kreisverfahren; bei ungerader Zahl spielfreier Platzhalter
@@ -395,6 +461,14 @@ function resetMatch(T, id) {
 }
 
 function afterChange(T) {
+  if (T.type === 'blind') {
+    const cur = T.matches.filter(m => m.round === T.round);
+    if (cur.length && cur.every(m => m.status === 'done')) {
+      if (T.round < T.cfg.rounds) nextBlindRound(T);
+      else { T.status = 'done'; T.champion = blindStandings(T)[0].name; }
+    } else if (T.status === 'done') { T.status = 'blind'; T.champion = null; }
+    schedule(T); return;
+  }
   if (T.type === 'league') { if (T.matches.every(m => m.status === 'done')) T.status = 'done'; else T.status = 'league'; schedule(T); return; }
   propagate(T);
   if (T.status === 'groups' && groupsDone(T)) buildKO(T);
@@ -418,7 +492,7 @@ function lastEnd(T, p) {
 }
 
 function schedule(T, boardsState) {
-  if (T.status !== 'groups' && T.status !== 'ko' && T.status !== 'league') return;
+  if (T.status !== 'groups' && T.status !== 'ko' && T.status !== 'league' && T.status !== 'blind') return;
   const used = {};
   T.matches.forEach(m => { if ((m.status === 'assigned' || m.status === 'running') && m.board) used[m.board] = 1; });
   const free = T.cfg.boards.filter(n => !used[n] && !(boardsState && boardsState[n] && boardsState[n].status === 'play' && !boardsState[n].tmatch));
@@ -502,4 +576,4 @@ function unassign(T, id) {
   m.status = 'pending'; m.board = null;
 }
 
-module.exports = { createLeague, setDoubles, substitute, leagueScore, create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };
+module.exports = { createBlind, nextBlindRound, blindStandings, createLeague, setDoubles, substitute, leagueScore, create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };
