@@ -8,40 +8,43 @@
 <style>
 /* Bewusst einfaches CSS (Tabellen), damit auch alte Fernseh-Browser es darstellen */
 * { margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
-body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
-#bar { height: 1.8em; line-height: 1.8em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #fff; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1120; }
+body { color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.8em; line-height: 1.8em; padding: 0 0.8em; background: #131c31; border-bottom: 1px solid #26324f; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
 #bar .r { float: right; }
-#bar .ph { color: #8cc4ff; }
+#bar .ph { color: #7cb2ff; }
 table.cols { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0.4em; }
 table.cols > tbody > tr > td { vertical-align: top; }
-.box { background: #0b2d6b; border: 0.08em solid #3f6fbf; }
-.h { background: #10377f; padding: 0.25em 0.5em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; }
+.box { background: #131c31; border: 0.08em solid #2e3d61; }
+.h { background: #1c2741; padding: 0.25em 0.5em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; overflow: hidden; }
 table.t { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.t td, table.t th { padding: 0.18em 0.35em; border-top: 0.05em solid #23498f; white-space: nowrap; overflow: hidden; }
-table.t th { color: #b7d3ff; font-weight: normal; font-size: 0.7em; text-transform: uppercase; text-align: center; }
+table.t td, table.t th { padding: 0.18em 0.35em; border-top: 0.05em solid #253150; white-space: nowrap; overflow: hidden; }
+table.t th { color: #9fb0cf; font-weight: normal; font-size: 0.7em; text-transform: uppercase; text-align: center; }
 table.t td.c { text-align: center; }
 table.t td.p { text-align: center; font-weight: bold; }
-table.t tr.q td { background: #1d4f99; }
+table.t tr.q td { background: #1e3a7a; }
 table.t tr.q td.nm { font-weight: bold; }
 .ml td { font-size: 0.95em; }
-.live { color: #8cff9e; font-weight: bold; }
-.km { background: #0b2d6b; border: 0.08em solid #3f6fbf; margin-bottom: 0.5em; }
+.live { color: #5ee88a; font-weight: bold; }
+.km { background: #131c31; border: 0.08em solid #2e3d61; margin-bottom: 0.5em; }
 .km table { width: 100%; border-collapse: collapse; }
 .km td { padding: 0.25em 0.45em; white-space: nowrap; overflow: hidden; }
-.km td.s { width: 2.2em; text-align: center; font-weight: bold; background: #10377f; }
-.km tr.w td { background: #ffffff; color: #071d47; font-weight: bold; }
-.km tr.w td.s { background: #dfe9fa; }
-.km .lab { font-size: 0.7em; color: #b7d3ff; padding: 0.15em 0.45em; text-transform: uppercase; letter-spacing: 0.05em; }
-.km.run { border-color: #8cff9e; }
-.champ { margin: 0.4em; padding: 0.5em; text-align: center; background: #fff; color: #071d47; font-size: 2.2em; font-weight: bold; text-transform: uppercase; }
-.empty { padding: 3em 1em; text-align: center; font-size: 1.6em; color: #b7d3ff; }
+.km td.s { width: 2.2em; text-align: center; font-weight: bold; background: #1c2741; }
+.km tr.w td { background: #2f6fed; color: #ffffff; font-weight: bold; }
+.km tr.w td.s { background: #1f57c9; }
+.km .lab { font-size: 0.7em; color: #9fb0cf; padding: 0.15em 0.45em; text-transform: uppercase; letter-spacing: 0.05em; }
+.km.run { border-color: #5ee88a; }
+.champ { margin: 0.4em; padding: 0.5em; text-align: center; background: #2f6fed; color: #ffffff; font-size: 2.2em; font-weight: bold; text-transform: uppercase; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.6em; color: #9fb0cf; }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
 <div id="bar"><span class="r" id="clock"></span><span id="title">Turnier</span></div>
 <div id="wrap"><div class="empty">Lade …</div></div>
-<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #2e3d61"></div>
 <script src="/sponsor.js"></script>
 <script>
 (function () {
@@ -76,7 +79,7 @@ table.t tr.q td.nm { font-weight: bold; }
     else el('wrap').innerHTML = koView(T);
   }
   function blindView(T) {
-    var tab = S.blindTable || [], h = T.status === 'done' ? '<div class="champ">&#127942; ' + esc(T.champion) + '</div>' : '';
+    var tab = S.blindTable || [], h = T.status === 'done' ? '<div class="champ">&#15803d; ' + esc(T.champion) + '</div>' : '';
     h += '<table class="cols"><tr><td style="width:45%"><div class="box"><div class="h">Wertung</div><table class="t"><tr><th style="width:1.6em">#</th><th style="text-align:left">Spieler</th><th style="width:2em">Sp</th><th style="width:2em">S</th><th style="width:3.2em">Quote</th></tr>';
     for (var i = 0; i < tab.length && i < 16; i++) { var r = tab[i]; h += '<tr' + (i === 0 ? ' class="q"' : '') + '><td class="c">' + r.rank + '</td><td class="nm">' + esc(r.name) + '</td><td class="c">' + r.played + '</td><td class="c">' + r.won + '</td><td class="p">' + Math.round(r.quote * 100) + '%</td></tr>'; }
     h += '</table></div></td><td><div class="h" style="margin-bottom:0.4em">Runde ' + T.round + '</div>';
@@ -145,7 +148,7 @@ table.t tr.q td.nm { font-weight: bold; }
     for (i = 0; i < T.matches.length; i++) if (T.matches[i].phase === 'ko') ko.push(T.matches[i]);
     for (i = 0; i < ko.length; i++) if (!seen[ko[i].koRound]) { seen[ko[i].koRound] = 1; rounds.push(ko[i].koRound); }
     rounds.sort(function (a, b) { if (a === 3) return 1; if (b === 3) return -1; return b - a; });
-    var h = T.status === 'done' ? '<div class="champ">&#127942; ' + esc(T.champion) + '</div>' : '';
+    var h = T.status === 'done' ? '<div class="champ">&#15803d; ' + esc(T.champion) + '</div>' : '';
     h += '<table class="cols"><tr>';
     for (var r = 0; r < rounds.length; r++) {
       var list = [];

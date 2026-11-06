@@ -8,32 +8,56 @@
 <title>Dart Live Riedenburg</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; padding: 20px 16px; text-align: center; }
-h1 { font-size: 30px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
-p { color: #b7d3ff; margin-bottom: 18px; }
-h2 { font-size: 18px; margin: 18px 0 8px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; }
-a { display: inline-block; min-width: 130px; margin: 5px; padding: 18px 14px; background: #fff; color: #071d47; font-size: 22px; font-weight: bold; text-decoration: none; border-radius: 10px; }
-a.tv { background: #10377f; color: #fff; border: 2px solid #3f6fbf; }
-small { display: block; font-size: 14px; font-weight: normal; margin-top: 4px; }
+body { background: #0b1120; color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; padding: 28px 16px 40px; }
+.wrap { max-width: 1080px; margin: 0 auto; }
+header { display: flex; align-items: center; gap: 16px; margin-bottom: 26px; }
+header img { width: 56px; height: 56px; border-radius: 16px; box-shadow: 0 10px 30px -10px rgba(47,111,237,.8); }
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -.5px; line-height: 1.1; }
+h1 span { color: #7cb2ff; }
+header p { color: #9fb0cf; font-size: 15px; margin-top: 3px; }
+h2 { font-size: 12px; font-weight: 700; margin: 26px 0 10px; color: #7d8bab; text-transform: uppercase; letter-spacing: 1.6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.grid.boards { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+a { display: block; padding: 16px 18px; background: #151e34; color: #fff; font-size: 18px; font-weight: 700; text-decoration: none; border-radius: 16px; border: 1px solid #26324f; text-align: left; }
+a:hover { border-color: #4a86ff; background: #1a2440; }
+a:active { transform: scale(.98); }
+.boards a { background: #2f6fed; border-color: #4a86ff; font-size: 22px; text-align: center; padding: 22px 12px; box-shadow: 0 10px 26px -14px rgba(47,111,237,.9); }
+.boards a:hover { background: #3a7af5; }
+.boards a b { display: block; font-size: 12px; font-weight: 600; letter-spacing: 1.4px; text-transform: uppercase; color: #cfe0ff; margin-bottom: 2px; }
+small { display: block; font-size: 13.5px; font-weight: 400; margin-top: 4px; color: #9fb0cf; }
+#lokal { margin-top: 30px; color: #9fb0cf; font-size: 14px; text-align: center; }
+#lokal a { display: inline; background: none; border: 0; padding: 0; color: #ff8f8f; font-size: 14px; font-weight: 400; text-decoration: underline; }
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { background-color: #0e1527; color: #ffffff; }
+input::placeholder, textarea::placeholder { color: #5f6e8f; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #4a86ff; box-shadow: 0 0 0 3px rgba(74,134,255,.28); }
+button, .btn, a { -webkit-transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, -webkit-transform .1s ease; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+button:active, .btn:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.card { box-shadow: 0 12px 32px -16px rgba(0,0,0,.7); }
+#top { box-shadow: 0 6px 20px -10px rgba(0,0,0,.6); }
+#dlg .box { border: 1px solid #33456e; box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
+#toast { box-shadow: 0 12px 32px -8px rgba(0,0,0,.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #2e3d61; border-radius: 10px; } ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
-<h1>Dart Live</h1>
-<p>TV Riedenburg · Was soll dieses Gerät anzeigen?</p>
+<div class="wrap">
+<header><img src="/icon.svg" alt=""><div><h1>Dart <span>Live</span></h1><p>TV Riedenburg · Was soll dieses Gerät anzeigen?</p></div></header>
 <h2>Tablet an der Scheibe</h2>
-<a href="/1">Scheibe 1</a><a href="/2">Scheibe 2</a><a href="/3">Scheibe 3</a><a href="/4">Scheibe 4</a><a href="/5">Scheibe 5</a>
+<div class="grid boards"><a href="/1"><b>Scheibe</b>1</a><a href="/2"><b>Scheibe</b>2</a><a href="/3"><b>Scheibe</b>3</a><a href="/4"><b>Scheibe</b>4</a><a href="/5"><b>Scheibe</b>5</a></div>
 <h2>Fernseher</h2>
-<a class="tv" href="/tv1">Fernseher 1<small>Scheiben 1–3</small></a><a class="tv" href="/tv2">Fernseher 2<small>Scheiben 4–5</small></a><a class="tv" href="/tv">Alle 5<small>Scheiben 1–5</small></a>
+<div class="grid"><a href="/tv1">Fernseher 1<small>Scheiben 1–3</small></a><a href="/tv2">Fernseher 2<small>Scheiben 4–5</small></a><a href="/tv">Alle 5<small>Scheiben 1–5</small></a></div>
 <h2>Turnier</h2>
-<a class="tv" href="/turnier">Turnierleitung<small>Anlegen, Spiele, Ergebnisse</small></a><a class="tv" href="/turnier-tv">Turnier-Anzeige<small>für den Fernseher</small></a><a class="tv" href="/bestenliste">Bestenliste<small>Training</small></a>
-<a class="tv" href="/blind">Blind-Doppel<small>Partner werden zugelost</small></a><a class="tv" href="/vereinsliga">Vereinsliga<small>jeder gegen jeden</small></a>
+<div class="grid"><a href="/turnier">Turnierleitung<small>Anlegen, Spiele, Ergebnisse</small></a><a href="/turnier-tv">Turnier-Anzeige<small>für den Fernseher</small></a><a href="/bestenliste">Bestenliste<small>Training</small></a><a href="/blind">Blind-Doppel<small>Partner werden zugelost</small></a><a href="/vereinsliga">Vereinsliga<small>jeder gegen jeden</small></a></div>
 <h2>Liga-Heimspiel</h2>
-<a class="tv" href="/liga">Spieltag<small>Aufstellung, Spiele, Bericht</small></a><a class="tv" href="/liga-tv">Spieltag-Anzeige<small>für den Fernseher</small></a>
+<div class="grid"><a href="/liga">Spieltag<small>Aufstellung, Spiele, Bericht</small></a><a href="/liga-tv">Spieltag-Anzeige<small>für den Fernseher</small></a></div>
 <h2>Statistik</h2>
-<a class="tv" href="/statistik">Spielerstatistik<small>Average, 180er, Finishes</small></a><a class="tv" href="/statistik-tv">Ehrentafel<small>für den Fernseher</small></a><a class="tv" href="/rangliste">Vereinsrangliste<small>Elo, Punkte, Siegquote</small></a><a class="tv" href="/rangliste-tv">Rangliste<small>für den Fernseher</small></a>
+<div class="grid"><a href="/statistik">Spielerstatistik<small>Average, 180er, Finishes</small></a><a href="/statistik-tv">Ehrentafel<small>für den Fernseher</small></a><a href="/rangliste">Vereinsrangliste<small>Elo, Punkte, Siegquote</small></a><a href="/rangliste-tv">Rangliste<small>für den Fernseher</small></a></div>
 <h2>Verein</h2>
-<a class="tv" href="/getraenke">Strichliste<small>Getränke &amp; Abrechnung</small></a><a class="tv" href="/termine">Anmeldelisten<small>Zu- und Absagen</small></a><a class="tv" href="/verwaltung">Verwaltung<small>Datensicherung</small></a><a class="tv" href="/checkliste">Checkliste<small>für den Spielabend</small></a><a class="tv" href="/kurzanleitung">Kurzanleitung<small>zum Laminieren</small></a><a class="tv" href="/sponsoren">Sponsoren<small>für die Fernseher</small></a><a class="tv" href="/sponsoren-tv">Sponsoren-Diashow<small>für Pausen</small></a>
-<p id="lokal" style="display:none;margin-top:26px;color:#b7d3ff;font-size:14px">Betrieb ohne Server – alle Daten liegen nur auf diesem Gerät.<br><a href="#" id="reset" style="color:#ffb3b3;display:inline;background:none;padding:0;min-width:0;font-size:14px;font-weight:normal">Alle Testdaten auf diesem Gerät löschen</a></p>
+<div class="grid"><a href="/getraenke">Strichliste<small>Getränke &amp; Abrechnung</small></a><a href="/termine">Anmeldelisten<small>Zu- und Absagen</small></a><a href="/verwaltung">Verwaltung<small>Datensicherung</small></a><a href="/checkliste">Checkliste<small>für den Spielabend</small></a><a href="/kurzanleitung">Kurzanleitung<small>zum Laminieren</small></a><a href="/sponsoren">Sponsoren<small>für die Fernseher</small></a><a href="/sponsoren-tv">Sponsoren-Diashow<small>für Pausen</small></a></div>
+<p id="lokal" style="display:none">Betrieb ohne Server – alle Daten liegen nur auf diesem Gerät.<br><a href="#" id="reset">Alle Testdaten auf diesem Gerät löschen</a></p>
+</div>
 <script>
 (function () {
   if (!window.DartLokal) return;

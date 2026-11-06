@@ -8,36 +8,49 @@
 <title>Statistik – Dart Live</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+body { background: #0b1120; color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 16px; }
 button, select { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; border: 0; color: inherit; background: none; }
-#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #131c31; border-bottom: 1px solid #26324f; }
 #top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
-#top a { color: #b7d3ff; font-size: 14px; }
+#top a { color: #9fb0cf; font-size: 14px; }
 #main { max-width: 1150px; margin: 0 auto; padding: 14px 16px 60px; }
 h2 { font-size: 20px; margin: 4px 0 10px; }
-h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+h3 { font-size: 14px; color: #9fb0cf; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
 .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
-.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
-.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; overflow-x: auto; }
+.seg button { padding: 8px 12px; border-radius: 12px; background: #1c2741; border: 1px solid #2e3d61; margin: 0 6px 6px 0; }
+.seg button.on { background: #2f6fed; color: #ffffff; font-weight: bold; }
+.card { background: #131c31; border: 1px solid #2e3d61; border-radius: 16px; padding: 10px 12px; margin-bottom: 12px; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
-td, th { padding: 8px 6px; border-bottom: 1px solid #23498f; text-align: right; white-space: nowrap; }
+td, th { padding: 8px 6px; border-bottom: 1px solid #253150; text-align: right; white-space: nowrap; }
 td:first-child, th:first-child, td.l, th.l { text-align: left; }
-th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; cursor: pointer; user-select: none; }
+th { color: #9fb0cf; font-weight: normal; font-size: 12px; text-transform: uppercase; cursor: pointer; user-select: none; }
 th.s { color: #fff; font-weight: bold; }
-tr.pl { cursor: pointer; } tr.pl:hover td { background: #10377f; }
+tr.pl { cursor: pointer; } tr.pl:hover td { background: #1c2741; }
 td.b { font-weight: bold; }
 .tiles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-.tile { flex: 1 1 150px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; }
-.tile small { display: block; color: #b7d3ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.tile { flex: 1 1 150px; background: #131c31; border: 1px solid #2e3d61; border-radius: 16px; padding: 10px 12px; }
+.tile small { display: block; color: #9fb0cf; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
 .tile b { display: block; font-size: 26px; margin-top: 4px; }
-.tile span { display: block; font-size: 13px; color: #b7d3ff; margin-top: 2px; }
-.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
-.back { display: inline-block; margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; }
-.del { padding: 3px 8px; border-radius: 5px; background: #3a1f4f; font-size: 13px; }
-.win { color: #8cff9e; font-weight: bold; } .loss { color: #ffb3b3; }
-svg text { fill: #b7d3ff; font-size: 11px; }
+.tile span { display: block; font-size: 13px; color: #9fb0cf; margin-top: 2px; }
+.note { color: #9fb0cf; font-size: 14px; margin: 6px 0; }
+.back { display: inline-block; margin-bottom: 10px; padding: 8px 12px; border-radius: 12px; background: #1c2741; border: 1px solid #2e3d61; }
+.del { padding: 3px 8px; border-radius: 12px; background: #3a1f4f; font-size: 13px; }
+.win { color: #5ee88a; font-weight: bold; } .loss { color: #ff8f8f; }
+svg text { fill: #9fb0cf; font-size: 11px; }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { background-color: #0e1527; color: #ffffff; }
+input::placeholder, textarea::placeholder { color: #5f6e8f; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #4a86ff; box-shadow: 0 0 0 3px rgba(74,134,255,.28); }
+button, .btn, a { -webkit-transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, -webkit-transform .1s ease; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+button:active, .btn:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.card { box-shadow: 0 12px 32px -16px rgba(0,0,0,.7); }
+#top { box-shadow: 0 6px 20px -10px rgba(0,0,0,.6); }
+#dlg .box { border: 1px solid #33456e; box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
+#toast { box-shadow: 0 12px 32px -8px rgba(0,0,0,.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #2e3d61; border-radius: 10px; } ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
@@ -162,7 +175,7 @@ svg text { fill: #b7d3ff; font-size: 11px; }
     if (mx === mn) { mx += 5; mn -= 5; }
     var pts = vals.map(function (v, k) { return (pad + k * (W - 2 * pad) / (vals.length - 1)).toFixed(1) + ',' + (H - pad - (v - mn) / (mx - mn) * (H - 2 * pad)).toFixed(1); });
     var h = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
-    h += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#8cc4ff" stroke-width="3"/>';
+    h += '<polyline points="' + pts.join(' ') + '" fill="none" stroke="#7cb2ff" stroke-width="3"/>';
     pts.forEach(function (p) { var xy = p.split(','); h += '<circle cx="' + xy[0] + '" cy="' + xy[1] + '" r="4" fill="#fff"/>'; });
     h += '<text x="4" y="' + (pad - 8) + '">' + f1(mx) + '</text><text x="4" y="' + (H - 8) + '">' + f1(mn) + '</text>';
     return h + '</svg>';

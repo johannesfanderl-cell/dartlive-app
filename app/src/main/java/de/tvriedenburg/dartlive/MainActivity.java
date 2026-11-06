@@ -264,7 +264,7 @@ public class MainActivity extends Activity {
     /** WebView mit automatischem Neuversuch, falls der Server (noch) nicht erreichbar ist. */
     static WebView createWebView(Context ctx, final boolean input) {
         final WebView w = new WebView(ctx);
-        w.setBackgroundColor(Color.rgb(7, 29, 71));
+        w.setBackgroundColor(Color.rgb(11, 17, 32));
         w.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         WebSettings s = w.getSettings();
         s.setJavaScriptEnabled(true);
@@ -280,12 +280,12 @@ public class MainActivity extends Activity {
     /** Seite, die angezeigt wird, solange der Server nicht antwortet. */
     static String statusPage(String title, String url, boolean input, boolean retry) {
         return "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'></head>"
-                + "<body style='background:#071d47;color:#fff;font-family:Arial;text-align:center;padding:12vh 4vw 0'>"
+                + "<body style='background:#0b1120;color:#fff;font-family:Roboto,Arial,sans-serif;text-align:center;padding:12vh 4vw 0'>"
                 + "<h1 style='font-size:6vmin;margin:0 0 3vmin'>" + title + "</h1>"
                 + "<p style='font-size:4vmin;margin:0 0 4vmin'>" + url + "</p>"
-                + (retry ? "<p style='font-size:3.5vmin;color:#b7d3ff'>Läuft der Server auf dem Chromebook?<br>Ist das Gerät im WLAN „TVR Dart“?</p>"
-                         + "<p style='font-size:3.5vmin;color:#b7d3ff'>Neuer Versuch in 5 Sekunden …</p>" : "")
-                + (input ? "<p style='font-size:3vmin;color:#b7d3ff'>Zurück-Taste: Menü mit Einstellungen</p>" : "")
+                + (retry ? "<p style='font-size:3.5vmin;color:#9fb0cf'>Läuft der Server auf dem Chromebook?<br>Ist das Gerät im WLAN „TVR Dart“?</p>"
+                         + "<p style='font-size:3.5vmin;color:#9fb0cf'>Neuer Versuch in 5 Sekunden …</p>" : "")
+                + (input ? "<p style='font-size:3vmin;color:#9fb0cf'>Zurück-Taste: Menü mit Einstellungen</p>" : "")
                 + (retry ? "<script>setTimeout(function(){location.href='" + url.replace("'", "") + "'},5000)</script>" : "")
                 + "</body></html>";
     }

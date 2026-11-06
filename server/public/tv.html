@@ -9,20 +9,20 @@
 /* Absichtlich sehr einfaches CSS (Tabellen, keine Variablen, kein Grid/Flex),
    damit auch alte Fernseh-Browser alles richtig anzeigen. */
 * { margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
-body { color: #ffffff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
-#bar { height: 1.7em; line-height: 1.7em; padding: 0 0.8em; background: #0b2d6b; border-bottom: 0.12em solid #ffffff; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1120; }
+body { color: #ffffff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 20px; cursor: none; }
+#bar { height: 1.7em; line-height: 1.7em; padding: 0 0.8em; background: #131c31; border-bottom: 1px solid #26324f; font-weight: bold; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
 #bar .r { float: right; }
-#bar .net { color: #ffb3b3; margin-right: 1em; }
+#bar .net { color: #ff8f8f; margin-right: 1em; }
 table.grid { width: 100%; border-collapse: separate; border-spacing: 0.4em; table-layout: fixed; }
 table.grid td { vertical-align: top; }
-.pn { position: relative; background: #0b2d6b; border: 0.12em solid #3f6fbf; overflow: hidden; }
-.hd { height: 2.7em; padding: 0.25em 0.6em 0 0.6em; background: #10377f; white-space: nowrap; overflow: hidden; }
+.pn { position: relative; background: #131c31; border: 0.08em solid #2e3d61; border-radius: 0.6em; overflow: hidden; }
+.hd { height: 2.7em; padding: 0.25em 0.6em 0 0.6em; background: #1c2741; white-space: nowrap; overflow: hidden; }
 .hd b { display: block; font-size: 1.15em; line-height: 1.25em; letter-spacing: 0.08em; text-transform: uppercase; }
-.hd span { display: block; color: #b7d3ff; font-size: 0.85em; line-height: 1.3em; }
-.pb { display: table; width: 100%; border-top: 0.1em solid #3f6fbf; }
+.hd span { display: block; color: #9fb0cf; font-size: 0.85em; line-height: 1.3em; }
+.pb { display: table; width: 100%; border-top: 0.1em solid #2e3d61; }
 .pbi { display: table-cell; vertical-align: middle; padding: 0 0.6em; }
-.pb.on { background: #ffffff; color: #071d47; }
+.pb.on { background: #2f6fed; color: #ffffff; }
 .nm { font-size: 1.35em; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
 .nm i { font-style: normal; float: right; margin-left: 0.4em; }
 .rm { font-size: 5.2em; font-weight: bold; line-height: 1; }
@@ -31,16 +31,16 @@ table.grid td { vertical-align: top; }
 .idle.spon { display: block; overflow: hidden; }
 .idle div { display: table-cell; vertical-align: middle; }
 .idle b { display: block; font-size: 2em; letter-spacing: 0.06em; text-transform: uppercase; }
-.idle span { display: block; font-size: 1.2em; color: #b7d3ff; margin-top: 0.3em; }
-.win { display: table; width: 100%; text-align: center; background: #ffffff; color: #071d47; }
+.idle span { display: block; font-size: 1.2em; color: #9fb0cf; margin-top: 0.3em; }
+.win { display: table; width: 100%; text-align: center; background: #2f6fed; color: #ffffff; }
 .win div { display: table-cell; vertical-align: middle; padding: 0 0.4em; }
 .win small { display: block; font-size: 1.1em; letter-spacing: 0.1em; text-transform: uppercase; }
 .win b { display: block; font-size: 2.2em; text-transform: uppercase; margin: 0.2em 0; word-wrap: break-word; }
 .win em { display: block; font-style: normal; font-size: 3.6em; font-weight: bold; }
-table.duo { width: 100%; border-collapse: collapse; table-layout: fixed; border-top: 0.1em solid #3f6fbf; }
+table.duo { width: 100%; border-collapse: collapse; table-layout: fixed; border-top: 0.1em solid #2e3d61; }
 table.duo td { vertical-align: middle; text-align: center; padding: 0 0.5em; }
-table.duo td.l { border-right: 0.1em solid #3f6fbf; }
-table.duo td.on { background: #ffffff; color: #071d47; }
+table.duo td.l { border-right: 0.1em solid #2e3d61; }
+table.duo td.on { background: #2f6fed; color: #ffffff; }
 table.duo .nm { font-size: 2em; }
 table.duo .nm i { float: none; display: block; font-size: 0.8em; margin: 0.15em 0 0 0; }
 table.duo .rm { font-size: 8.5em; }
@@ -57,18 +57,21 @@ body.single .hd span { font-size: 1.1em; }
 body.single .tr .nm { font-size: 1.9em; }
 body.single .tr .st { font-size: 1.2em; }
 .st.cur { font-weight: bold; opacity: 1; }
-.intro td { background: #10377f; }
+.intro td { background: #1c2741; }
 .intro .nm { font-size: 1.7em; margin-bottom: 0.3em; }
 .intro .st { font-size: 1.05em; opacity: 1; line-height: 1.5; }
 body.single .intro .nm { font-size: 3em; }
 body.single .intro .st { font-size: 1.6em; }
-.ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #ffffff; color: #071d47; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #3f6fbf; border-bottom: 0.15em solid #3f6fbf; }
+.ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #2f6fed; color: #ffffff; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #2e3d61; border-bottom: 0.15em solid #2e3d61; }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
 <div id="bar"><span class="r"><span class="net" id="net"></span><span id="clock"></span></span>TV Riedenburg · Dart Live</div>
 <div id="wrap"></div>
-<div id="spbar" style="position:absolute;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<div id="spbar" style="position:absolute;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #2e3d61"></div>
 <script src="/sponsor.js"></script>
 
 <script>

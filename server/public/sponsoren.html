@@ -8,24 +8,37 @@
 <title>Sponsoren – Dart Live</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+body { background: #0b1120; color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 16px; }
 button, input { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; border: 0; color: inherit; background: none; }
-#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
-#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #b7d3ff; font-size: 14px; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #131c31; border-bottom: 1px solid #26324f; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; } #top a { color: #9fb0cf; font-size: 14px; }
 #main { max-width: 900px; margin: 0 auto; padding: 12px 12px 60px; }
-h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
-.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
-.sp { display: flex; align-items: center; gap: 12px; } .sp .logo { flex: 0 0 140px; height: 80px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #3f5f99; font-size: 13px; }
+h3 { font-size: 14px; color: #9fb0cf; text-transform: uppercase; letter-spacing: 1px; margin: 16px 0 8px; }
+.card { background: #131c31; border: 1px solid #2e3d61; border-radius: 16px; padding: 12px 14px; margin-bottom: 10px; }
+.sp { display: flex; align-items: center; gap: 12px; } .sp .logo { flex: 0 0 140px; height: 80px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden; color: #c7d6f5; font-size: 13px; }
 .sp .logo img { max-width: 130px; max-height: 70px; } .sp .t { flex: 1 1 auto; min-width: 0; } .sp .t b { font-size: 18px; } .sp.off { opacity: .45; }
-.btn { display: inline-block; padding: 8px 12px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 5px 0 0; font-size: 14px; text-decoration: none; }
-.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; } .btn.warn { background: #6b1d2d; color: #fff; }
-input[type=text] { width: 100%; padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; margin-bottom: 8px; }
-label.f { display: block; color: #b7d3ff; font-size: 14px; margin: 8px 0 4px; }
-.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; } .seg button.on { background: #fff; color: #071d47; font-weight: bold; }
-.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; line-height: 1.4; }
-#prev { width: 220px; height: 110px; background: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #3f5f99; font-size: 13px; overflow: hidden; margin-bottom: 8px; } #prev img { max-width: 210px; max-height: 100px; }
-#msg { font-weight: bold; min-height: 20px; color: #ffb3b3; }
+.btn { display: inline-block; padding: 8px 12px; border-radius: 12px; background: #2f6fed; color: #ffffff; font-weight: bold; margin: 4px 5px 0 0; font-size: 14px; text-decoration: none; }
+.btn.sec { background: #1c2741; color: #fff; border: 1px solid #2e3d61; } .btn.warn { background: #7a1f33; color: #fff; }
+input[type=text] { width: 100%; padding: 9px 10px; border-radius: 12px; border: 1px solid #33456e; background: #0e1527; color: #ffffff; margin-bottom: 8px; }
+label.f { display: block; color: #9fb0cf; font-size: 14px; margin: 8px 0 4px; }
+.seg button { padding: 8px 12px; border-radius: 12px; background: #1c2741; border: 1px solid #2e3d61; margin: 0 6px 6px 0; } .seg button.on { background: #2f6fed; color: #ffffff; font-weight: bold; }
+.note { color: #9fb0cf; font-size: 14px; margin: 6px 0; line-height: 1.4; }
+#prev { width: 220px; height: 110px; background: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #5b6b8c; font-size: 13px; overflow: hidden; margin-bottom: 8px; } #prev img { max-width: 210px; max-height: 100px; }
+#msg { font-weight: bold; min-height: 20px; color: #ff8f8f; }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { background-color: #0e1527; color: #ffffff; }
+input::placeholder, textarea::placeholder { color: #5f6e8f; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #4a86ff; box-shadow: 0 0 0 3px rgba(74,134,255,.28); }
+button, .btn, a { -webkit-transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, -webkit-transform .1s ease; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+button:active, .btn:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.card { box-shadow: 0 12px 32px -16px rgba(0,0,0,.7); }
+#top { box-shadow: 0 6px 20px -10px rgba(0,0,0,.6); }
+#dlg .box { border: 1px solid #33456e; box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
+#toast { box-shadow: 0 12px 32px -8px rgba(0,0,0,.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #2e3d61; border-radius: 10px; } ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>

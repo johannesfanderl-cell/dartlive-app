@@ -30,7 +30,7 @@
   SP.slide = function (it, label) {
     if (!it) return '';
     return '<table style="width:100%;height:100%;border-collapse:collapse;background:#ffffff;color:#071d47"><tr><td style="text-align:center;vertical-align:middle;padding:0.4em">' +
-      (label ? '<div style="font-size:0.8em;letter-spacing:0.1em;text-transform:uppercase;color:#3f5f99;margin-bottom:0.4em">' + esc(label) + '</div>' : '') +
+      (label ? '<div style="font-size:0.8em;letter-spacing:0.1em;text-transform:uppercase;color:#5b6b8c;margin-bottom:0.4em">' + esc(label) + '</div>' : '') +
       (it.img ? '<img src="' + it.img + '" alt="" style="max-width:90%;max-height:55%;display:block;margin:0 auto 0.4em auto">' : '') +
       (it.name ? '<div style="font-size:1.6em;font-weight:bold">' + esc(it.name) + '</div>' : '') +
       (it.text ? '<div style="font-size:1em;margin-top:0.2em">' + esc(it.text) + '</div>' : '') +
@@ -42,7 +42,7 @@
     var it = SP.current();
     if (!it || !SP.barOn()) return '';
     return '<table style="width:100%;height:100%;border-collapse:collapse;background:#ffffff;color:#071d47"><tr>' +
-      '<td style="width:1%;white-space:nowrap;padding:0 0.6em;font-size:0.6em;letter-spacing:0.08em;text-transform:uppercase;color:#3f5f99">Mit Unterstützung von</td>' +
+      '<td style="width:1%;white-space:nowrap;padding:0 0.6em;font-size:0.6em;letter-spacing:0.08em;text-transform:uppercase;color:#5b6b8c">Mit Unterstützung von</td>' +
       (it.img ? '<td style="width:1%;padding:0.1em 0.4em"><img src="' + it.img + '" alt="" style="height:1.6em;display:block"></td>' : '') +
       '<td style="padding:0 0.4em;white-space:nowrap;overflow:hidden"><b>' + esc(it.name) + '</b>' + (it.text ? ' &middot; ' + esc(it.text) : '') + '</td></tr></table>';
   };

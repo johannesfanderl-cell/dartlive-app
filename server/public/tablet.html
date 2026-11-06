@@ -4,87 +4,87 @@
 <meta charset="utf-8">
 <script src="/local.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#071d47">
+<meta name="theme-color" content="#0b1120">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Dart Live – Scheibe</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; }
-body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 1rem; overflow: hidden;
+body { background: #0b1120; color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 1rem; overflow: hidden;
   -webkit-user-select: none; user-select: none; touch-action: manipulation; }
 button { font-family: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
 input { font-family: inherit; }
 
 #app { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
-#top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: .35rem .9rem; background: #0b2d6b; border-bottom: .15rem solid #fff; }
+#top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: .35rem .9rem; background: #131c31; border-bottom: 1px solid #26324f; }
 #top b { font-size: 1.25rem; letter-spacing: .08em; text-transform: uppercase; }
-#top b span { color: #8cc4ff; }
-#net { font-size: .85rem; color: #b7d3ff; }
-#net.bad { color: #ffb3b3; font-weight: bold; }
+#top b span { color: #7cb2ff; }
+#net { font-size: .85rem; color: #9fb0cf; }
+#net.bad { color: #ff8f8f; font-weight: bold; }
 #main { flex: 1 1 auto; position: relative; overflow: hidden; }
 
 /* ---------- Einrichten ---------- */
 .setup { height: 100%; overflow-y: auto; padding: .8rem 1rem 1rem; }
 .setup h2 { font-size: 1.3rem; margin-bottom: .6rem; text-transform: uppercase; letter-spacing: .06em; }
 .row { display: flex; align-items: center; margin-bottom: .55rem; }
-.row label { flex: 0 0 9rem; font-size: 1rem; color: #b7d3ff; }
-.row input { flex: 1 1 auto; font-size: 1.25rem; padding: .45rem .6rem; border-radius: .4rem; border: .15rem solid #3f6fbf; background: #fff; color: #071d47; -webkit-user-select: text; user-select: text; }
-.row input.on { border-color: #8cc4ff; box-shadow: 0 0 0 .2rem rgba(140,196,255,.5); }
+.row label { flex: 0 0 9rem; font-size: 1rem; color: #9fb0cf; }
+.row input { flex: 1 1 auto; font-size: 1.25rem; padding: .45rem .6rem; border-radius: 0.6rem; border: .1rem solid #33456e; background: #0e1527; color: #ffffff; -webkit-user-select: text; user-select: text; }
+.row input.on { border-color: #7cb2ff; box-shadow: 0 0 0 .2rem rgba(140,196,255,.5); }
 .chips { margin: 0 0 .7rem 9rem; }
-.chips button { display: inline-block; margin: 0 .35rem .35rem 0; padding: .35rem .7rem; border-radius: 1rem; background: #10377f; border: .1rem solid #3f6fbf; font-size: .95rem; }
+.chips button { display: inline-block; margin: 0 .35rem .35rem 0; padding: .35rem .7rem; border-radius: 1rem; background: #1c2741; border: .1rem solid #2e3d61; font-size: .95rem; }
 .seg { display: flex; flex: 1 1 auto; }
-.seg button { flex: 1 1 0; padding: .55rem .3rem; font-size: 1.1rem; background: #10377f; border: .1rem solid #3f6fbf; margin-right: .3rem; border-radius: .4rem; }
-.seg button.on { background: #fff; color: #071d47; font-weight: bold; border-color: #fff; }
+.seg button { flex: 1 1 0; padding: .55rem .3rem; font-size: 1.1rem; background: #1c2741; border: .1rem solid #2e3d61; margin-right: .3rem; border-radius: 0.6rem; }
+.seg button.on { background: #2f6fed; color: #ffffff; font-weight: bold; border-color: #4a86ff; }
 .step { display: flex; align-items: center; }
-.step button { width: 3rem; height: 2.6rem; font-size: 1.5rem; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.step button { width: 3rem; height: 2.6rem; font-size: 1.5rem; background: #1c2741; border: .1rem solid #2e3d61; border-radius: 0.6rem; }
 .step span { min-width: 3rem; text-align: center; font-size: 1.5rem; font-weight: bold; }
-.big { display: block; width: 100%; padding: .8rem; margin-top: .6rem; font-size: 1.5rem; font-weight: bold; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #071d47; border-radius: .5rem; }
-.big.sec { background: #10377f; color: #fff; border: .12rem solid #3f6fbf; }
-.hint { color: #ffb3b3; min-height: 1.3rem; font-size: 1rem; margin-top: .3rem; }
+.big { display: block; width: 100%; padding: .8rem; margin-top: .6rem; font-size: 1.5rem; font-weight: bold; letter-spacing: .08em; text-transform: uppercase; background: #2f6fed; color: #ffffff; border-radius: 0.75rem; }
+.big.sec { background: #1c2741; color: #fff; border: .12rem solid #2e3d61; }
+.hint { color: #ff8f8f; min-height: 1.3rem; font-size: 1rem; margin-top: .3rem; }
 
 /* ---------- Spiel ---------- */
 .play { height: 100%; display: flex; }
 .side { flex: 1 1 50%; display: flex; flex-direction: column; padding: .6rem; }
 .pad { flex: 1 1 50%; display: flex; flex-direction: column; padding: .6rem .6rem .6rem 0; }
-.info { font-size: .95rem; color: #b7d3ff; text-align: center; margin-bottom: .4rem; }
-.pl { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; border: .15rem solid #3f6fbf; border-radius: .6rem; padding: .4rem .8rem; margin-bottom: .5rem; background: #10377f; position: relative; }
+.info { font-size: .95rem; color: #9fb0cf; text-align: center; margin-bottom: .4rem; }
+.pl { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; border: .1rem solid #33456e; border-radius: 0.9rem; padding: .4rem .8rem; margin-bottom: .5rem; background: #1c2741; position: relative; }
 .pl:last-child { margin-bottom: 0; }
-.pl.on { background: #fff; color: #071d47; border-color: #fff; }
+.pl.on { background: #2f6fed; color: #ffffff; border-color: #4a86ff; }
 .pl .nm { font-size: 1.35rem; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4.5rem; }
 .pl .lg { position: absolute; top: .4rem; right: .8rem; font-size: 1.1rem; font-weight: bold; }
 .pl .rm { font-size: 4.6rem; font-weight: bold; line-height: 1; }
 .pl .st { font-size: .9rem; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pl .tw { font-size: .85rem; font-weight: bold; color: #0b2d6b; }
-.disp { display: flex; align-items: center; justify-content: space-between; background: #fff; color: #071d47; border-radius: .5rem; padding: .2rem .8rem; margin-bottom: .45rem; min-height: 3.6rem; }
+.pl .tw { font-size: .85rem; font-weight: bold; color: #ffffff; }
+.disp { display: flex; align-items: center; justify-content: space-between; background: #2f6fed; color: #ffffff; border-radius: 0.75rem; padding: .2rem .8rem; margin-bottom: .45rem; min-height: 3.6rem; }
 .disp .who { font-size: 1rem; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
 .disp .val { font-size: 2.6rem; font-weight: bold; }
-.disp .val.ph { font-size: 1.1rem; color: #7a8fb3; font-weight: normal; }
+.disp .val.ph { font-size: 1.1rem; color: #7d8bab; font-weight: normal; }
 .quick { display: flex; flex-wrap: wrap; margin-bottom: .2rem; }
-.quick button { flex: 1 1 18%; margin: 0 .25rem .25rem 0; padding: .45rem 0; font-size: 1.1rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .35rem; }
+.quick button { flex: 1 1 18%; margin: 0 .25rem .25rem 0; padding: .45rem 0; font-size: 1.1rem; font-weight: bold; background: #1c2741; border: .1rem solid #2e3d61; border-radius: 0.52rem; }
 .keys { flex: 1 1 auto; display: flex; flex-wrap: wrap; }
-.keys button { flex: 0 0 32.3%; margin: 0 1% 1% 0; font-size: 2rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .45rem; }
-.keys button.ok { background: #fff; color: #071d47; border-color: #fff; font-size: 1.6rem; }
-.keys button:active, .quick button:active, .acts button:active { background: #3f6fbf; }
+.keys button { flex: 0 0 32.3%; margin: 0 1% 1% 0; font-size: 2rem; font-weight: bold; background: #1c2741; border: .1rem solid #2e3d61; border-radius: 0.68rem; }
+.keys button.ok { background: #2f6fed; color: #ffffff; border-color: #4a86ff; font-size: 1.6rem; }
+.keys button:active, .quick button:active, .acts button:active { background: #2e3d61; }
 .acts { display: flex; margin-top: .25rem; }
-.acts button { flex: 1 1 0; margin-right: .3rem; padding: .55rem 0; font-size: 1.05rem; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.acts button { flex: 1 1 0; margin-right: .3rem; padding: .55rem 0; font-size: 1.05rem; background: #131c31; border: .1rem solid #2e3d61; border-radius: 0.6rem; }
 .acts button:last-child { margin-right: 0; }
-.err { color: #ffb3b3; font-weight: bold; }
+.err { color: #ff8f8f; font-weight: bold; }
 
 /* ---------- Ende ---------- */
 .done { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; }
 .done h1 { font-size: 2.6rem; text-transform: uppercase; letter-spacing: .04em; }
 .done .res { font-size: 4.4rem; font-weight: bold; margin: .3rem 0; }
-.done p { color: #b7d3ff; font-size: 1.1rem; margin-bottom: .3rem; }
+.done p { color: #9fb0cf; font-size: 1.1rem; margin-bottom: .3rem; }
 .done .btns { width: 70%; max-width: 30rem; }
 
 /* ---------- Dialog / Meldung ---------- */
 #dlg { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.65); z-index: 10; }
-#dlg .box { position: absolute; top: 50%; left: 50%; width: 26rem; max-width: 92%; transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); background: #fff; color: #071d47; border-radius: .7rem; padding: 1.1rem; text-align: center; }
+#dlg .box { position: absolute; top: 50%; left: 50%; width: 26rem; max-width: 92%; transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); background: #172036; color: #ffffff; border-radius: 1.05rem; padding: 1.1rem; text-align: center; }
 #dlg h3 { font-size: 1.5rem; margin-bottom: .4rem; }
 #dlg p { font-size: 1.05rem; margin-bottom: .7rem; }
-#dlg button { display: block; width: 100%; padding: .7rem; margin-top: .4rem; font-size: 1.2rem; font-weight: bold; border-radius: .45rem; background: #0b2d6b; color: #fff; }
-#dlg button.sec { background: #e3ebf7; color: #071d47; }
-#toast { display: none; position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); -webkit-transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; font-size: 1.2rem; padding: .6rem 1.2rem; border-radius: .5rem; z-index: 11; box-shadow: 0 .2rem 1rem rgba(0,0,0,.5); }
+#dlg button { display: block; width: 100%; padding: .7rem; margin-top: .4rem; font-size: 1.2rem; font-weight: bold; border-radius: 0.68rem; background: #2f6fed; color: #fff; }
+#dlg button.sec { background: #26324f; color: #ffffff; }
+#toast { display: none; position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); -webkit-transform: translateX(-50%); background: #1f2b46; color: #ffffff; font-weight: bold; font-size: 1.2rem; padding: .6rem 1.2rem; border-radius: 0.75rem; z-index: 11; box-shadow: 0 .2rem 1rem rgba(0,0,0,.5); ; border: 1px solid #33456e}
 
 @media (orientation: portrait) {
   .play { flex-direction: column; }
@@ -94,6 +94,19 @@ input { font-family: inherit; }
   .row label { flex-basis: 7rem; }
   .chips { margin-left: 7rem; }
 }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { background-color: #0e1527; color: #ffffff; }
+input::placeholder, textarea::placeholder { color: #5f6e8f; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #4a86ff; box-shadow: 0 0 0 3px rgba(74,134,255,.28); }
+button, .btn, a { -webkit-transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, -webkit-transform .1s ease; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+button:active, .btn:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.card { box-shadow: 0 12px 32px -16px rgba(0,0,0,.7); }
+#top { box-shadow: 0 6px 20px -10px rgba(0,0,0,.6); }
+#dlg .box { border: 1px solid #33456e; box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
+#toast { box-shadow: 0 12px 32px -8px rgba(0,0,0,.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #2e3d61; border-radius: 10px; } ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
@@ -382,7 +395,7 @@ input { font-family: inherit; }
   // Liga: fester Beginner je Scheibe; sonst nach dem Ausbullen wählen
   function startButtons(tm) {
     var by = tour && tour.type === 'league' && tour.cfg && tour.cfg.startBy ? tour.cfg.startBy[N] : null;
-    var st = 'background:#0b2d6b;color:#fff;font-weight:bold';
+    var st = 'background:#131c31;color:#fff;font-weight:bold';
     if (by) {
       var f = by === 'home' ? 0 : 1, who = f === 0 ? tm.p1 : tm.p2, team = f === 0 ? tour.homeTeam : tour.guestTeam;
       return '<div class="seg"><button data-tstart="' + f + '" style="' + st + '">Spiel starten – ' + esc(who) + ' beginnt (' + esc(team) + ')</button></div>';
@@ -395,16 +408,16 @@ input { font-family: inherit; }
     var h = '<div class="setup">';
     var tm = myMatch();
     if (tm) {
-      h += '<div style="background:#fff;color:#071d47;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem">' +
-        '<div style="font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:#3f5f99">' + esc(tour.name) + ' · ' + esc(tLabel(tm)) + '</div>' +
+      h += '<div style="background: #2f6fed;color: #ffffff;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem">' +
+        '<div style="font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:#c7d6f5">' + esc(tour.name) + ' · ' + esc(tLabel(tm)) + '</div>' +
         '<div style="font-size:2rem;font-weight:bold;margin:.2rem 0">' + esc(tm.p1) + ' – ' + esc(tm.p2) + '</div>' +
         '<div style="font-size:1rem;margin-bottom:.4rem">' + tour.cfg.start + (tour.cfg.doubleOut ? ' Double Out' : '') + ' · First to ' + tm.legsToWin + ' Legs' + (tour.type === 'league' && tour.cfg.startBy && tour.cfg.startBy[N] ? '' : ' · Ausbullen: Wer beginnt?') + '</div>' +
         startButtons(tm) + '</div>';
     } else if (tour && tour.type === 'league' && tour.status === 'league') {
-      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': ' + (tour.cfg.boards.indexOf(N) >= 0 ? 'Das nächste Spiel für diese Scheibe erscheint hier automatisch.' : 'Im Ligabetrieb wird auf Scheibe ' + tour.cfg.boards.join(' und ') + ' gespielt.') + '</p>';
+      h += '<p style="color:#9fb0cf;margin-bottom:.6rem">' + esc(tour.name) + ': ' + (tour.cfg.boards.indexOf(N) >= 0 ? 'Das nächste Spiel für diese Scheibe erscheint hier automatisch.' : 'Im Ligabetrieb wird auf Scheibe ' + tour.cfg.boards.join(' und ') + ' gespielt.') + '</p>';
     }
     else if (tour && (tour.status === 'groups' || tour.status === 'ko' || tour.status === 'blind')) {
-      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
+      h += '<p style="color:#9fb0cf;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
     }
     h += '<h2>' + (tm ? 'Oder freies Spiel' : 'Neues Spiel') + '</h2>';
     h += '<div class="row"><label>Spieler 1</label><input id="n1" maxlength="24" autocomplete="off" placeholder="Name" value="' + esc(setup.n1) + '"' + (setup.active === 0 ? ' class="on"' : '') + '></div>';
@@ -419,7 +432,7 @@ input { font-family: inherit; }
       '<button data-start="501"' + (setup.start === 501 ? ' class="on"' : '') + '>501</button>' +
       '<button data-start="701"' + (setup.start === 701 ? ' class="on"' : '') + '>701</button></div></div>';
     h += '<div class="row"><label>Gewinn-Legs</label><div class="step"><button data-legs="-1">−</button><span>' + setup.legs + '</span><button data-legs="1">+</button></div>' +
-      '<span style="margin-left:.8rem;color:#b7d3ff">(First to ' + setup.legs + ')</span></div>';
+      '<span style="margin-left:.8rem;color:#9fb0cf">(First to ' + setup.legs + ')</span></div>';
     h += '<div class="row"><label>Double Out</label><div class="seg">' +
       '<button data-dout="1"' + (setup.dout ? ' class="on"' : '') + '>Ja</button>' +
       '<button data-dout="0"' + (!setup.dout ? ' class="on"' : '') + '>Nein</button></div></div>';
@@ -428,8 +441,8 @@ input { font-family: inherit; }
       '<button data-hc="1"' + (setup.hc ? ' class="on"' : '') + '>Unterschiedliche Startpunkte</button></div></div>';
     if (setup.hc) {
       h += '<div class="row"><label>' + esc(setup.n1 || 'Spieler 1') + '</label><div class="step"><button data-hs="1" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s1 + '</span><button data-hs="1" data-d="25">+</button></div>' +
-        '<span style="margin-left:1.2rem;color:#b7d3ff">' + esc(setup.n2 || 'Spieler 2') + '</span><div class="step" style="margin-left:.6rem"><button data-hs="2" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s2 + '</span><button data-hs="2" data-d="25">+</button></div></div>' +
-        '<div class="row"><label></label><button class="big sec" style="margin:0;padding:.5rem;font-size:1rem;width:auto" data-a="hcsuggest">Vorschlag aus dem Average</button><span id="hcinfo" style="margin-left:.8rem;color:#b7d3ff">' + esc(hcInfo) + '</span></div>';
+        '<span style="margin-left:1.2rem;color:#9fb0cf">' + esc(setup.n2 || 'Spieler 2') + '</span><div class="step" style="margin-left:.6rem"><button data-hs="2" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s2 + '</span><button data-hs="2" data-d="25">+</button></div></div>' +
+        '<div class="row"><label></label><button class="big sec" style="margin:0;padding:.5rem;font-size:1rem;width:auto" data-a="hcsuggest">Vorschlag aus dem Average</button><span id="hcinfo" style="margin-left:.8rem;color:#9fb0cf">' + esc(hcInfo) + '</span></div>';
     }
     h += '<div class="row"><label>Beginnt</label><div class="seg">' +
       '<button data-first="0"' + (setup.first === 0 ? ' class="on"' : '') + '>' + esc(setup.n1 || 'Spieler 1') + '</button>' +

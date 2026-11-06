@@ -7,31 +7,34 @@
 <title>Spieltag – Dart Live</title>
 <style>
 * { margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: #071d47; }
-body { color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 20px; cursor: none; }
-table.sc { width: 100%; border-collapse: collapse; background: #fff; color: #071d47; table-layout: fixed; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1120; }
+body { color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 20px; cursor: none; }
+table.sc { width: 100%; border-collapse: collapse; background: #2f6fed; color: #ffffff; table-layout: fixed; }
 table.sc td { padding: 0.25em 0.5em; text-align: center; font-weight: bold; text-transform: uppercase; }
 table.sc td.t { font-size: 1.4em; white-space: nowrap; overflow: hidden; }
 table.sc td.n { font-size: 2.8em; width: 4.2em; line-height: 1.05; }
-table.sc small { display: block; font-size: 0.32em; text-transform: none; color: #3f5f99; font-weight: normal; }
+table.sc small { display: block; font-size: 0.32em; text-transform: none; color: #c7d6f5; font-weight: normal; }
 table.g { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 0.3em; }
-table.g td { padding: 0.08em 0.4em; border-bottom: 0.05em solid #23498f; white-space: nowrap; overflow: hidden; }
-table.g td.no { width: 1.8em; text-align: center; color: #b7d3ff; }
+table.g td { padding: 0.08em 0.4em; border-bottom: 0.05em solid #253150; white-space: nowrap; overflow: hidden; }
+table.g td.no { width: 1.8em; text-align: center; color: #9fb0cf; }
 table.g td.r { width: 3.6em; text-align: center; font-weight: bold; }
 table.g td.h { text-align: right; }
-table.g td.s { width: 3.2em; text-align: center; color: #b7d3ff; font-size: 0.8em; }
-table.g td.st { width: 6.2em; text-align: center; font-size: 0.75em; color: #b7d3ff; }
-table.g tr.sec td { background: #10377f; color: #b7d3ff; font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; padding: 0.1em; }
-table.g tr.run td { background: #1d4f99; }
-table.g tr.run td.r { color: #8cff9e; }
+table.g td.s { width: 3.2em; text-align: center; color: #9fb0cf; font-size: 0.8em; }
+table.g td.st { width: 6.2em; text-align: center; font-size: 0.75em; color: #9fb0cf; }
+table.g tr.sec td { background: #1c2741; color: #9fb0cf; font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.1em; text-align: center; padding: 0.1em; }
+table.g tr.run td { background: #1e3a7a; }
+table.g tr.run td.r { color: #5ee88a; }
 td.w { font-weight: bold; color: #ffffff; }
-td.l { color: #9fb4d6; }
-.empty { padding: 3em 1em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+td.l { color: #9fb0cf; }
+.empty { padding: 3em 1em; text-align: center; font-size: 1.5em; color: #9fb0cf; }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
 <div id="wrap"><div class="empty">Lade …</div></div>
-<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
+<div id="spbar" style="position:fixed;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #2e3d61"></div>
 <script src="/sponsor.js"></script>
 <script>
 (function () {

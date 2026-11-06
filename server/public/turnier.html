@@ -8,61 +8,61 @@
 <title>Turnierleitung – Dart Live</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+body { background: #0b1120; color: #fff; font-family: "Roboto", "Segoe UI", system-ui, -apple-system, Arial, sans-serif; font-size: 16px; }
 button, select, input, textarea { font-family: inherit; font-size: inherit; }
 button { cursor: pointer; border: 0; color: inherit; background: none; }
-#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #131c31; border-bottom: 1px solid #26324f; }
 #top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
-#net { font-size: 13px; color: #b7d3ff; } #net.bad { color: #ffb3b3; font-weight: bold; }
+#net { font-size: 13px; color: #9fb0cf; } #net.bad { color: #ff8f8f; font-weight: bold; }
 #main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 60px; }
 h2 { font-size: 20px; margin: 6px 0 10px; }
-h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
-.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
-label.f { display: block; color: #b7d3ff; font-size: 14px; margin: 10px 0 4px; }
-input[type=text], textarea, select { width: 100%; padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; }
+h3 { font-size: 14px; color: #9fb0cf; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.card { background: #131c31; border: 1px solid #2e3d61; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px; }
+label.f { display: block; color: #9fb0cf; font-size: 14px; margin: 10px 0 4px; }
+input[type=text], textarea, select { width: 100%; padding: 9px 10px; border-radius: 12px; border: 1px solid #33456e; background: #0e1527; color: #ffffff; }
 textarea { min-height: 220px; line-height: 1.4; }
 .row { display: flex; flex-wrap: wrap; gap: 10px; } .row > * { flex: 1 1 140px; }
-.btn { display: inline-block; padding: 10px 16px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; }
-.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; }
-.btn.warn { background: #6b1d2d; color: #fff; }
+.btn { display: inline-block; padding: 10px 16px; border-radius: 12px; background: #2f6fed; color: #ffffff; font-weight: bold; margin: 4px 6px 4px 0; }
+.btn.sec { background: #1c2741; color: #fff; border: 1px solid #2e3d61; }
+.btn.warn { background: #7a1f33; color: #fff; }
 .btn.sm { padding: 6px 10px; font-size: 14px; }
-.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
-.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
-.chips span { display: inline-block; margin: 0 6px 6px 0; padding: 6px 10px; border-radius: 16px; background: #10377f; border: 1px solid #3f6fbf; cursor: pointer; }
-.chips span.on { background: #fff; color: #071d47; font-weight: bold; }
-.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
-.err { color: #ffb3b3; font-weight: bold; min-height: 20px; margin: 6px 0; }
+.seg button { padding: 8px 12px; border-radius: 12px; background: #1c2741; border: 1px solid #2e3d61; margin: 0 6px 6px 0; }
+.seg button.on { background: #2f6fed; color: #ffffff; font-weight: bold; }
+.chips span { display: inline-block; margin: 0 6px 6px 0; padding: 6px 10px; border-radius: 16px; background: #1c2741; border: 1px solid #2e3d61; cursor: pointer; }
+.chips span.on { background: #2f6fed; color: #ffffff; font-weight: bold; }
+.note { color: #9fb0cf; font-size: 14px; margin: 6px 0; }
+.err { color: #ff8f8f; font-weight: bold; min-height: 20px; margin: 6px 0; }
 .groups { display: flex; flex-wrap: wrap; gap: 12px; }
 .groups .card { flex: 1 1 260px; }
-.pl { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #23498f; }
+.pl { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #253150; }
 .pl select { width: auto; padding: 4px; }
 .boards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.bd { flex: 1 1 170px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 8px; padding: 8px 10px; min-height: 76px; }
-.bd b { display: block; font-size: 13px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; }
+.bd { flex: 1 1 170px; background: #131c31; border: 1px solid #2e3d61; border-radius: 12px; padding: 8px 10px; min-height: 76px; }
+.bd b { display: block; font-size: 13px; color: #9fb0cf; text-transform: uppercase; letter-spacing: 1px; }
 .bd .m { font-weight: bold; margin-top: 4px; }
-.bd .s { font-size: 13px; color: #b7d3ff; margin-top: 2px; }
-.bd.run { background: #fff; color: #071d47; } .bd.run b, .bd.run .s { color: #3f5f99; }
+.bd .s { font-size: 13px; color: #9fb0cf; margin-top: 2px; }
+.bd.run { background: #2f6fed; color: #ffffff; } .bd.run b, .bd.run .s { color: #c7d6f5; }
 .tabs { display: flex; flex-wrap: wrap; margin-bottom: 10px; }
-.tabs button { padding: 9px 14px; margin: 0 6px 6px 0; border-radius: 7px; background: #10377f; border: 1px solid #3f6fbf; }
-.tabs button.on { background: #fff; color: #071d47; font-weight: bold; }
+.tabs button { padding: 9px 14px; margin: 0 6px 6px 0; border-radius: 12px; background: #1c2741; border: 1px solid #2e3d61; }
+.tabs button.on { background: #2f6fed; color: #ffffff; font-weight: bold; }
 table { width: 100%; border-collapse: collapse; }
-td, th { padding: 7px 6px; border-bottom: 1px solid #23498f; text-align: left; vertical-align: middle; }
-th { color: #b7d3ff; font-weight: normal; font-size: 13px; text-transform: uppercase; }
+td, th { padding: 7px 6px; border-bottom: 1px solid #253150; text-align: left; vertical-align: middle; }
+th { color: #9fb0cf; font-weight: normal; font-size: 13px; text-transform: uppercase; }
 td.n, th.n { text-align: center; }
 tr.q td { background: rgba(140,196,255,.12); }
-.st { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-.st.pending { background: #23498f; } .st.assigned { background: #c9a227; color: #071d47; } .st.running { background: #2e9d5b; } .st.done { background: #fff; color: #071d47; }
-.champ { text-align: center; padding: 22px; font-size: 26px; font-weight: bold; background: #fff; color: #071d47; border-radius: 10px; margin-bottom: 12px; }
+.st { display: inline-block; padding: 2px 8px; border-radius: 16px; font-size: 12px; font-weight: bold; }
+.st.pending { background: #253150; } .st.assigned { background: #e0ac1c; color: #0b1120; } .st.running { background: #1f9d55; } .st.done { background: #3a4766; color: #ffffff; }
+.champ { text-align: center; padding: 22px; font-size: 26px; font-weight: bold; background: #2f6fed; color: #ffffff; border-radius: 16px; margin-bottom: 12px; }
 #dlg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20; }
-#dlg .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-width: 94%; background: #fff; color: #071d47; border-radius: 10px; padding: 16px; }
+#dlg .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-width: 94%; background: #172036; color: #ffffff; border-radius: 16px; padding: 16px; }
 #dlg h4 { font-size: 19px; margin-bottom: 8px; }
 #dlg .lg { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
 #dlg .lg span { flex: 1 1 auto; font-weight: bold; }
-#dlg .lg input { width: 70px; text-align: center; font-size: 22px; padding: 6px; border: 2px solid #3f6fbf; border-radius: 6px; }
-#dlg .btn { background: #0b2d6b; color: #fff; }
-#dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
-#toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
-#toast.bad { background: #ffd6d6; color: #6b1d2d; }
+#dlg .lg input { width: 70px; text-align: center; font-size: 22px; padding: 6px; border: 1px solid #33456e; border-radius: 12px; }
+#dlg .btn { background: #2f6fed; color: #fff; }
+#dlg .btn.sec { background: #26324f; color: #ffffff; border: 0; }
+#toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #1f2b46; color: #ffffff; font-weight: bold; padding: 10px 18px; border-radius: 12px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); ; border: 1px solid #33456e}
+#toast.bad { background: #ffc2c2; color: #7a1f33; }
 @media (max-width: 600px) {
   #main { padding: 10px 8px 50px; }
   td, th { padding: 5px 3px; font-size: 14px; }
@@ -70,6 +70,19 @@ tr.q td { background: rgba(140,196,255,.12); }
   .card { padding: 8px; }
   .score .n { font-size: 36px; } .score .t { font-size: 15px; }
 }
+
+/* ---------- Modernes Design (gemeinsam) ---------- */
+body { background-image: radial-gradient(ellipse 90% 55% at 50% -12%, #1b2b57 0%, rgba(11,17,32,0) 70%); background-repeat: no-repeat; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]), textarea, select { background-color: #0e1527; color: #ffffff; }
+input::placeholder, textarea::placeholder { color: #5f6e8f; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: #4a86ff; box-shadow: 0 0 0 3px rgba(74,134,255,.28); }
+button, .btn, a { -webkit-transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, -webkit-transform .1s ease; transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, transform .1s ease; }
+button:active, .btn:active { -webkit-transform: scale(.97); transform: scale(.97); }
+.card { box-shadow: 0 12px 32px -16px rgba(0,0,0,.7); }
+#top { box-shadow: 0 6px 20px -10px rgba(0,0,0,.6); }
+#dlg .box { border: 1px solid #33456e; box-shadow: 0 24px 60px -12px rgba(0,0,0,.8); }
+#toast { box-shadow: 0 12px 32px -8px rgba(0,0,0,.7); }
+::-webkit-scrollbar { width: 10px; height: 10px; } ::-webkit-scrollbar-thumb { background: #2e3d61; border-radius: 10px; } ::-webkit-scrollbar-track { background: transparent; }
 </style>
 </head>
 <body>
@@ -130,8 +143,8 @@ tr.q td { background: rgba(140,196,255,.12); }
   function render() {
     var T = S && S.tournament;
     var h;
-    if (T && T.type === 'blind') h = '<div class="card"><p>Gerade läuft ein Blind-Doppel (' + esc(T.name) + '). Verwaltung unter <a href="/blind" style="color:#8cc4ff">/blind</a>.</p></div>';
-    else if (T && T.type === 'league') h = '<div class="card"><p>Gerade läuft ein Liga-Spieltag (' + esc(T.name) + '). Verwaltung unter <a href="/liga" style="color:#8cc4ff">/liga</a>. Ein Turnier kann erst angelegt werden, wenn der Spieltag dort gelöscht wurde.</p></div>';
+    if (T && T.type === 'blind') h = '<div class="card"><p>Gerade läuft ein Blind-Doppel (' + esc(T.name) + '). Verwaltung unter <a href="/blind" style="color:#7cb2ff">/blind</a>.</p></div>';
+    else if (T && T.type === 'league') h = '<div class="card"><p>Gerade läuft ein Liga-Spieltag (' + esc(T.name) + '). Verwaltung unter <a href="/liga" style="color:#7cb2ff">/liga</a>. Ein Turnier kann erst angelegt werden, wenn der Spieltag dort gelöscht wurde.</p></div>';
     else if (!T) h = createHTML();
     else if (T.status === 'setup') h = setupHTML(T);
     else h = runHTML(T);
@@ -380,7 +393,7 @@ tr.q td { background: rgba(140,196,255,.12); }
   function resultDialog(m) {
     if (!m) return;
     var l = m.legs || [0, 0];
-    dialog('<h4>Ergebnis ' + esc(mLabel(m)) + '</h4><p class="note" style="color:#3f5f99">First to ' + m.legsToWin + '</p>' +
+    dialog('<h4>Ergebnis ' + esc(mLabel(m)) + '</h4><p class="note" style="color:#c7d6f5">First to ' + m.legsToWin + '</p>' +
       '<div class="lg"><span>' + esc(m.p1) + '</span><input id="l1" inputmode="numeric" value="' + l[0] + '"></div>' +
       '<div class="lg"><span>' + esc(m.p2) + '</span><input id="l2" inputmode="numeric" value="' + l[1] + '"></div>',
       [{ label: 'Speichern', keep: true, fn: function () {
