@@ -10,6 +10,9 @@ const PORT = Number(process.env.PORT) || 3000;
 const PUB = path.join(__dirname, 'public');
 const DATA = path.join(__dirname, 'data');
 const { createCore } = require('./core');
+const { execFile } = require('child_process');
+// Auf dem Raspberry Pi gesetzt (installieren.sh): Server darf die Uhr stellen und sich ausschalten
+const PI = process.env.DART_PI === '1';
 require('./extensions');
 
 // Daten liegen als JSON-Dateien im Ordner data/
@@ -43,7 +46,7 @@ setTimeout(dailyBackup, 5000);
 setInterval(dailyBackup, 60 * 60 * 1000);
 
 // Wartende Anzeigen (Long-Polling)
-let waiting = [];
+let waiting = [], clockBusy = false;
 core.onChange(function (state) {
   const list = waiting; waiting = [];
   list.forEach(function (w) { clearTimeout(w.timer); sendJSON(w.res, 200, state); });
@@ -95,6 +98,27 @@ const server = http.createServer(function (req, res) {
     w.timer = setTimeout(function () { waiting = waiting.filter(function (x) { return x !== w; }); sendJSON(res, 200, core.state()); }, 25000);
     waiting.push(w);
     req.on('close', function () { clearTimeout(w.timer); waiting = waiting.filter(function (x) { return x !== w; }); });
+    return;
+  }
+
+  // Uhrzeit von Tablets/Fernsehern übernehmen (nur vorstellen, nie zurück – der Pi ohne Internet geht nach)
+  if (p === '/api/zeit') {
+    const t = Number(u.searchParams.get('t'));
+    if (PI && t > 1.7e12 && t - Date.now() > 120000 && t - Date.now() < 5 * 365 * 864e5 && !clockBusy) {
+      clockBusy = true;
+      execFile('sudo', ['-n', '/usr/bin/date', '-s', '@' + Math.round(t / 1000)], function (err) {
+        clockBusy = false;
+        if (err) console.error('Uhr stellen fehlgeschlagen:', err.message); else console.log('Uhrzeit vom Gerät übernommen: ' + new Date().toLocaleString('de-DE'));
+      });
+    }
+    return sendJSON(res, 200, { ok: true, server: Date.now() });
+  }
+  if (p === '/api/system') return sendJSON(res, 200, { pi: PI, uptime: Math.round(os.uptime()), time: Date.now() });
+  if (p === '/api/system/aus' && req.method === 'POST') {
+    if (!PI) return sendJSON(res, 400, { error: 'Ausschalten geht nur auf dem Raspberry Pi' });
+    sendJSON(res, 200, { ok: true });
+    try { dailyBackup(); } catch (e) {}
+    setTimeout(function () { execFile('sudo', ['-n', '/usr/bin/systemctl', 'poweroff'], function (err) { if (err) console.error('Ausschalten fehlgeschlagen:', err.message); }); }, 1000);
     return;
   }
 

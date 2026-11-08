@@ -6,5 +6,13 @@
     if (/[?&]lokal=0/.test(location.search)) localStorage.removeItem('dartlokal');
     on = !!window.DartLocal || localStorage.getItem('dartlokal') === '1';
   } catch (e) { on = !!window.DartLocal; }
-  if (on) document.write('<script src="/local-core.js"><\/script>');
+  if (on) { document.write('<script src="/local-core.js"><\/script>'); return; }
+  // Uhrzeit an den Server melden: Ein Raspberry Pi im Keller ohne Internet kennt die Uhrzeit sonst nicht.
+  try {
+    if (/^https?:$/.test(location.protocol)) {
+      var r = new XMLHttpRequest();
+      r.open('GET', '/api/zeit?t=' + new Date().getTime(), true);
+      r.send();
+    }
+  } catch (e) {}
 })();

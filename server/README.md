@@ -2,7 +2,12 @@
 
 Live-Eingabe an 5 Tablets und Anzeige auf den Fernsehern. Läuft ohne Internet im WLAN „TVR Dart“.
 
-## Einmalig: Startbefehl einrichten
+## Raspberry Pi (empfohlen): einrichten und aktualisieren mit einem Befehl
+    curl -fsSL https://raw.githubusercontent.com/johannesfanderl-cell/dartlive-app/main/server/installieren.sh | bash
+Dart Live startet danach bei jedem Einschalten von selbst. Ausschalten: Startseite → Verwaltung → „Server ausschalten“.
+Die Uhrzeit holt sich der Pi von den Tablets (im Keller gibt es kein Internet).
+
+## Chromebook – einmalig: Startbefehl einrichten
     bash ~/dartlive/einrichten.sh
 Danach Terminal neu öffnen – ab dann startet alles mit:  dart   (startet nach Absturz automatisch neu)
 

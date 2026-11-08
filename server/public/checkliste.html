@@ -27,15 +27,17 @@ table { border-collapse: collapse; width: 100%; margin-top: 2mm; } td { border: 
   <p class="sub">Dart Live · TV Riedenburg</p>
   <h2>1. Vor dem Spielabend (zu Hause, mit Internet)</h2>
   <ul>
-    <li>Chromebook und Tablets aufladen.</li>
-    <li>Neue Version eingespielt? (<code>dartlive.zip</code> in „Linux-Dateien“, im Terminal <code>cd ~ &amp;&amp; unzip -o dartlive.zip</code>)</li>
-    <li>Nur beim ersten Mal: <code>bash ~/dartlive/einrichten.sh</code> – danach startet alles mit <code>dart</code>.</li>
+    <li class="cb">Chromebook und Tablets aufladen.</li><li class="pi">Tablets aufladen.</li>
+    <li class="cb">Neue Version eingespielt? (<code>dartlive.zip</code> in „Linux-Dateien“, im Terminal <code>cd ~ &amp;&amp; unzip -o dartlive.zip</code>)</li>
+    <li class="cb">Nur beim ersten Mal: <code>bash ~/dartlive/einrichten.sh</code> – danach startet alles mit <code>dart</code>.</li>
+    <li class="pi">Neue Version? Den Pi zu Hause ans Internet hängen und den Installationsbefehl aus der Einrichtungsanleitung noch einmal ausführen.</li>
   </ul>
   <h2>2. Aufbau im Vereinsraum</h2>
   <ul>
     <li>Reiserouter „TVR Dart“ einstecken und 1 Minute warten.</li>
-    <li>Chromebook: <b>zuerst</b> Terminal öffnen (Linux startet), dann ins WLAN <b>TVR Dart</b> wechseln.</li>
-    <li>Im Terminal <code>dart</code> eingeben → „Dart Live läuft auf Port 3000“. Terminal offen lassen (nur minimieren).</li>
+    <li class="cb">Chromebook: <b>zuerst</b> Terminal öffnen (Linux startet), dann ins WLAN <b>TVR Dart</b> wechseln.</li>
+    <li class="cb">Im Terminal <code>dart</code> eingeben → „Dart Live läuft auf Port 3000“. Terminal offen lassen (nur minimieren).</li>
+    <li class="pi">Raspberry Pi einstecken und ca. 1 Minute warten – Dart Live startet von selbst.</li>
     <li>Tablets: WLAN „TVR Dart“, App „Dart Live“ öffnen, HDMI-Kabel zum Monitor stecken.</li>
     <li>Fernseher: Browser öffnen, Adresse eingeben (siehe unten).</li>
   </ul>
@@ -51,16 +53,35 @@ table { border-collapse: collapse; width: 100%; margin-top: 2mm; } td { border: 
   </table>
   <h2>4. Wenn etwas nicht geht</h2>
   <ul>
-    <li>Tablet zeigt „Server nicht erreichbar“: Läuft das Terminal am Chromebook? Ist das Tablet im WLAN „TVR Dart“?</li>
-    <li>Chromebook-IP prüfen (WLAN-Details): muss <b>192.168.68.222</b> sein.</li>
-    <li>Linux startet nicht (Fehler 52): kurz mit Internet-WLAN verbinden, Terminal öffnen, dann zurück zu „TVR Dart“.</li>
+    <li class="cb">Tablet zeigt „Server nicht erreichbar“: Läuft das Terminal am Chromebook? Ist das Tablet im WLAN „TVR Dart“?</li><li class="pi">Tablet zeigt „Server nicht erreichbar“: Leuchtet am Pi die rote Lampe? Pi aus- und wieder einstecken, 1 Minute warten. Ist das Tablet im WLAN „TVR Dart“?</li>
+    <li class="cb">Chromebook-IP prüfen (WLAN-Details): muss <b>192.168.68.222</b> sein.</li>
+    <li class="cb">Linux startet nicht (Fehler 52): kurz mit Internet-WLAN verbinden, Terminal öffnen, dann zurück zu „TVR Dart“.</li>
     <li>Falsche Eingabe am Tablet: „Rückgängig“. Turnier-/Ligaergebnis falsch: in der Leitung „Ergebnis“ korrigieren.</li>
   </ul>
   <h2>5. Nach dem Spielabend</h2>
   <ul>
     <li>Optional: Startseite → Verwaltung → „Sicherung herunterladen“ (eine automatische Sicherung gibt es zusätzlich täglich).</li>
-    <li>Im Terminal <code>Strg + C</code>, Chromebook zuklappen, Tablets und Router ausstecken.</li>
+    <li class="cb">Im Terminal <code>Strg + C</code>, Chromebook zuklappen, Tablets und Router ausstecken.</li>
+    <li class="pi">Startseite → Verwaltung → <b>„Server ausschalten“</b>, ca. 20 Sekunden warten, dann Pi, Tablets und Router ausstecken.</li>
   </ul>
 </div>
+<script>
+(function () {
+  function show(pi) {
+    var li = document.getElementsByTagName('li');
+    for (var i = 0; i < li.length; i++) {
+      if (li[i].className === 'pi') li[i].style.display = pi ? '' : 'none';
+      if (li[i].className === 'cb') li[i].style.display = pi ? 'none' : '';
+    }
+  }
+  show(false);
+  try {
+    var r = new XMLHttpRequest();
+    r.open('GET', '/api/system?_=' + new Date().getTime(), true);
+    r.onreadystatechange = function () { if (r.readyState === 4 && r.status === 200) { try { show(!!JSON.parse(r.responseText).pi); } catch (e) {} } };
+    r.send();
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

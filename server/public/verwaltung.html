@@ -44,6 +44,15 @@ table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-
     <p class="note"><b>Automatisch:</b> Der Server am Chromebook speichert jeden Tag eine Sicherung im Ordner <code>dartlive/data/sicherungen</code> (die letzten 30 Tage).
     Wenn du in den ChromeOS-Einstellungen den Ordner „Downloads“ für Linux freigibst, liegt zusätzlich eine Kopie in <b>Downloads/Dart-Sicherungen</b> – von dort kannst du sie z. B. in Google Drive ablegen.</p>
   </div>
+  <div id="pi" style="display:none">
+  <h3>Server (Raspberry Pi)</h3>
+  <div class="card">
+    <p class="note" id="piinfo"></p>
+    <p class="note">Nach dem Spielabend den Pi hier ausschalten und erst dann den Stecker ziehen – so bleibt die Speicherkarte heil. Vorher wird automatisch eine Sicherung angelegt.</p>
+    <button class="btn warn" id="aus">Server ausschalten</button>
+    <div class="msg" id="m3"></div>
+  </div>
+  </div>
   <h3>Spielabend</h3>
   <div class="card"><a class="btn sec" href="/checkliste">Checkliste für den Spielabend</a></div>
 </div>
@@ -66,6 +75,20 @@ table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-
     });
   }
   if (window.DartLokal) $('auto').style.display = 'none';
+  req('GET', '/api/system', null, function (e, d) {
+    if (e || !d || !d.pi) return;
+    $('pi').style.display = 'block';
+    $('auto').innerHTML = '<p class="note"><b>Automatisch:</b> Der Server speichert jeden Tag eine Sicherung im Ordner <code>dartlive/data/sicherungen</code> (die letzten 30 Tage). Lade ab und zu oben eine Sicherung herunter und lege sie z. B. in Google Drive ab.</p>';
+    var h = Math.floor(d.uptime / 3600), m = Math.floor(d.uptime % 3600 / 60);
+    $('piinfo').innerHTML = 'Läuft seit ' + h + ' Std. ' + m + ' Min. · Uhrzeit am Server: ' + new Date(d.time).toLocaleString('de-DE');
+  });
+  $('aus').onclick = function () {
+    if (!confirm('Server jetzt ausschalten? Danach funktionieren Tablets und Fernseher erst wieder, wenn der Pi neu eingesteckt wird.')) return;
+    req('POST', '/api/system/aus', '{}', function (e) {
+      if (e) return msg('m3', e);
+      msg('m3', 'Der Server schaltet sich aus. Wenn die grüne Lampe am Pi nicht mehr blinkt (ca. 20 Sekunden), kannst du den Stecker ziehen.', true);
+    });
+  };
   $('dl').onclick = function () {
     req('GET', '/api/backup', null, function (e, b) {
       if (e) return msg('m1', e);
