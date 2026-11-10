@@ -95,7 +95,9 @@ const server = http.createServer(function (req, res) {
     const v = Number(u.searchParams.get('v')) || 0;
     if (core.version() !== v) return sendJSON(res, 200, core.state());
     const w = { res: res, timer: null };
-    w.timer = setTimeout(function () { waiting = waiting.filter(function (x) { return x !== w; }); sendJSON(res, 200, core.state()); }, 25000);
+    // max = höchstens so viele Sekunden warten (Geräte, bei denen lange Verbindungen abbrechen, fragen kürzer)
+    const maxWait = Math.max(0, Math.min(25, Number(u.searchParams.get('max') || 25))) * 1000;
+    w.timer = setTimeout(function () { waiting = waiting.filter(function (x) { return x !== w; }); sendJSON(res, 200, core.state()); }, maxWait);
     waiting.push(w);
     req.on('close', function () { clearTimeout(w.timer); waiting = waiting.filter(function (x) { return x !== w; }); });
     return;

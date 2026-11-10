@@ -377,7 +377,7 @@ function buildKO(T) {
   for (let i = 0; i < order.length; i += 2) pairs.push([order[i], order[i + 1]]);
   const lows = pairs.map(p => p[1]);
   let best = lows, bestScore = Infinity;
-  if (size <= 8) {
+  if (size <= 16) {
     permutations(lows).forEach(perm => {
       let conflicts = 0, dev = 0;
       pairs.forEach((p, i) => {

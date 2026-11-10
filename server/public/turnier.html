@@ -154,7 +154,7 @@ tr.q td { background: rgba(140,196,255,.12); }
     for (var i = 0; i < names.length; i++) if (pl.indexOf(names[i]) < 0) known += '<span data-addname="' + esc(names[i]) + '">' + esc(names[i]) + '</span>';
     if (known) h += '<p class="note">Bekannte Namen antippen zum Hinzufügen:</p><div class="chips">' + known + '</div>';
     h += '<label class="f">Gesetzte Spieler (der Reihe nach antippen: Nr. 1, 2, 3 … – werden auf die Gruppen verteilt)</label><div class="chips" id="seedbox">' + seedChips() + '</div>';
-    h += '<div class="row"><div><label class="f">Gruppen</label>' + seg('groups', [2, 3, 4], form.groups) + '</div>';
+    h += '<div class="row"><div><label class="f">Gruppen</label>' + seg('groups', [2, 3, 4, 5, 6], form.groups) + '</div>';
     h += '<div><label class="f">K.-o.-Runde ab</label>' + seg('koSize', [4, 8, 16], form.koSize, ['Halbfinale', 'Viertelfinale', 'Achtelfinale']) + '</div></div>';
     h += '<div class="row"><div><label class="f">Gruppenspiele First to</label>' + seg('legs', [1, 2, 3, 4], form.legs) + '</div>';
     h += '<div><label class="f">K.-o. First to</label>' + seg('koLegs', [2, 3, 4, 5], form.koLegs) + '</div>';
