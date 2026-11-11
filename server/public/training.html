@@ -134,7 +134,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     atc:      { name: 'Around the Clock', desc: '1–20 und Bull der Reihe nach', best: 'min' },
     bobs:     { name: "Bob's 27", desc: 'Doppel-Training, Start 27 Punkte', best: 'max' },
     checkout: { name: 'Checkout-Training', desc: 'Rest in 3 Aufnahmen auschecken', best: 'max' },
-    countup:  { name: 'Count Up', desc: 'Punkte sammeln in festen Aufnahmen', best: 'max' },
+    countup:  { name: 'Count Up / Highscore', desc: 'So viele Punkte wie möglich in festen Aufnahmen (z. B. 50), Feld egal', best: 'max' },
     cricket:  { name: 'Cricket', desc: '15–20 und Bull schließen, Punkte machen', best: 'max' },
     killer:   { name: 'Swedish Killer', desc: '5 Leben, Zahl mit der schwachen Hand', best: 'sum' }
   };
@@ -331,7 +331,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         break;
       case 'countup':
         big = p.total;
-        small = 'Runde ' + Math.min(p.round, G.opts.rounds) + '/' + G.opts.rounds + ' · Ø ' + (p.round ? fmt(p.total / p.round, 1) : '–');
+        small = Math.min(p.round, G.opts.rounds) + '/' + G.opts.rounds + ' Aufnahmen gespielt · Ø ' + (p.round ? fmt(p.total / p.round, 1) : '–');
         break;
       case 'cricket':
         big = p.pts;
@@ -559,7 +559,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     h += '</div>';
     if (setup.game === 'atc') h += optHTML('Modus', 'atc', ['Single', 'Double', 'Triple'], setup.atc);
     if (setup.game === 'checkout') h += optHTML('Startwert', 'start', [61, 81, 101, 121], setup.start) + '<p class="note">10 Versuche mit je 3 Aufnahmen. Geschafft: Ziel +1, nicht geschafft: Ziel −1 (nicht unter Startwert). Double Out.</p>';
-    if (setup.game === 'countup') h += optHTML('Aufnahmen', 'rounds', [10, 20], setup.rounds);
+    if (setup.game === 'countup') h += optHTML('Aufnahmen', 'rounds', [10, 20, 30, 50], setup.rounds);
     if (setup.game === 'killer') h += optHTML('Eigene Zahl', 'own', ['nichts', 'Leben zurück', 'kostet Leben'], setup.own) + '<p class="note">Treffer auf die Zahl eines Gegners: Single −1, Double −2, Triple −3 Leben. Wer als Letzter übrig ist, gewinnt.</p>';
     if (setup.game === 'jdc') h += '<p class="note">Offizielle Wertung: Shanghai 10–15 und 15–20 (je Zahl 3 Darts, Shanghai +100), Doppel 1–20 je 1 Dart = 50, Bull = 100.</p>';
     if (setup.game === 'cricket') h += '<p class="note">Allein: so schnell wie möglich alles schließen. Mit mehreren: wer alles zu hat und vorne liegt, gewinnt. Wertung: Marks pro Runde (MPR).</p>';
