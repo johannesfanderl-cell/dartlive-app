@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script>window.DART_PWA = true;</script>
+<script src="local-core.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dart Training">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#071d47">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Dart Training</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; overflow: hidden; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+button { font-family: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+input { font-family: inherit; }
+#app { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+#top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: .35rem .9rem; background: #0b2d6b; border-bottom: .15rem solid #fff; }
+#top b { font-size: 1.2rem; letter-spacing: .08em; text-transform: uppercase; }
+#top b span { color: #8cc4ff; }
+#net { font-size: .85rem; color: #b7d3ff; }
+#net.bad { color: #ffb3b3; font-weight: bold; }
+#main { flex: 1 1 auto; position: relative; overflow: hidden; }
+.scroll { height: 100%; overflow-y: auto; padding: .7rem 1rem 1rem; }
+h2 { font-size: 1.2rem; text-transform: uppercase; letter-spacing: .06em; margin: .2rem 0 .5rem; }
+h3 { font-size: 1rem; color: #b7d3ff; text-transform: uppercase; letter-spacing: .05em; margin: .8rem 0 .4rem; }
+.games { display: flex; flex-wrap: wrap; }
+.games button { flex: 0 0 31.6%; margin: 0 1.5% .5rem 0; padding: .6rem .5rem; text-align: left; background: #10377f; border: .12rem solid #3f6fbf; border-radius: .5rem; min-height: 4.2rem; }
+.games button b { display: block; font-size: 1.15rem; }
+.games button small { display: block; font-size: .85rem; color: #b7d3ff; margin-top: .15rem; }
+.games button.on { background: #fff; color: #071d47; border-color: #fff; }
+.games button.on small { color: #3f5f99; }
+.seg { display: flex; flex-wrap: wrap; }
+.seg button { flex: 1 1 0; min-width: 5rem; padding: .55rem .3rem; font-size: 1.05rem; background: #10377f; border: .1rem solid #3f6fbf; margin: 0 .3rem .3rem 0; border-radius: .4rem; }
+.seg.tsel button { flex: 0 0 auto; min-width: 3.6rem; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; border-color: #fff; }
+.opt { display: flex; align-items: center; margin-bottom: .3rem; }
+.opt > span { flex: 0 0 8rem; color: #b7d3ff; }
+.opt .seg { flex: 1 1 auto; }
+.plist { display: flex; flex-wrap: wrap; margin-bottom: .3rem; }
+.plist .pc { display: flex; align-items: center; margin: 0 .4rem .4rem 0; padding: .4rem .5rem .4rem .8rem; border-radius: 1.2rem; background: #fff; color: #071d47; font-weight: bold; font-size: 1.05rem; }
+.plist .pc button { margin-left: .4rem; width: 1.8rem; height: 1.8rem; border-radius: 1rem; background: #0b2d6b; color: #fff; font-size: 1rem; }
+.plist .pc input { width: 3.2rem; margin-left: .5rem; font-size: 1.05rem; padding: .15rem .3rem; border: .12rem solid #3f6fbf; border-radius: .3rem; text-align: center; -webkit-user-select: text; user-select: text; }
+.addrow { display: flex; margin-bottom: .4rem; }
+.addrow input { flex: 1 1 auto; font-size: 1.15rem; padding: .45rem .6rem; border-radius: .4rem; border: .15rem solid #3f6fbf; -webkit-user-select: text; user-select: text; }
+.addrow button { margin-left: .4rem; padding: 0 1rem; font-size: 1.1rem; font-weight: bold; background: #fff; color: #071d47; border-radius: .4rem; }
+.chips button { display: inline-block; margin: 0 .35rem .35rem 0; padding: .35rem .7rem; border-radius: 1rem; background: #10377f; border: .1rem solid #3f6fbf; font-size: .95rem; }
+.big { display: block; width: 100%; padding: .75rem; margin-top: .5rem; font-size: 1.4rem; font-weight: bold; letter-spacing: .06em; text-transform: uppercase; background: #fff; color: #071d47; border-radius: .5rem; }
+.big.sec { background: #10377f; color: #fff; border: .12rem solid #3f6fbf; }
+.row2 { display: flex; } .row2 .big { margin-right: .5rem; } .row2 .big:last-child { margin-right: 0; }
+.hint { color: #ffb3b3; min-height: 1.2rem; margin-top: .3rem; }
+.note { color: #b7d3ff; font-size: .9rem; margin: .2rem 0 .4rem; }
+
+/* Spiel */
+.play { height: 100%; display: flex; }
+.side { flex: 0 0 44%; display: flex; flex-direction: column; padding: .6rem; overflow: hidden; }
+.pad { flex: 1 1 auto; display: flex; flex-direction: column; padding: .6rem .6rem .6rem 0; }
+.ginfo { font-size: .95rem; color: #b7d3ff; text-align: center; margin-bottom: .35rem; }
+.prow { display: flex; align-items: center; border: .12rem solid #3f6fbf; background: #10377f; border-radius: .5rem; padding: .3rem .6rem; margin-bottom: .35rem; flex: 1 1 0; min-height: 0; }
+.prow.on { background: #fff; color: #071d47; border-color: #fff; }
+.prow.out { opacity: .45; }
+.prow .pn { flex: 1 1 auto; min-width: 0; }
+.prow .pn b { display: block; font-size: 1.15rem; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .pn small { display: block; font-size: .85rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prow .pv { font-size: 2.4rem; font-weight: bold; margin-left: .5rem; }
+.tgt { display: flex; align-items: center; justify-content: space-between; background: #fff; color: #071d47; border-radius: .5rem; padding: .3rem .8rem; margin-bottom: .4rem; }
+.tgt .who { font-size: 1.05rem; font-weight: bold; text-transform: uppercase; }
+.tgt .what { font-size: 2.3rem; font-weight: bold; }
+.slots { display: flex; margin-bottom: .4rem; }
+.slots span { flex: 1 1 0; margin-right: .3rem; text-align: center; padding: .35rem 0; border-radius: .35rem; background: #0b2d6b; border: .1rem solid #3f6fbf; font-size: 1.15rem; font-weight: bold; min-height: 2.2rem; }
+.slots span:last-child { margin-right: 0; }
+.inp { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-content: stretch; }
+.inp button { margin: 0 1% 1% 0; font-size: 1.7rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .45rem; }
+.inp button.w2 { flex: 0 0 49%; } .inp button.w3 { flex: 0 0 32.3%; } .inp button.w4 { flex: 0 0 24%; } .inp button.w5 { flex: 0 0 19%; } .inp button.w1 { flex: 0 0 99%; }
+.inp button.hi { background: #fff; color: #071d47; border-color: #fff; }
+.inp button.miss { background: #3a1f4f; border-color: #8a5fb0; }
+.inp button:active { background: #3f6fbf; }
+.inp button small { display: block; font-size: .8rem; font-weight: normal; }
+.cgrid { flex: 1 1 auto; display: flex; flex-direction: column; }
+.cgrid .cr { flex: 1 1 0; display: flex; margin-bottom: 1%; }
+.cgrid .cr span { flex: 0 0 22%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: bold; text-align: center; line-height: 1.1; }
+.cgrid .cr button { flex: 1 1 0; margin-left: 1%; font-size: 1.3rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.cgrid .cr button.x { opacity: .35; }
+.cgrid .cr button:active { background: #3f6fbf; }
+.cgrid .cr.miss button { background: #3a1f4f; border-color: #8a5fb0; }
+.acts { display: flex; margin-top: .3rem; }
+.acts button { flex: 1 1 0; margin-right: .3rem; padding: .55rem 0; font-size: 1.05rem; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.acts button:last-child { margin-right: 0; }
+
+/* Ergebnis / Bestenliste */
+table.res { width: 100%; border-collapse: collapse; margin-bottom: .5rem; }
+table.res td, table.res th { padding: .45rem .5rem; border-bottom: .08rem solid #3f6fbf; text-align: left; font-size: 1.05rem; }
+table.res th { color: #b7d3ff; font-weight: normal; font-size: .9rem; text-transform: uppercase; }
+table.res td.n { text-align: right; font-weight: bold; font-size: 1.25rem; }
+table.res tr.first td { color: #fff; font-weight: bold; }
+table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; background: #3a1f4f; font-size: .9rem; }
+.tabs { display: flex; flex-wrap: wrap; margin-bottom: .5rem; }
+.tabs button { padding: .45rem .8rem; margin: 0 .3rem .3rem 0; border-radius: .4rem; background: #10377f; border: .1rem solid #3f6fbf; font-size: .95rem; }
+.tabs button.on { background: #fff; color: #071d47; font-weight: bold; }
+
+#dlg { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.65); z-index: 10; }
+#dlg .box { position: absolute; top: 50%; left: 50%; width: 26rem; max-width: 92%; transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); background: #fff; color: #071d47; border-radius: .7rem; padding: 1.1rem; text-align: center; }
+#dlg h3 { font-size: 1.4rem; margin: 0 0 .4rem; color: #071d47; text-transform: none; letter-spacing: 0; }
+#dlg p { font-size: 1.05rem; margin-bottom: .6rem; }
+#dlg button { display: block; width: 100%; padding: .7rem; margin-top: .4rem; font-size: 1.15rem; font-weight: bold; border-radius: .45rem; background: #0b2d6b; color: #fff; }
+#dlg button.sec { background: #e3ebf7; color: #071d47; }
+#toast { display: none; position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); -webkit-transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; font-size: 1.2rem; padding: .6rem 1.2rem; border-radius: .5rem; z-index: 11; box-shadow: 0 .2rem 1rem rgba(0,0,0,.5); }
+@media (orientation: portrait) {
+  .play { flex-direction: column; } .side { flex: 0 0 auto; max-height: 40%; overflow-y: auto; padding-bottom: 0; } .pad { padding: .6rem; }
+  .prow { flex: 0 0 auto; min-height: 3.4rem; } .prow .pv { font-size: 2rem; }
+  .games button { flex-basis: 48%; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top"><b>Training · Scheibe <span id="bn">?</span></b><span id="net">verbinde …</span></div>
+  <div id="main"></div>
+</div>
+<div id="dlg"><div class="box" id="dlgbox"></div></div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var N = parseInt(location.pathname.replace(/[^0-9]/g, ''), 10);
+  if (!(N >= 1 && N <= 5)) N = 1;
+  document.getElementById('bn').innerHTML = N;
+  document.title = 'Training – Scheibe ' + N;
+
+  var IMPOSSIBLE = { 163: 1, 166: 1, 169: 1, 172: 1, 173: 1, 175: 1, 176: 1, 178: 1, 179: 1 };
+  var CR = [20, 19, 18, 17, 16, 15, 25];
+  var MAXP = 6;
+
+  var GAMES = {
+    jdc:      { name: 'JDC Challenge', desc: 'Shanghai 10–15, Doppel 1–20 + Bull, Shanghai 15–20', best: 'max' },
+    atc:      { name: 'Around the Clock', desc: '1–20 und Bull der Reihe nach', best: 'min' },
+    bobs:     { name: "Bob's 27", desc: 'Doppel-Training, Start 27 Punkte', best: 'max' },
+    checkout: { name: 'Checkout-Training', desc: 'Ab Startwert auschecken – 3, 6 oder 9 Darts je Zahl', best: 'max' },
+    countup:  { name: 'Count Up / Highscore', desc: 'So viele Punkte wie möglich in festen Aufnahmen (z. B. 50), Feld egal', best: 'max' },
+    cricket:  { name: 'Cricket', desc: '15–20 und Bull schließen, Punkte machen', best: 'max' },
+    killer:   { name: 'Swedish Killer', desc: '5 Leben, Zahl mit der schwachen Hand', best: 'sum' },
+    shanghai: { name: 'Shanghai', desc: 'Runde 1 auf die 1, Runde 2 auf die 2 … – S+D+T in einer Aufnahme gewinnt sofort', best: 'max' },
+    halveit:  { name: 'Halve It', desc: '7 feste Ziele – Ziel verfehlt: Punkte halbiert', best: 'max' },
+    bermuda:  { name: 'Bermuda', desc: 'Wie Halve It mit 12 Zielen von 12 bis Bull', best: 'max' },
+    ladder:   { name: '121-Checkout-Leiter', desc: 'Ab 121: geschafft +1 – sonst −1 oder stehen bleiben', best: 'max' },
+    doubles:  { name: 'Doppel-Training', desc: 'Alle Doppel oder Lieblingsdoppel – Trefferquote', best: 'max' },
+    scoring:  { name: 'Triple-Training', desc: 'Mind. 3 Triple aussuchen, je 10+ Aufnahmen – Triple-Quote', best: 'max' },
+    catch40:  { name: 'Catch 40', desc: '61 bis 100 auschecken – 3, 6 oder 9 Darts je Zahl', best: 'max' },
+    twodart:  { name: '2-Dart-Finishes', desc: 'Alle 2-Dart-Finishes 41–110 ab Wunschzahl – 3, 6 oder 9 Darts', best: 'max' },
+    randcheck:{ name: 'Zufalls-Checkouts', desc: 'Zufällige 2-Dart-Finishes (z. B. 15) – 3, 6 oder 9 Darts', best: 'max' },
+    beat:     { name: 'Beat the Score', desc: 'Vorgänger überbieten, sonst ein Leben weg', best: 'sum' },
+    flow:     { name: 'Darts Flow', desc: 'TVR-Flow: je Runde 20, 19, 18, Bull, D16/D8/D4, D20/D10/D5 – ab 100 Bonus-Strich', best: 'max' },
+    gotcha:   { name: 'Gotcha', desc: 'Genau auf 301 – gleicher Stand schickt den Gegner auf 0', best: 'sum' }
+  };
+  // Ziele für Halve It / Bermuda: Zahl, 'D' = beliebiges Doppel, 'T' = beliebiges Triple, 25 = Bull
+  var HALVE = { halveit: [20, 16, 'D', 17, 'T', 18, 25], bermuda: [12, 13, 14, 'D', 15, 16, 17, 'T', 18, 19, 20, 25] };
+  function hvLabel(t) { return t === 'D' ? 'Doppel' : (t === 'T' ? 'Triple' : (t === 25 ? 'Bull' : String(t))); }
+  // Ist v als Summe von 3 Darts auf dieses Ziel möglich?
+  function hvValid(t, v) {
+    if (v === 0) return true;
+    if (t === 'D') return v % 2 === 0 && v <= 120;
+    if (t === 'T') return v % 3 === 0 && v <= 180;
+    if (t === 25) return v % 25 === 0 && v <= 150;
+    return v % t === 0 && v <= 9 * t;
+  }
+  function dblSeq(mode) {
+    var s = [], i;
+    if (mode === 'Alle Doppel') { for (i = 1; i <= 20; i++) s.push(i); s.push(25); }
+    else if (mode === 'D20/D16/D8') s = [20, 20, 20, 16, 16, 16, 8, 8, 8];
+    else { var n = parseInt(String(mode).replace(/\D/g, ''), 10) || 20; for (i = 0; i < 10; i++) s.push(n); }
+    return s;
+  }
+  function dLabel(n) { return n === 25 ? 'Bull' : 'D' + n; }
+  // Alle Zahlen, die mit 2 Darts (Double Out) gecheckt werden können: 41–98, 100, 101, 104, 107, 110
+  var TWO = (function () {
+    var single = {}, dbl = [], out = [], i, v;
+    for (i = 1; i <= 20; i++) { single[i] = single[2 * i] = single[3 * i] = 1; dbl.push(2 * i); }
+    single[25] = single[50] = 1; dbl.push(50);
+    for (v = 41; v <= 170; v++) for (i = 0; i < dbl.length; i++) if (single[v - dbl[i]]) { out.push(v); break; }
+    return out;
+  })();
+  // Darts Flow: 6 Stationen je Runde, je 3 Darts (Doppel: je ein Dart auf jedes Doppel)
+  var FLOW = [['20', '20', '20'], ['19', '19', '19'], ['18', '18', '18'], ['Bull', 'Bull', 'Bull'], ['D16', 'D8', 'D4'], ['D20', 'D10', 'D5']];
+  var FLOWN = ['20', '19', '18', 'Bull', 'D16 · D8 · D4', 'D20 · D10 · D5'];
+  var FLOW_BONUS = 100;
+  var CD_DEF = { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 };
+  function visMax() { return Math.max(1, Math.round((G.opts.cd || (isCatch(G.game) ? 6 : 9)) / 3)); }
+  function tsetOf() { return G.opts.tset || [G.opts.tz || 20]; }
+  function catchPts(darts) { return darts <= 2 ? 3 : (darts === 3 ? 2 : 1); }
+  function isCatch(g) { return g === 'catch40' || g === 'twodart' || g === 'randcheck'; }
+  function catchSeq(cfg) {
+    var i, s = [];
+    if (cfg.game === 'catch40') { for (i = 61; i <= 60 + cfg.c40; i++) s.push(i); return s; }
+    if (cfg.game === 'twodart') { for (i = 0; i < TWO.length; i++) if (TWO[i] >= cfg.cs) s.push(TWO[i]); return s; }
+    var pool = TWO.slice();
+    for (i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    return pool.slice(0, cfg.cn);
+  }
+  function pct(a, b) { return b ? Math.round(a / b * 1000) / 10 : 0; }
+
+  var names = [], results = [];
+  var screen = 'menu';
+  var setup = { game: 'jdc', players: [], nums: {}, atc: 'Single', start: 121, rounds: 10, own: 'nichts', sh: 7, att: 10, dbl: 'Alle Doppel', tz: 20, tr: 10, tset: [20, 19, 18], cdm: { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 }, c40: 40, lives: 3, gt: 301, cs: 41, cn: 15, lm: '−1 zurück', fr: 12 };
+  var G = null;            // laufendes Spiel
+  var undo = [];
+  var typed = '';
+  var msg = '';
+  var bestTab = null;
+  var loaded = false, dirty = false, saving = false;
+  var savedIds = [];   // zuletzt gespeicherte Ergebnisse (für Rückgängig nach Spielende)
+
+  /* ---------- Hilfen ---------- */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function fmt(x, d) { return (Math.round(x * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d).replace('.', ','); }
+  function tName(n) { return n === 25 ? 'Bull' : String(n); }
+
+  function xhr(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    r.timeout = 8000;
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      cb(r.status >= 200 && r.status < 300 ? null : (r.status || 'Netz'), d);
+    };
+    if (body != null) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function setNet(ok, t) { var n = $('net'); n.className = ok ? '' : 'bad'; n.innerHTML = esc(window.DART_PWA && ok ? 'TV Riedenburg' : t); }
+  if (window.DART_PWA) { var tb = $('top').getElementsByTagName('b')[0]; if (tb) tb.innerHTML = 'Dart Training'; document.title = 'Dart Training'; }
+  function scale() {
+    var w = window.innerWidth, h = window.innerHeight;
+    var f = w > h ? Math.min(w / 62, h / 36) : Math.min(w / 36, h / 62);
+    document.documentElement.style.fontSize = Math.max(9, Math.round(f * 10) / 10) + 'px';
+  }
+  var toastT = null;
+  function toast(t) { var el = $('toast'); el.innerHTML = esc(t); el.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(function () { el.style.display = 'none'; }, 2300); }
+  var dlgBtns = [];
+  function dialog(title, text, btns) {
+    dlgBtns = btns;
+    var h = '<h3>' + esc(title) + '</h3>' + (text ? '<p>' + esc(text) + '</p>' : '');
+    for (var i = 0; i < btns.length; i++) h += '<button data-dlg="' + i + '"' + (btns[i].sec ? ' class="sec"' : '') + '>' + esc(btns[i].label) + '</button>';
+    $('dlgbox').innerHTML = h; $('dlg').style.display = 'block';
+  }
+  function closeDlg() { $('dlg').style.display = 'none'; dlgBtns = []; }
+
+  /* ---------- Server ---------- */
+  function boardDoc() {
+    if (!G) return { status: 'idle' };
+    return { status: 'training', players: G.players.map(function (p) { return { name: p.name }; }), view: view(), g: G, banner: G.banner || '', bannerId: G.bannerId || 0 };
+  }
+  function save() {
+    dirty = true; if (saving) return;
+    saving = true; dirty = false;
+    xhr('PUT', '/api/board/' + N, boardDoc(), function (err) {
+      saving = false;
+      if (err) { dirty = true; setNet(false, '⚠ nicht gespeichert – keine Verbindung'); return; }
+      setNet(true, '● verbunden'); if (dirty) save();
+    });
+  }
+  setInterval(function () { if (dirty && !saving) save(); }, 3000);
+
+  function load() {
+    xhr('GET', '/api/state', null, function (err, d) {
+      if (err || !d) { setNet(false, '⚠ Server nicht erreichbar'); if (!loaded) render(); setTimeout(load, 3000); return; }
+      setNet(true, '● verbunden');
+      names = d.names || [];
+      if (!loaded) {
+        loaded = true;
+        var b = d.boards && d.boards[N];
+        if (b && b.status === 'training' && b.g && !b.g.finished) { G = b.g; screen = 'play'; }
+      }
+      render();
+    });
+  }
+  function loadResults(cb) {
+    xhr('GET', '/api/results', null, function (err, d) { if (!err && d) results = d.results || []; if (cb) cb(); });
+  }
+
+  /* ---------- Spiele: Aufbau ---------- */
+  var JDC_STEPS = (function () {
+    var s = [], i;
+    for (i = 10; i <= 15; i++) s.push({ t: 'sh', n: i, part: 0 });
+    var d = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25];
+    for (i = 0; i < 21; i += 3) s.push({ t: 'db', g: d.slice(i, i + 3), part: 1 });
+    for (i = 15; i <= 20; i++) s.push({ t: 'sh', n: i, part: 2 });
+    return s;
+  })();
+
+  function newGame(cfg) {
+    var g = { game: cfg.game, opts: {}, players: [], cur: 0, round: 1, visit: [], finished: false, saved: false, winner: -1, bannerId: 0, banner: '' };
+    var i;
+    for (i = 0; i < cfg.players.length; i++) g.players.push({ name: cfg.players[i] });
+    if (g.game === 'atc') g.opts.mode = cfg.atc;
+    if (g.game === 'checkout') g.opts.start = cfg.start;
+    if (g.game === 'countup') g.opts.rounds = cfg.rounds;
+    if (g.game === 'killer') g.opts.own = cfg.own;
+    g.opts.sh = cfg.sh; g.opts.att = cfg.att; g.opts.dbl = cfg.dbl; g.opts.tz = cfg.tz; g.opts.tr = cfg.tr; g.opts.tset = (cfg.tset || [20, 19, 18]).slice();
+    g.opts.cd = (cfg.cdm && cfg.cdm[cfg.game]) || CD_DEF[cfg.game] || 9;
+    g.opts.c40 = cfg.c40; g.opts.lives = cfg.lives; g.opts.gt = cfg.gt; g.opts.cs = cfg.cs; g.opts.cn = cfg.cn; g.opts.lm = cfg.lm; g.opts.fr = cfg.fr || 12;
+    if (isCatch(g.game)) g.seq = catchSeq(cfg);
+    if (g.game === 'ladder') g.opts.start = 121;
+    g.cfg = clone(cfg); g.bar = 0;
+    g.pd = [];
+    for (i = 0; i < g.players.length; i++) {
+      var p;
+      switch (g.game) {
+        case 'jdc': p = { step: 0, score: 0, parts: [0, 0, 0], sh: 0, dhits: 0 }; break;
+        case 'atc': p = { target: 1, darts: 0, hits: 0, per: {} }; break;
+        case 'bobs': p = { score: 27, target: 1, hits: 0, out: false, hl: [] }; break;
+        case 'checkout': p = { target: cfg.start, attempt: 1, vis: 0, rem: cfg.start, checks: 0, best: 0, darts: 0, fails: 0, cdarts: 0 }; break;
+        case 'countup': p = { round: 0, total: 0, vs: [] }; break;
+        case 'cricket': p = { marks: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 }, pts: 0, darts: 0, mk: 0, trip: 0, bulls: 0, closedAt: 0 }; break;
+        case 'killer': p = { num: cfg.nums[cfg.players[i]], lives: 5, out: false, place: 0, taken: 0 }; break;
+        case 'shanghai': p = { num: 1, score: 0, sh: 0, hits: 0, darts: 0, trip: 0, rp: [] }; break;
+        case 'halveit': case 'bermuda': p = { idx: 0, score: 0, halved: 0, lost: 0, tv: [] }; break;
+        case 'ladder': p = { target: 121, attempt: 1, vis: 0, rem: 121, checks: 0, best: 0, darts: 0, fails: 0, cdarts: 0 }; break;
+        case 'doubles': p = { vi: 0, darts: 0, hits: 0, per: {} }; break;
+        case 'scoring': p = { ti: 0, visits: 0, tv: 0, darts: 0, tr: 0, pts: 0, per: {} }; break;
+        case 'catch40': case 'twodart': case 'randcheck': p = { si: 0, num: g.seq[0], vis: 0, rem: g.seq[0], pts: 0, checks: 0, cdarts: 0, b: [0, 0, 0, 0], missed: [] }; break;
+        case 'beat': p = { lives: cfg.lives || 3, out: false, place: 0, vs: [] }; break;
+        case 'gotcha': p = { score: 0, got: 0, gotBy: 0, vs: [] }; break;
+        case 'flow': p = { r: 0, st: 0, hits: 0, darts: 0, per: {}, rh: [] }; break;
+      }
+      p.done = false;
+      g.pd.push(p);
+    }
+    return g;
+  }
+
+  /* Welche Eingabe braucht der aktuelle Spieler? */
+  function inputKind() {
+    var p = G.pd[G.cur];
+    switch (G.game) {
+      case 'jdc': return JDC_STEPS[p.step].t === 'sh' ? 'mult' : 'hit';
+      case 'atc': return 'hit';
+      case 'bobs': return 'count';
+      case 'checkout': case 'countup': return 'score';
+      case 'cricket': return 'cricket';
+      case 'killer': return 'killer';
+      case 'shanghai': case 'scoring': return 'mult';
+      case 'doubles': case 'flow': return 'hit';
+      default: return 'score';
+    }
+  }
+  function multNum() {
+    var p = G.pd[G.cur];
+    if (G.game === 'jdc') return JDC_STEPS[p.step].n;
+    if (G.game === 'shanghai') return p.num;
+    return tsetOf()[Math.min(p.ti || 0, tsetOf().length - 1)];
+  }
+
+  function atcLabel(t, mode) {
+    var pre = mode === 'Double' ? 'D' : (mode === 'Triple' ? 'T' : '');
+    if (t === 21) return mode === 'Double' ? 'Bull' : 'Bull';
+    return pre + t;
+  }
+  function bobsLabel(t) { return t === 21 ? 'Bull' : 'D' + t; }
+
+  /* Text für „Ziel“ des aktuellen Spielers */
+  function targetText() {
+    var p = G.pd[G.cur], k = G.visit.length;
+    switch (G.game) {
+      case 'jdc':
+        var st = JDC_STEPS[p.step];
+        if (st.t === 'sh') return String(st.n);
+        var tg = st.g[Math.min(k, st.g.length - 1)];
+        return tg === 25 ? 'Bull' : 'D' + tg;
+      case 'atc': return atcLabel(p.target, G.opts.mode);
+      case 'bobs': return bobsLabel(p.target);
+      case 'checkout': return String(p.rem);
+      case 'countup': return 'Runde ' + (p.round + 1) + '/' + G.opts.rounds;
+      case 'cricket': return 'Cricket';
+      case 'killer': return 'Zahl ' + p.num;
+      case 'shanghai': return String(p.num);
+      case 'halveit': case 'bermuda': return hvLabel(HALVE[G.game][p.idx]);
+      case 'ladder': return String(p.rem);
+      case 'doubles': return dLabel(dblSeq(G.opts.dbl)[p.vi]);
+      case 'scoring': return 'T' + multNum();
+      case 'catch40': case 'twodart': case 'randcheck': return String(p.rem);
+      case 'beat': return G.bar ? 'mehr als ' + G.bar : 'vorlegen';
+      case 'gotcha': return 'Rest ' + (G.opts.gt - p.score);
+      case 'flow': return FLOW[p.st][Math.min(k, 2)];
+    }
+    return '';
+  }
+
+  function infoText() {
+    var p = G.pd[G.cur];
+    switch (G.game) {
+      case 'jdc':
+        var st = JDC_STEPS[p.step];
+        return ['Teil 1 · Shanghai 10–15', 'Teil 2 · Doppel 1–20 + Bull', 'Teil 3 · Shanghai 15–20'][st.part];
+      case 'atc': return 'Modus ' + G.opts.mode + ' · Runde ' + G.round;
+      case 'bobs': return 'Runde ' + G.round;
+      case 'checkout': return 'ab ' + G.opts.start + ' · ' + (G.opts.cd || 9) + ' Darts · Versuch ' + p.attempt + '/10' + (visMax() > 1 ? ' · Aufnahme ' + (p.vis + 1) + '/' + visMax() : '');
+      case 'countup': return G.opts.rounds + ' Aufnahmen';
+      case 'cricket': return 'Runde ' + G.round;
+      case 'killer': return 'Runde ' + G.round;
+      case 'shanghai': return 'Runde ' + p.num + '/' + G.opts.sh;
+      case 'halveit': case 'bermuda': return 'Ziel ' + (p.idx + 1) + '/' + HALVE[G.game].length;
+      case 'ladder': return 'Versuch ' + p.attempt + '/' + G.opts.att + ' · Aufnahme ' + (p.vis + 1) + '/' + visMax();
+      case 'doubles': return G.opts.dbl + ' · Aufnahme ' + (p.vi + 1) + '/' + dblSeq(G.opts.dbl).length;
+      case 'scoring': return 'Triple ' + ((p.ti || 0) + 1) + '/' + tsetOf().length + ' · Aufnahme ' + (p.visits + 1) + '/' + G.opts.tr;
+      case 'catch40': case 'twodart': case 'randcheck': return 'Zahl ' + (p.si + 1) + '/' + G.seq.length + ' · Aufnahme ' + (p.vis + 1) + '/' + visMax() + (G.game === 'randcheck' && G.seq.length - p.si > 1 ? ' · danach ' + G.seq.slice(p.si + 1, p.si + 4).join(', ') + (G.seq.length - p.si > 4 ? ' …' : '') : '');
+      case 'beat': return 'Runde ' + G.round + ' · ' + G.opts.lives + ' Leben';
+      case 'gotcha': return 'genau ' + G.opts.gt + ' · Runde ' + G.round;
+      case 'flow': return 'Runde ' + (p.r + 1) + '/' + G.opts.fr + ' · ' + FLOWN[p.st];
+    }
+    return '';
+  }
+
+  /* Wert und Zusatz je Spieler (Tablet-Liste und Monitor) */
+  function playerLine(i) {
+    var p = G.pd[i], big = '', small = '';
+    switch (G.game) {
+      case 'jdc':
+        big = p.score;
+        small = p.done ? 'fertig · Shanghai ' + p.sh + ' · Doppel ' + p.dhits + '/21' : ('Teil ' + (JDC_STEPS[p.step].part + 1) + ' · T1 ' + p.parts[0] + ' · T2 ' + p.parts[1] + ' · T3 ' + p.parts[2]);
+        break;
+      case 'atc':
+        big = p.done ? '✓' : atcLabel(p.target, G.opts.mode);
+        small = p.darts + ' Darts' + (p.done ? ' · fertig' : '');
+        break;
+      case 'bobs':
+        big = p.score;
+        small = p.out ? 'ausgeschieden bei ' + bobsLabel(p.target) : (p.done ? 'fertig · ' + p.hits + ' Treffer' : 'Ziel ' + bobsLabel(p.target) + ' · ' + p.hits + ' Treffer');
+        break;
+      case 'checkout':
+        big = p.done ? p.checks : p.rem;
+        small = p.done ? 'Checks · höchster ' + (p.best || '–') : 'Ziel ' + p.target + ' · Versuch ' + p.attempt + '/10 · Checks ' + p.checks;
+        break;
+      case 'countup':
+        big = p.total;
+        small = Math.min(p.round, G.opts.rounds) + '/' + G.opts.rounds + ' Aufnahmen gespielt · Ø ' + (p.round ? fmt(p.total / p.round, 1) : '–');
+        break;
+      case 'cricket':
+        big = p.pts;
+        var parts = [];
+        for (var c = 0; c < CR.length; c++) { var m = p.marks[CR[c]]; parts.push(tName(CR[c]) + (m >= 3 ? '✓' : (m === 2 ? '··' : (m === 1 ? '·' : '')))); }
+        small = parts.join(' ') + ' · MPR ' + (p.darts ? fmt(p.mk / (p.darts / 3), 2) : '–');
+        break;
+      case 'killer':
+        big = p.out ? '✗' : p.lives;
+        small = 'Zahl ' + p.num + (p.out ? ' · raus' : ' · ' + (p.lives === 1 ? '1 Leben' : p.lives + ' Leben'));
+        break;
+      case 'shanghai':
+        big = p.score;
+        small = (p.done ? 'fertig' : 'Zahl ' + p.num) + (p.sh ? ' · Shanghai!' : '');
+        break;
+      case 'halveit': case 'bermuda':
+        big = p.score;
+        small = (p.done ? 'fertig' : 'Ziel ' + hvLabel(HALVE[G.game][p.idx])) + ' · ' + p.halved + '× halbiert';
+        break;
+      case 'ladder':
+        big = p.done ? (p.best || '–') : p.rem;
+        small = p.done ? 'höchster Check · Endstand ' + p.target : 'Ziel ' + p.target + ' · Versuch ' + p.attempt + '/' + G.opts.att + ' · Checks ' + p.checks;
+        break;
+      case 'doubles':
+        big = fmt(pct(p.hits, p.darts), 0) + '%';
+        small = p.hits + '/' + p.darts + ' Treffer' + (p.done ? ' · fertig' : ' · ' + dLabel(dblSeq(G.opts.dbl)[p.vi]));
+        break;
+      case 'scoring':
+        big = p.tr;
+        small = 'Triples · ' + fmt(pct(p.tr, p.darts), 0) + '% · ' + p.pts + ' Punkte' + (p.done ? '' : ' · jetzt T' + tsetOf()[Math.min(p.ti || 0, tsetOf().length - 1)]);
+        break;
+      case 'catch40': case 'twodart': case 'randcheck':
+        big = p.pts;
+        small = p.done ? p.checks + ' Checks' : 'Zahl ' + p.num + ' · Rest ' + p.rem + ' · ' + p.checks + ' Checks';
+        break;
+      case 'beat':
+        big = p.out ? '✗' : p.lives;
+        small = p.out ? 'raus' : (p.lives === 1 ? '1 Leben' : p.lives + ' Leben');
+        break;
+      case 'flow':
+        big = p.hits;
+        small = (p.done ? 'fertig' : 'Runde ' + (p.r + 1) + '/' + G.opts.fr + ' · ' + FLOWN[p.st]) + ' · ' + fmt(pct(p.hits, p.darts), 0) + '%' + (p.hits >= FLOW_BONUS ? ' · Bonus ✓' : '');
+        break;
+      case 'gotcha':
+        big = p.score;
+        small = 'noch ' + (G.opts.gt - p.score) + (p.got ? ' · ' + p.got + '× erwischt' : '');
+        break;
+    }
+    return { name: G.players[i].name, big: String(big), small: small, on: i === G.cur && !G.finished, out: !!(p.out || (p.done && G.game !== 'killer' && G.game !== 'beat')) };
+  }
+
+  function view() {
+    var rows = [];
+    for (var i = 0; i < G.players.length; i++) rows.push(playerLine(i));
+    var cur = G.finished ? '' : G.players[G.cur].name + ': ' + targetText() + (G.visit.length ? ' · ' + G.visit.map(dartLabel).join(', ') : '');
+    return { title: GAMES[G.game].name, sub: G.finished ? 'Beendet' : infoText(), cur: cur, rows: rows };
+  }
+
+  function dartLabel(d) {
+    if (d.l) return d.l;
+    return '–';
+  }
+
+  /* ---------- Spiele: Eingaben ---------- */
+  function pushUndo() { undo.push(JSON.stringify(G)); if (undo.length > 120) undo.shift(); }
+
+  function endVisit() {
+    G.visit = [];
+    typed = '';
+    // Nächster Spieler, der noch nicht fertig ist
+    var n = G.players.length, i, nx = -1;
+    for (i = 1; i <= n; i++) {
+      var c = (G.cur + i) % n;
+      if (!G.pd[c].done) { nx = c; if (c <= G.cur) G.round++; break; }
+    }
+    if (nx < 0 || G.finished) { finish(); return; }
+    G.cur = nx;
+  }
+
+  function banner(t) { G.banner = t; G.bannerId = new Date().getTime(); }
+
+  // JDC: Multiplikator 0–3 auf Shanghai-Zahl
+  function jdcMult(m) {
+    var p = G.pd[G.cur], st = JDC_STEPS[p.step];
+    var pts = m * st.n;
+    G.visit.push({ m: m, l: m ? ['', 'S', 'D', 'T'][m] + st.n : '–' });
+    p.score += pts; p.parts[st.part] += pts;
+    if (G.visit.length === 3) {
+      var has = {}; for (var i = 0; i < 3; i++) has[G.visit[i].m] = 1;
+      if (has[1] && has[2] && has[3]) { p.score += 100; p.parts[st.part] += 100; p.sh++; banner('Shanghai! ' + G.players[G.cur].name + ' +100'); toast('Shanghai! +100'); }
+      p.step++; if (p.step >= JDC_STEPS.length) p.done = true;
+      endVisit();
+    }
+  }
+  // JDC Doppel-Teil: Treffer/Daneben
+  function jdcHit(h) {
+    var p = G.pd[G.cur], st = JDC_STEPS[p.step];
+    var tg = st.g[G.visit.length];
+    var pts = h ? (tg === 25 ? 100 : 50) : 0;
+    G.visit.push({ h: h, l: h ? (tg === 25 ? 'Bull' : 'D' + tg) : '–' });
+    p.score += pts; p.parts[1] += pts; if (h) p.dhits++;
+    if (G.visit.length === st.g.length) { p.step++; if (p.step >= JDC_STEPS.length) p.done = true; endVisit(); }
+  }
+
+  function atcHit(h) {
+    var p = G.pd[G.cur];
+    p.darts++;
+    G.visit.push({ h: h, l: h ? atcLabel(p.target, G.opts.mode) : '–' });
+    p.per = p.per || {}; p.per[p.target] = (p.per[p.target] || 0) + 1;
+    if (h) { p.hits++; p.target++; if (p.target > 21) { p.done = true; banner(G.players[G.cur].name + ' fertig in ' + p.darts + ' Darts'); } }
+    if (p.done || G.visit.length === 3) endVisit();
+  }
+
+  function bobsCount(c) {
+    var p = G.pd[G.cur], val = p.target === 21 ? 50 : p.target * 2;
+    if (c === 0) p.score -= val; else { p.score += c * val; p.hits += c; }
+    (p.hl = p.hl || []).push(c);
+    if (p.score <= 0) { p.out = true; p.done = true; banner(G.players[G.cur].name + ' ist ausgeschieden'); }
+    else { p.target++; if (p.target > 21) p.done = true; }
+    endVisit();
+  }
+
+  function checkoutScore(v, forceBust, d) {
+    var p = G.pd[G.cur];
+    var rest = p.rem - v;
+    p.vis++;
+    if (d > 0) {
+      p.darts += d; p.checks++; p.cdarts = (p.cdarts || 0) + (p.vis - 1) * 3 + d;
+      if (p.target > p.best) p.best = p.target;
+      banner(G.players[G.cur].name + ' checkt ' + p.target + ' mit ' + ((p.vis - 1) * 3 + d) + ' Darts!');
+      p.target++; nextAttempt(p); endVisit(); return;
+    }
+    p.darts += 3;
+    if (forceBust || rest < 0 || rest === 1 || rest === 0) { toast('Überworfen'); }
+    else p.rem = rest;
+    if (p.vis >= visMax()) {
+      p.fails = (p.fails || 0) + 1;
+      if (G.game === 'ladder') { if (G.opts.lm !== 'bleibt stehen' && p.target > 2) p.target--; }
+      else if (p.target > G.opts.start) p.target--;
+      nextAttempt(p);
+    }
+    endVisit();
+  }
+  function nextAttempt(p) {
+    p.attempt++; p.vis = 0; p.rem = p.target;
+    var max = G.game === 'ladder' ? G.opts.att : 10;
+    if (p.attempt > max) { p.attempt = max; p.done = true; }
+  }
+
+  function countupScore(v) {
+    var p = G.pd[G.cur];
+    p.total += v; p.round++; (p.vs = p.vs || []).push(v);
+    if (p.round >= G.opts.rounds) p.done = true;
+    endVisit();
+  }
+
+  function cricketDart(n, m) {
+    var p = G.pd[G.cur];
+    p.darts++;
+    if (!n) { G.visit.push({ l: '–' }); }
+    else {
+      var before = p.marks[n];
+      var over = Math.max(0, before + m - 3) - Math.max(0, before - 3);
+      p.marks[n] = Math.min(3, before + m);
+      p.mk += m; if (m === 3) p.trip = (p.trip || 0) + 1; if (n === 25) p.bulls = (p.bulls || 0) + m;
+      var open = false;
+      for (var i = 0; i < G.pd.length; i++) if (i !== G.cur && G.pd[i].marks[n] < 3) open = true;
+      if (over > 0 && open) p.pts += over * n;
+      G.visit.push({ l: (n === 25 ? (m === 2 ? 'DBull' : 'Bull') : ['', 'S', 'D', 'T'][m] + n) });
+    }
+    // Gewonnen?
+    var all = true;
+    for (var c = 0; c < CR.length; c++) if (p.marks[CR[c]] < 3) all = false;
+    if (all && !p.closedAt) p.closedAt = p.darts;
+    if (all) {
+      var top = true;
+      for (var j = 0; j < G.pd.length; j++) if (j !== G.cur && G.pd[j].pts > p.pts) top = false;
+      if (top) { G.winner = G.cur; G.finished = true; banner(G.players[G.cur].name + ' gewinnt Cricket'); finish(); return; }
+    }
+    if (G.visit.length === 3) endVisit();
+  }
+
+  function killerDart(target, m) {
+    var me = G.pd[G.cur];
+    if (target < 0) { G.visit.push({ l: '–' }); }
+    else {
+      var v = G.pd[target];
+      if (target === G.cur) {
+        if (G.opts.own === 'Leben zurück') me.lives = Math.min(5, me.lives + m);
+        else if (G.opts.own === 'kostet Leben') { me.lives -= m; if (me.lives <= 0) knockOut(G.cur); }
+      } else if (!v.out) {
+        me.taken += Math.min(m, v.lives);
+        v.lives -= m;
+        if (v.lives <= 0) { knockOut(target); toast(G.players[target].name + ' ist raus!'); }
+      }
+      G.visit.push({ l: ['', 'S', 'D', 'T'][m] + G.pd[target].num });
+    }
+    var alive = [];
+    for (var i = 0; i < G.pd.length; i++) if (!G.pd[i].out) alive.push(i);
+    if (alive.length <= 1) {
+      G.winner = alive.length ? alive[0] : G.cur;
+      G.pd[G.winner].place = 1;
+      G.finished = true; banner(G.players[G.winner].name + ' gewinnt Killer'); finish(); return;
+    }
+    if (me.out || G.visit.length === 3) endVisit();
+  }
+  function knockOut(i) {
+    var p = G.pd[i]; p.lives = 0; p.out = true; p.done = true;
+    var alive = 0; for (var k = 0; k < G.pd.length; k++) if (!G.pd[k].out) alive++;
+    p.place = alive + 1;
+  }
+
+  // Shanghai: Multiplikator auf die Rundenzahl
+  function shMult(m) {
+    var p = G.pd[G.cur];
+    G.visit.push({ m: m, l: m ? ['', 'S', 'D', 'T'][m] + p.num : '–' });
+    p.score += m * p.num; p.darts = (p.darts || 0) + 1;
+    if (m) p.hits = (p.hits || 0) + 1; if (m === 3) p.trip = (p.trip || 0) + 1;
+    if (G.visit.length < 3) return;
+    var rp = 0; for (var k = 0; k < 3; k++) rp += G.visit[k].m * p.num;
+    (p.rp = p.rp || []).push(rp);
+    var has = {}; for (var i = 0; i < 3; i++) has[G.visit[i].m] = 1;
+    if (has[1] && has[2] && has[3]) {
+      p.sh++; G.winner = G.cur; G.finished = true;
+      banner('Shanghai! ' + G.players[G.cur].name + ' gewinnt'); finish(); return;
+    }
+    p.num++; if (p.num > G.opts.sh) p.done = true;
+    endVisit();
+  }
+  function shWinner() {
+    if (G.winner >= 0) return;
+    var b = 0; for (var i = 1; i < G.pd.length; i++) if (G.pd[i].score > G.pd[b].score) b = i;
+    G.winner = b;
+  }
+  // Triple-Training
+  function scMult(m) {
+    var p = G.pd[G.cur], n = multNum();
+    G.visit.push({ m: m, l: m ? ['', 'S', 'D', 'T'][m] + n : '–' });
+    p.darts++; p.pts += m * n; if (m === 3) p.tr++;
+    p.per = p.per || {};
+    var e = p.per[n] || (p.per[n] = { d: 0, c: [0, 0, 0, 0], pts: 0 });
+    e.d++; e.c[m]++; e.pts += m * n;
+    if (G.visit.length < 3) return;
+    p.visits++; p.tv = (p.tv || 0) + 1;
+    if (p.visits >= G.opts.tr) {
+      p.visits = 0; p.ti = (p.ti || 0) + 1;
+      if (p.ti >= tsetOf().length) { p.ti = tsetOf().length - 1; p.visits = G.opts.tr; p.done = true; }
+    }
+    endVisit();
+  }
+  // Doppel-Training: Treffer/Daneben je Dart
+  function dblHit(h) {
+    var p = G.pd[G.cur], seq = dblSeq(G.opts.dbl), t = seq[p.vi];
+    G.visit.push({ l: h ? dLabel(t) : '–' });
+    p.darts++; if (h) p.hits++;
+    p.per = p.per || {}; var e = p.per[t] || (p.per[t] = { h: 0, d: 0 }); e.d++; if (h) e.h++;
+    if (G.visit.length < 3) return;
+    p.vi++; if (p.vi >= seq.length) p.done = true;
+    endVisit();
+  }
+  // Darts Flow: Treffer/Daneben je Dart, 1 Punkt je Treffer
+  function flowHit(h) {
+    var p = G.pd[G.cur], lab = FLOW[p.st][G.visit.length], name = FLOWN[p.st];
+    G.visit.push({ l: h ? lab : '–' });
+    p.darts++; if (h) p.hits++;
+    p.per = p.per || {}; p.rh = p.rh || [];
+    var e = p.per[name] || (p.per[name] = { h: 0, d: 0 }); e.d++; if (h) e.h++;
+    if (p.st >= 4) { var e2 = p.per[lab] || (p.per[lab] = { h: 0, d: 0 }); e2.d++; if (h) e2.h++; }
+    p.rh[p.r] = (p.rh[p.r] || 0) + (h ? 1 : 0);
+    if (h && p.hits === FLOW_BONUS) banner(G.players[G.cur].name + ': 100 Punkte – Bonus-Strich!');
+    if (G.visit.length < 3) return;
+    p.st++;
+    if (p.st >= FLOW.length) { p.st = 0; p.r++; if (p.r >= G.opts.fr) { p.r = G.opts.fr - 1; p.st = FLOW.length - 1; p.done = true; } }
+    endVisit();
+  }
+  // Halve It / Bermuda: Punkte auf das Ziel, 0 = halbiert
+  function halveScore(v) {
+    var p = G.pd[G.cur];
+    (p.tv = p.tv || []).push(v);
+    if (v === 0) { var nw = Math.floor(p.score / 2); p.lost = (p.lost || 0) + p.score - nw; p.score = nw; p.halved++; toast('Halbiert!'); }
+    else p.score += v;
+    p.idx++; if (p.idx >= HALVE[G.game].length) p.done = true;
+    endVisit();
+  }
+  // Catch 40: d = Darts in dieser Aufnahme beim Checkout (0 = kein Checkout)
+  function catchScore(v, bust, d) {
+    var p = G.pd[G.cur], rest = p.rem - v;
+    if (d > 0) {
+      var darts = p.vis * 3 + d, pts = catchPts(darts);
+      p.pts += pts; p.checks++; p.cdarts = (p.cdarts || 0) + darts;
+      p.b = p.b || [0, 0, 0, 0]; p.b[darts <= 2 ? 0 : (darts === 3 ? 1 : (darts <= 6 ? 2 : 3))]++;
+      banner(G.players[G.cur].name + ' checkt ' + p.num + ' mit ' + darts + ' Darts (+' + pts + ')');
+      catchNext(p); endVisit(); return;
+    }
+    if (bust || rest < 0 || rest === 1 || rest === 0) toast('Überworfen');
+    else p.rem = rest;
+    p.vis++;
+    if (p.vis >= visMax()) { (p.missed = p.missed || []).push(p.num); catchNext(p); }
+    endVisit();
+  }
+  function catchNext(p) {
+    p.si++; p.vis = 0;
+    if (p.si >= G.seq.length) { p.si = G.seq.length - 1; p.rem = 0; p.done = true; return; }
+    p.num = G.seq[p.si]; p.rem = p.num;
+  }
+  // Beat the Score
+  function beatScore(v) {
+    var p = G.pd[G.cur];
+    (p.vs = p.vs || []).push(v);
+    if (v > G.bar) G.bar = v;
+    else {
+      p.lives--; G.bar = 0;
+      toast(G.players[G.cur].name + ': ein Leben weg');
+      if (p.lives <= 0) { knockOut(G.cur); banner(G.players[G.cur].name + ' ist raus'); }
+    }
+    var alive = []; for (var i = 0; i < G.pd.length; i++) if (!G.pd[i].out) alive.push(i);
+    if (alive.length <= 1) {
+      G.winner = alive.length ? alive[0] : G.cur; G.pd[G.winner].place = 1;
+      G.finished = true; banner(G.players[G.winner].name + ' gewinnt'); finish(); return;
+    }
+    endVisit();
+  }
+  // Gotcha
+  function gotchaScore(v) {
+    var p = G.pd[G.cur], ns = p.score + v;
+    (p.vs = p.vs || []).push(v);
+    if (ns > G.opts.gt) { toast('Zu viel – zählt nicht'); endVisit(); return; }
+    p.score = ns;
+    if (ns === G.opts.gt) { G.winner = G.cur; G.finished = true; banner(G.players[G.cur].name + ' gewinnt Gotcha'); finish(); return; }
+    for (var j = 0; j < G.pd.length; j++) {
+      if (j !== G.cur && ns > 0 && G.pd[j].score === ns) { G.pd[j].score = 0; p.got++; G.pd[j].gotBy = (G.pd[j].gotBy || 0) + 1; banner('Gotcha! ' + G.players[j].name + ' zurück auf 0'); }
+    }
+    endVisit();
+  }
+
+  /* Checkout: mit wie vielen Darts in dieser Aufnahme? (fn(v, bust, darts)) */
+  function askDarts(v, num, fn) {
+    var bt = [];
+    function add(d) { bt.push({ label: d + (d === 1 ? ' Dart' : ' Darts'), fn: function () { pushUndo(); fn(v, false, d); after(); } }); }
+    if ((v <= 40 && v % 2 === 0) || v === 50) add(1);
+    if (v <= 110) add(2);
+    add(3);
+    bt.push({ label: 'Nicht mit Doppel – überworfen', sec: true, fn: function () { pushUndo(); fn(v, true, 0); after(); } });
+    bt.push({ label: 'Abbrechen', sec: true, fn: function () { typed = ''; render(); } });
+    dialog('Ausgecheckt!', G.players[G.cur].name + ' checkt ' + num + '. Wie viele Darts in dieser Aufnahme?', bt);
+  }
+
+  /* Punkte-Eingabe mit Doppel-Abfrage (Checkout) */
+  function submitScore(v) {
+    if (isNaN(v) || v < 0 || v > 180 || IMPOSSIBLE[v]) { msg = v + ' ist nicht möglich'; typed = ''; render(); return; }
+    msg = '';
+    if (G.game === 'halveit' || G.game === 'bermuda') {
+      var ht = HALVE[G.game][G.pd[G.cur].idx];
+      if (!hvValid(ht, v)) { msg = v + ' geht auf ' + hvLabel(ht) + ' nicht'; typed = ''; render(); return; }
+      pushUndo(); halveScore(v); after(); return;
+    }
+    if (G.game === 'beat') { pushUndo(); beatScore(v); after(); return; }
+    if (G.game === 'gotcha') { pushUndo(); gotchaScore(v); after(); return; }
+    if (isCatch(G.game)) {
+      var cp = G.pd[G.cur];
+      if (cp.rem - v === 0) { askDarts(v, cp.num, catchScore); return; }
+      pushUndo(); catchScore(v, false, 0); after(); return;
+    }
+    if (G.game === 'checkout' || G.game === 'ladder') {
+      var p = G.pd[G.cur], rest = p.rem - v;
+      if (rest === 0) { askDarts(v, p.target, checkoutScore); return; }
+      pushUndo(); checkoutScore(v); after(); return;
+    }
+    pushUndo(); countupScore(v); after();
+  }
+
+  function after() { typed = ''; save(); render(); }
+
+  /* ---------- Ende & Ergebnisse ---------- */
+  function resultOf(i) {
+    var p = G.pd[i], r = { name: G.players[i].name, game: G.game, variant: '', score: 0, detail: '' };
+    switch (G.game) {
+      case 'jdc': r.score = p.score; r.detail = 'T1 ' + p.parts[0] + ' · T2 ' + p.parts[1] + ' · T3 ' + p.parts[2] + ' · Shanghai ' + p.sh; break;
+      case 'atc': r.variant = G.opts.mode; r.score = p.darts; r.detail = p.darts + ' Darts'; break;
+      case 'bobs': r.score = p.out ? 0 : p.score; r.detail = p.out ? 'ausgeschieden bei ' + bobsLabel(p.target) : p.hits + ' Treffer'; break;
+      case 'checkout': r.variant = 'ab ' + G.opts.start + ' · ' + (G.opts.cd || 9) + ' Darts'; r.score = p.checks; r.detail = 'höchster Check ' + (p.best || '–'); break;
+      case 'countup': r.variant = G.opts.rounds + ' Aufnahmen'; r.score = p.total; r.detail = 'Ø ' + fmt(p.total / G.opts.rounds, 1); break;
+      case 'cricket': r.score = p.darts ? Math.round(p.mk / (p.darts / 3) * 100) / 100 : 0; r.detail = (G.winner === i && G.players.length > 1 ? 'Sieg · ' : '') + p.pts + ' Punkte · ' + p.darts + ' Darts'; r.variant = G.players.length === 1 ? 'Solo' : ''; break;
+      case 'killer': r.score = G.winner === i ? 1 : 0; r.detail = 'Platz ' + (p.place || '?') + ' · ' + p.taken + ' Leben genommen'; break;
+      case 'shanghai': r.variant = G.opts.sh + ' Runden'; r.score = p.score; r.detail = (p.sh ? 'Shanghai in Runde ' + p.num + ' · ' : '') + (G.winner === i && G.players.length > 1 ? 'Sieg · ' : '') + p.score + ' Punkte'; break;
+      case 'halveit': case 'bermuda': r.score = p.score; r.detail = p.halved + '× halbiert'; break;
+      case 'ladder': r.variant = G.opts.att + ' Versuche' + (G.opts.cd && G.opts.cd !== 9 ? ' · ' + G.opts.cd + ' Darts' : '') + (G.opts.lm === 'bleibt stehen' ? ' · bleibt stehen' : ''); r.score = p.best; r.detail = p.checks + ' Checks · Endstand ' + p.target; break;
+      case 'doubles': r.variant = G.opts.dbl; r.score = pct(p.hits, p.darts); r.detail = p.hits + ' von ' + p.darts + ' Darts'; break;
+      case 'scoring': r.variant = 'je ' + G.opts.tr + ' Aufnahmen'; r.score = pct(p.tr, p.darts); r.detail = tsetOf().map(function (n) { return 'T' + n; }).join(', ') + ' · ' + p.tr + ' Triples · ' + p.pts + ' Punkte'; break;
+      case 'catch40': r.variant = G.opts.c40 === 20 ? '61–80' : '61–100'; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' Checks'; break;
+      case 'twodart': r.variant = 'ab ' + G.seq[0]; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' von ' + G.seq.length + ' gecheckt'; break;
+      case 'randcheck': r.variant = G.seq.length + ' Zahlen'; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' von ' + G.seq.length + ' gecheckt'; break;
+      case 'beat': r.score = G.winner === i ? 1 : 0; r.detail = 'Platz ' + (p.place || '?'); break;
+      case 'flow': r.variant = G.opts.fr + ' Runden'; r.score = p.hits; r.detail = (p.hits >= FLOW_BONUS ? 'Bonus-Strich · ' : '') + 'Quote ' + fmt(pct(p.hits, p.darts), 0) + ' %'; break;
+      case 'gotcha': r.score = G.winner === i ? 1 : 0; r.detail = (G.winner === i ? 'Sieg' : 'Stand ' + p.score) + (p.got ? ' · ' + p.got + '× erwischt' : ''); break;
+    }
+    return r;
+  }
+
+  /* ---------- Statistik je Spieler (Ergebnis-Bildschirm) ---------- */
+  function avg(a) { if (!a || !a.length) return '–'; var t = 0; for (var i = 0; i < a.length; i++) t += a[i]; return fmt(t / a.length, 1); }
+  function maxOf(a) { return a && a.length ? Math.max.apply(null, a) : '–'; }
+  function minOf(a) { return a && a.length ? Math.min.apply(null, a) : '–'; }
+  function cnt(a, f) { var n = 0; for (var i = 0; i < (a || []).length; i++) if (f(a[i])) n++; return n; }
+  function q(a, b) { return b ? fmt(a / b * 100, 0) + ' %' : '–'; }
+  // bestes/schwächstes Element aus {key: {h, d}} nach Quote
+  function bestWorst(per, lab) {
+    var b = null, w = null, k;
+    for (k in per) {
+      var e = per[k], r = e.d ? e.h / e.d : 0;
+      if (!b || r > b.r) b = { k: k, r: r, e: e };
+      if (!w || r < w.r) w = { k: k, r: r, e: e };
+    }
+    if (b && w && b.r === w.r) w = null;
+    return [b ? lab(+b.k) + ' (' + b.e.h + '/' + b.e.d + ')' : '–', w ? lab(+w.k) + ' (' + w.e.h + '/' + w.e.d + ')' : '–'];
+  }
+  function statsOf(i) {
+    var p = G.pd[i], S = [], k;
+    function add(l, v) { S.push([l, String(v)]); }
+    switch (G.game) {
+      case 'countup':
+        add('Ø pro Aufnahme', avg(p.vs)); add('Höchste Aufnahme', maxOf(p.vs)); add('Niedrigste Aufnahme', minOf(p.vs));
+        add('100+', cnt(p.vs, function (v) { return v >= 100; })); add('140+', cnt(p.vs, function (v) { return v >= 140; })); add('180', cnt(p.vs, function (v) { return v === 180; }));
+        if ((p.vs || []).length >= 20) for (k = 0; k < p.vs.length; k += 10) add('Ø Aufnahme ' + (k + 1) + '–' + Math.min(k + 10, p.vs.length), avg(p.vs.slice(k, k + 10)));
+        break;
+      case 'halveit': case 'bermuda':
+        var tg = HALVE[G.game], tv = p.tv || [], bi = -1;
+        for (k = 0; k < tv.length; k++) if (tv[k] > 0 && (bi < 0 || tv[k] > tv[bi])) bi = k;
+        add('Ziele getroffen', cnt(tv, function (v) { return v > 0; }) + '/' + tg.length); add('Halbierungen', p.halved);
+        add('Durch Halbieren verloren', (p.lost || 0) + ' Punkte'); add('Bestes Ziel', bi >= 0 ? hvLabel(tg[bi]) + ' (' + tv[bi] + ')' : '–');
+        break;
+      case 'bobs':
+        var hl = p.hl || [], db = {}, played = hl.length;
+        for (k = 0; k < hl.length; k++) db[k + 1] = { h: hl[k], d: 3 };
+        var bw = bestWorst(db, bobsLabel);
+        add('Doppelquote', q(p.hits, played * 3)); add('Gekommen bis', p.out ? bobsLabel(p.target) + ' (raus)' : 'Bull (geschafft)');
+        add('Stärkstes Doppel', bw[0]); add('Schwächstes Doppel', bw[1]);
+        break;
+      case 'shanghai':
+        add('Trefferquote', q(p.hits || 0, p.darts || 0)); add('Triples', p.trip || 0);
+        var rp = p.rp || [], br = -1; for (k = 0; k < rp.length; k++) if (br < 0 || rp[k] > rp[br]) br = k;
+        add('Beste Runde', br >= 0 ? 'Zahl ' + (br + 1) + ' (' + rp[br] + ')' : '–'); add('Shanghais', p.sh);
+        break;
+      case 'jdc':
+        add('Teil 1 · Shanghai 10–15', p.parts[0]); add('Teil 2 · Doppel', p.parts[1]); add('Teil 3 · Shanghai 15–20', p.parts[2]);
+        add('Doppelquote', p.dhits + '/21 (' + q(p.dhits, 21) + ')'); add('Shanghais', p.sh);
+        break;
+      case 'atc':
+        var mx = 0, mt = 0; for (k in (p.per || {})) if (p.per[k] > mx) { mx = p.per[k]; mt = +k; }
+        add('Darts gesamt', p.darts); add('Trefferquote', q(p.hits, p.darts)); add('Meiste Darts für', mt ? atcLabel(mt, G.opts.mode) + ' (' + mx + ')' : '–');
+        break;
+      case 'doubles':
+        var bd = bestWorst(p.per || {}, dLabel);
+        add('Quote gesamt', q(p.hits, p.darts)); add('Bestes Doppel', bd[0]); add('Schwächstes Doppel', bd[1]);
+        var keys = []; for (k in (p.per || {})) keys.push(+k);
+        if (keys.length <= 6) for (k = 0; k < keys.length; k++) add('Quote ' + dLabel(keys[k]), q(p.per[keys[k]].h, p.per[keys[k]].d));
+        break;
+      case 'scoring':
+        var c = [0, 0, 0, 0], tp = {}; for (k in (p.per || {})) { var e = p.per[k]; for (var m = 0; m < 4; m++) c[m] += e.c[m]; tp[k] = { h: e.c[3], d: e.d }; }
+        var bt = bestWorst(tp, function (n) { return 'T' + n; });
+        add('Triple-Quote', q(p.tr, p.darts)); add('Single / Double / Daneben', q(c[1], p.darts) + ' / ' + q(c[2], p.darts) + ' / ' + q(c[0], p.darts));
+        add('Ø Punkte pro Aufnahme', p.tv ? fmt(p.pts / p.tv, 1) : '–');
+        var ts = tsetOf(); for (k = 0; k < ts.length; k++) if (p.per && p.per[ts[k]]) add('Quote T' + ts[k], q(p.per[ts[k]].c[3], p.per[ts[k]].d));
+        add('Bestes Triple', bt[0]); add('Schwächstes Triple', bt[1]);
+        break;
+      case 'catch40': case 'twodart': case 'randcheck':
+        var tot = p.checks + (p.missed || []).length, bb = p.b || [0, 0, 0, 0];
+        add('Checkquote', p.checks + '/' + tot + ' (' + q(p.checks, tot) + ')');
+        add('In 1–2 Darts', bb[0]); add('In 3 Darts', bb[1]); if ((G.opts.cd || 6) > 3) add('In 4–6 Darts', bb[2]); if ((G.opts.cd || 6) > 6) add('In 7–9 Darts', bb[3]);
+        add('Ø Darts pro Check', p.checks ? fmt(p.cdarts / p.checks, 1) : '–');
+        add('Nicht gecheckt', (p.missed || []).length ? p.missed.join(', ') : '–');
+        break;
+      case 'checkout': case 'ladder':
+        var tries = p.checks + (p.fails || 0);
+        add('Checkquote', p.checks + '/' + tries + ' (' + q(p.checks, tries) + ')'); add('Höchster Check', p.best || '–');
+        add('Ø Darts pro Check', p.checks ? fmt((p.cdarts || 0) / p.checks, 1) : '–'); if (G.game === 'ladder') add('Endstand', p.target);
+        break;
+      case 'cricket':
+        add('MPR', p.darts ? fmt(p.mk / (p.darts / 3), 2) : '–'); add('Triples', p.trip || 0); add('Bull-Marks', p.bulls || 0);
+        add('Alles zu nach', p.closedAt ? p.closedAt + ' Darts' : '–');
+        break;
+      case 'killer':
+        add('Platz', p.place || '–'); add('Leben genommen', p.taken); add('Leben übrig', p.out ? 0 : p.lives);
+        break;
+      case 'beat':
+        add('Platz', p.place || '–'); add('Ø pro Aufnahme', avg(p.vs)); add('Höchste Aufnahme', maxOf(p.vs)); add('Leben verloren', (G.opts.lives || 3) - (p.out ? 0 : p.lives));
+        break;
+      case 'flow':
+        add('Trefferquote', q(p.hits, p.darts));
+        for (k = 0; k < FLOWN.length; k++) { var fe = (p.per || {})[FLOWN[k]]; add('Quote ' + FLOWN[k], fe ? q(fe.h, fe.d) + ' (' + fe.h + '/' + fe.d + ')' : '–'); }
+        var fd = {}, dl = ['D16', 'D8', 'D4', 'D20', 'D10', 'D5'];
+        for (k = 0; k < dl.length; k++) if (p.per && p.per[dl[k]]) fd[k] = p.per[dl[k]];
+        var fbw = bestWorst(fd, function (n) { return dl[n]; });
+        add('Bestes Doppel', fbw[0]); add('Schwächstes Doppel', fbw[1]);
+        var rh = p.rh || [], fb = -1; for (k = 0; k < rh.length; k++) if (fb < 0 || rh[k] > rh[fb]) fb = k;
+        add('Beste Runde', fb >= 0 ? 'Runde ' + (fb + 1) + ' (' + rh[fb] + '/18)' : '–');
+        if (rh.length >= 4) { var hf = Math.floor(rh.length / 2); add('Ø 1. Hälfte / 2. Hälfte', avg(rh.slice(0, hf)) + ' / ' + avg(rh.slice(hf))); }
+        add('Bonus (ab ' + FLOW_BONUS + ')', p.hits >= FLOW_BONUS ? 'Strich ✓' : 'noch ' + (FLOW_BONUS - p.hits));
+        var nm = G.players[i].name.toLowerCase(), bc = 0;
+        for (k = 0; k < results.length; k++) { var rr = results[k]; if (rr.game === 'flow' && rr.name.toLowerCase() === nm && rr.score >= FLOW_BONUS && savedIds.indexOf(rr.id) < 0) bc++; }
+        add('Bonus-Striche gesamt', bc + (p.hits >= FLOW_BONUS ? 1 : 0));
+        break;
+      case 'gotcha':
+        add('Ø pro Aufnahme', avg(p.vs)); add('Höchste Aufnahme', maxOf(p.vs)); add('Aufnahmen', (p.vs || []).length);
+        add('Gegner erwischt', p.got || 0); add('Selbst erwischt worden', p.gotBy || 0);
+        break;
+    }
+    return S;
+  }
+  function statsHTML() {
+    if (!G.pd.length) return '';
+    var arr = rankList(), all = [], i, r;
+    for (i = 0; i < arr.length; i++) all.push(statsOf(arr[i].i));
+    if (!all[0].length) return '';
+    var h = '<h3>Statistik</h3><div style="overflow-x:auto"><table class="res stat"><tr><th></th>';
+    for (i = 0; i < arr.length; i++) h += '<th style="text-align:right">' + esc(arr[i].name) + '</th>';
+    h += '</tr>';
+    for (r = 0; r < all[0].length; r++) {
+      h += '<tr><td>' + esc(all[0][r][0]) + '</td>';
+      for (i = 0; i < all.length; i++) h += '<td class="n" style="font-size:1rem">' + esc(all[i][r] ? all[i][r][1] : '') + '</td>';
+      h += '</tr>';
+    }
+    return h + '</table></div>';
+  }
+
+  function finish() {
+    G.finished = true;
+    if (G.game === 'shanghai') shWinner();
+    if (!G.saved) {
+      G.saved = true;
+      var list = [];
+      for (var i = 0; i < G.players.length; i++) list.push(resultOf(i));
+      savedIds = [];
+      xhr('POST', '/api/results', list, function (err, d) { if (err) toast('Ergebnis konnte nicht gespeichert werden'); else { savedIds = (d && d.ids) || []; loadResults(); } });
+    }
+    screen = 'done';
+  }
+
+  /* ---------- Darstellung ---------- */
+  function render() {
+    var m = $('main');
+    if (!loaded) { m.innerHTML = '<div class="scroll"><p>Lade …</p></div>'; return; }
+    if (screen === 'play' && G && !G.finished) m.innerHTML = playHTML();
+    else if (screen === 'done' && G) m.innerHTML = doneHTML();
+    else if (screen === 'best') m.innerHTML = bestHTML();
+    else m.innerHTML = menuHTML();
+  }
+
+  function menuHTML() {
+    var h = '<div class="scroll"><h2>Trainingsspiel wählen</h2><div class="games">';
+    for (var k in GAMES) h += '<button data-game="' + k + '"' + (setup.game === k ? ' class="on"' : '') + '><b>' + esc(GAMES[k].name) + '</b><small>' + esc(GAMES[k].desc) + '</small></button>';
+    h += '</div>';
+    if (setup.game === 'atc') h += optHTML('Modus', 'atc', ['Single', 'Double', 'Triple'], setup.atc);
+    if (setup.game === 'checkout') h += optHTML('Startwert', 'start', [61, 81, 101, 121], setup.start) + '<p class="note">10 Versuche. Je Versuch so viele Darts wie unten gewählt (3 = eine Aufnahme). Geschafft: Ziel +1, nicht geschafft: Ziel −1 (nicht unter Startwert). Double Out.</p>';
+    if (setup.game === 'countup') h += optHTML('Aufnahmen', 'rounds', [10, 20, 30, 50], setup.rounds);
+    if (setup.game === 'killer') h += optHTML('Eigene Zahl', 'own', ['nichts', 'Leben zurück', 'kostet Leben'], setup.own) + '<p class="note">Treffer auf die Zahl eines Gegners: Single −1, Double −2, Triple −3 Leben. Wer als Letzter übrig ist, gewinnt.</p>';
+    if (setup.game === 'jdc') h += '<p class="note">Offizielle Wertung: Shanghai 10–15 und 15–20 (je Zahl 3 Darts, Shanghai +100), Doppel 1–20 je 1 Dart = 50, Bull = 100.</p>';
+    if (setup.game === 'shanghai') h += optHTML('Runden', 'sh', [7, 10, 20], setup.sh) + '<p class="note">Je Runde 3 Darts auf die Rundenzahl, Punkte = Zahl × Multiplikator. Single, Double und Triple in einer Aufnahme = Shanghai, gewinnt sofort.</p>';
+    if (setup.game === 'halveit') h += '<p class="note">Ziele: 20 · 16 · beliebiges Doppel · 17 · beliebiges Triple · 18 · Bull. Eingegeben werden nur die Punkte, die aufs Ziel gehen. Kein Treffer: Punktestand wird halbiert.</p>';
+    if (setup.game === 'bermuda') h += '<p class="note">Ziele: 12 · 13 · 14 · Doppel · 15 · 16 · 17 · Triple · 18 · 19 · 20 · Bull. Nur Punkte aufs Ziel zählen, kein Treffer: halbiert.</p>';
+    if (setup.game === 'ladder') h += optHTML('Versuche', 'att', [10, 20, 30], setup.att) + optHTML('Nicht geschafft', 'lm', ['−1 zurück', 'bleibt stehen'], setup.lm) + '<p class="note">Start bei 121, je Versuch so viele Darts wie unten gewählt, Double Out. Geschafft: nächste Zahl +1. Nicht geschafft: „−1 zurück“ = eine Zahl runter, „bleibt stehen“ = dieselbe Zahl so lange, bis sie gecheckt ist. Wertung: höchster Check. Als Team einfach den Teamnamen als Spieler eintragen.</p>';
+    if (setup.game === 'twodart') h += '<div class="opt"><span>Start bei</span><div class="seg"><input id="cstart" inputmode="numeric" maxlength="3" value="' + esc(setup.cs) + '" style="width:6rem;font-size:1.15rem;padding:.4rem .5rem;border-radius:.4rem;border:.15rem solid #3f6fbf;text-align:center"></div></div>' + optHTML('Schnellwahl', 'cs', [41, 61, 81, 100], setup.cs) + '<p class="note">Alle 2-Dart-Finishes: 41–98, 100, 101, 104, 107, 110 (' + TWO.length + ' Zahlen). Es geht ab der Startzahl aufwärts bis 110. Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1.</p>';
+    if (setup.game === 'randcheck') h += optHTML('Anzahl', 'cn', [10, 15, 20, 25], setup.cn) + '<p class="note">Die App zieht zufällig verschiedene 2-Dart-Finishes (41–110). Alle Spieler bekommen dieselben Zahlen. Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1. Ideal zum Warm-up.</p>';
+    if (setup.game === 'doubles') h += optHTML('Ziel', 'dbl', ['Alle Doppel', 'D20', 'D16', 'D8', 'D20/D16/D8'], setup.dbl) + '<p class="note">Je Aufnahme 3 Darts aufs Doppel. Alle Doppel: D1–D20 und Bull. Einzelnes Doppel: 10 Aufnahmen. D20/D16/D8: je 3 Aufnahmen. Wertung: Trefferquote.</p>';
+    if (setup.game === 'scoring') {
+      h += '<div class="opt"><span>Triple (mind. 3)</span><div class="seg tsel">';
+      for (var tn = 20; tn >= 1; tn--) h += '<button data-tsel="' + tn + '"' + (setup.tset.indexOf(tn) >= 0 ? ' class="on"' : '') + '>T' + tn + '</button>';
+      h += '</div></div>' + optHTML('Aufnahmen je Triple', 'tr', [10, 15, 20], setup.tr) + '<p class="note">Gewählt: ' + (setup.tset.length ? setup.tset.map(function (n) { return 'T' + n; }).join(', ') : '–') + '. Die Triple werden nacheinander gespielt, je ' + setup.tr + ' Aufnahmen. Jeden Dart eingeben: daneben, Single, Double oder Triple. Wertung: Triple-Quote, dazu Quote je Triple.</p>';
+    }
+    if (CD_DEF[setup.game]) h += optHTML('Darts je Zahl', 'cd', [3, 6, 9], setup.cdm[setup.game]);
+    if (setup.game === 'catch40') h += optHTML('Zahlen', 'c40', [20, 40], setup.c40) + '<p class="note">Jede Zahl ab 61 auschecken, Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1. 40 Zahlen = 61–100, 20 Zahlen = 61–80.</p>';
+    if (setup.game === 'beat') h += optHTML('Leben', 'lives', [3, 5], setup.lives) + '<p class="note">Jeder muss mehr werfen als der Spieler vor ihm. Schafft er es nicht, verliert er ein Leben und die Runde beginnt neu. Wer übrig bleibt, gewinnt. Ab 2 Spielern.</p>';
+    if (setup.game === 'flow') h += optHTML('Runden', 'fr', [10, 12], setup.fr) + '<p class="note">Je Runde: je 3 Darts auf 20, 19 und 18 (S, D und T zählen), 3 Darts auf Bull (Single Bull und Bull zählen), dann je ein Dart auf D16, D8, D4 und auf D20, D10, D5. Jeder Treffer = 1 Punkt, höchstens 18 je Runde. Ab ' + FLOW_BONUS + ' Punkten gibt es einen Strich auf der Bonus-Liste.</p>';
+    if (setup.game === 'gotcha') h += optHTML('Ziel', 'gt', [301, 501], setup.gt) + '<p class="note">Punkte zählen nach oben, genau auf das Ziel kommen gewinnt (kein Doppel nötig). Wer zu viel wirft, bleibt stehen. Triffst du genau den Stand eines Gegners, muss er zurück auf 0. Ab 2 Spielern.</p>';
+    if (setup.game === 'cricket') h += '<p class="note">Allein: so schnell wie möglich alles schließen. Mit mehreren: wer alles zu hat und vorne liegt, gewinnt. Wertung: Marks pro Runde (MPR).</p>';
+
+    h += '<h3>Spieler (' + setup.players.length + '/' + MAXP + ')</h3><div class="plist">';
+    for (var i = 0; i < setup.players.length; i++) {
+      var nm = setup.players[i];
+      h += '<span class="pc">' + esc(nm) + (setup.game === 'killer' ? '<input data-num="' + esc(nm) + '" inputmode="numeric" maxlength="2" placeholder="Zahl" value="' + esc(setup.nums[nm] || '') + '">' : '') +
+        '<button data-rm="' + i + '">✕</button></span>';
+    }
+    h += '</div>';
+    if (setup.players.length < MAXP) {
+      h += '<div class="addrow"><input id="newp" maxlength="24" placeholder="Name eingeben" autocomplete="off"><button data-a="add">+</button></div>';
+      var ch = '';
+      for (var j = 0; j < names.length && j < 30; j++) if (setup.players.indexOf(names[j]) < 0) ch += '<button data-pick="' + esc(names[j]) + '">' + esc(names[j]) + '</button>';
+      if (ch) h += '<div class="chips">' + ch + '</div>';
+    }
+    if (setup.game === 'killer') h += '<p class="note">Jeder wirft seine Zahl mit der schwachen Hand und trägt sie neben dem Namen ein (1–20, jede Zahl nur einmal).</p>';
+    h += '<div class="hint">' + esc(msg) + '</div>';
+    h += '<button class="big" data-a="start">Training starten</button>';
+    h += '<div class="row2"><button class="big sec" data-a="best">Bestenliste</button>' + (window.DART_PWA ? '' : '<button class="big sec" data-a="match">Zum Spielmodus</button>') + '</div></div>';
+    return h;
+  }
+  function optHTML(label, key, vals, cur) {
+    var h = '<div class="opt"><span>' + label + '</span><div class="seg">';
+    for (var i = 0; i < vals.length; i++) h += '<button data-opt="' + key + '" data-val="' + vals[i] + '"' + (String(cur) === String(vals[i]) ? ' class="on"' : '') + '>' + vals[i] + '</button>';
+    return h + '</div></div>';
+  }
+
+  function playHTML() {
+    var h = '<div class="play"><div class="side"><div class="ginfo">' + esc(GAMES[G.game].name) + ' · ' + esc(infoText()) + '</div>';
+    for (var i = 0; i < G.players.length; i++) {
+      var l = playerLine(i);
+      h += '<div class="prow' + (l.on ? ' on' : '') + (l.out ? ' out' : '') + '"><div class="pn"><b>' + (l.on ? '▶ ' : '') + esc(l.name) + '</b><small>' + esc(l.small) + '</small></div><div class="pv">' + esc(l.big) + '</div></div>';
+    }
+    h += '</div><div class="pad">';
+    var kind = inputKind();
+    h += '<div class="tgt"><span class="who">' + esc(G.players[G.cur].name) + '</span><span class="what">' + esc(kind === 'score' && typed ? typed : targetText()) + '</span></div>';
+    if (kind !== 'score' && kind !== 'count') {
+      h += '<div class="slots">';
+      for (var s = 0; s < 3; s++) h += '<span>' + (G.visit[s] ? esc(dartLabel(G.visit[s])) : '&nbsp;') + '</span>';
+      h += '</div>';
+    }
+    if (msg) h += '<div class="hint">' + esc(msg) + '</div>';
+    h += inputHTML(kind);
+    h += '<div class="acts"><button data-a="undo">↶ Rückgängig</button><button data-a="menu">Menü</button></div></div></div>';
+    return h;
+  }
+
+  function inputHTML(kind) {
+    var h = '', p = G.pd[G.cur];
+    if (kind === 'mult') {
+      var n = multNum();
+      h = '<div class="inp"><button class="w2 miss" data-m="0">Daneben</button><button class="w2" data-m="1">Single ' + n + '</button>' +
+        '<button class="w2" data-m="2">Double ' + n + '</button><button class="w2 hi" data-m="3">Triple ' + n + '</button></div>';
+    } else if (kind === 'hit') {
+      h = '<div class="inp"><button class="w2 miss" data-h="0">Daneben</button><button class="w2 hi" data-h="1">Treffer<small>' + esc(targetText()) + '</small></button></div>';
+    } else if (kind === 'count') {
+      h = '<div class="inp">';
+      for (var c = 0; c <= 3; c++) h += '<button class="w2' + (c === 0 ? ' miss' : '') + '" data-c="' + c + '">' + c + '<small>' + (c === 1 ? 'Treffer' : 'Treffer') + ' auf ' + esc(bobsLabel(p.target)) + '</small></button>';
+      h += '</div>';
+    } else if (kind === 'score') {
+      var Q = [0, 26, 41, 45, 60, 81, 85, 100, 140, 180];
+      if (G.game === 'halveit' || G.game === 'bermuda') {
+        var ht = HALVE[G.game][p.idx];
+        if (ht === 'D') Q = [0, 8, 16, 20, 32, 40, 50, 60, 80, 100];
+        else if (ht === 'T') Q = [0, 30, 45, 51, 54, 57, 60, 90, 120, 180];
+        else if (ht === 25) Q = [0, 25, 50, 75, 100, 125, 150];
+        else { Q = []; for (var qi = 0; qi <= 9; qi++) Q.push(qi * ht); }
+      }
+      h = '<div class="inp" style="flex:0 0 auto">';
+      for (var q = 0; q < Q.length; q++) h += '<button class="w5" style="font-size:1.1rem;padding:.4rem 0" data-q="' + Q[q] + '">' + Q[q] + '</button>';
+      h += '</div><div class="inp">';
+      var k = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'];
+      for (var j = 0; j < k.length; j++) h += '<button class="w3' + (k[j] === 'ok' ? ' hi' : '') + '" data-k="' + k[j] + '">' + (k[j] === 'del' ? '⌫' : (k[j] === 'ok' ? 'OK' : k[j])) + '</button>';
+      h += '</div>';
+    } else if (kind === 'cricket') {
+      h = '<div class="cgrid">';
+      for (var r = 0; r < CR.length; r++) {
+        var t = CR[r], closed = p.marks[t] >= 3, dead = closed;
+        for (var o = 0; o < G.pd.length; o++) if (G.pd[o].marks[t] < 3) dead = false;
+        h += '<div class="cr"><span>' + tName(t) + '<br>' + markStr(p.marks[t]) + '</span>' +
+          '<button data-cn="' + t + '" data-cm="1"' + (dead ? ' class="x"' : '') + '>' + (t === 25 ? '25' : 'S') + '</button>' +
+          '<button data-cn="' + t + '" data-cm="2"' + (dead ? ' class="x"' : '') + '>' + (t === 25 ? '50' : 'D') + '</button>' +
+          (t === 25 ? '<button style="visibility:hidden"></button>' : '<button data-cn="' + t + '" data-cm="3"' + (dead ? ' class="x"' : '') + '>T</button>') + '</div>';
+      }
+      h += '<div class="cr miss"><button data-cn="0" data-cm="0">Daneben / andere Zahl</button></div></div>';
+    } else if (kind === 'killer') {
+      h = '<div class="cgrid">';
+      for (var i = 0; i < G.pd.length; i++) {
+        var v = G.pd[i];
+        if (v.out) continue;
+        var own = i === G.cur;
+        h += '<div class="cr"><span>' + v.num + '<br><small style="font-size:.75rem;font-weight:normal">' + esc(own ? 'eigene' : G.players[i].name) + ' · ' + v.lives + '♥</small></span>' +
+          '<button data-kt="' + i + '" data-km="1">S</button><button data-kt="' + i + '" data-km="2">D</button><button data-kt="' + i + '" data-km="3">T</button></div>';
+      }
+      h += '<div class="cr miss"><button data-kt="-1" data-km="0">Daneben / andere Zahl</button></div></div>';
+    }
+    return h;
+  }
+  function markStr(m) { return m >= 3 ? '✓' : (m === 2 ? 'X' : (m === 1 ? '/' : '·')); }
+
+  function rankList() {
+    var arr = [];
+    for (var i = 0; i < G.players.length; i++) { var r = resultOf(i); r.i = i; arr.push(r); }
+    var lower = GAMES[G.game].best === 'min';
+    arr.sort(function (a, b) {
+      if (G.game === 'killer' || G.game === 'beat') return (G.pd[a.i].place || 99) - (G.pd[b.i].place || 99);
+      if ((G.game === 'shanghai' || G.game === 'gotcha') && G.winner >= 0) { if (a.i === G.winner) return -1; if (b.i === G.winner) return 1; }
+      if (G.game === 'gotcha') return G.pd[b.i].score - G.pd[a.i].score;
+      if (G.game === 'cricket' && G.winner >= 0) { if (a.i === G.winner) return -1; if (b.i === G.winner) return 1; }
+      return lower ? a.score - b.score : b.score - a.score;
+    });
+    return arr;
+  }
+
+  function scoreText(game, s) {
+    if (game === 'cricket') return fmt(s, 2) + ' MPR';
+    if (game === 'atc') return s + ' Darts';
+    if (game === 'checkout') return s + ' Checks';
+    if (game === 'killer' || game === 'beat' || game === 'gotcha') return s ? 'Sieg' : '–';
+    if (game === 'doubles' || game === 'scoring') return fmt(s, 1) + ' %';
+    if (isCatch(game)) return s + ' Pkt.';
+    if (game === 'ladder') return s ? 'Check ' + s : '–';
+    return String(s);
+  }
+
+  function doneHTML() {
+    var h = '<div class="scroll"><h2>' + esc(GAMES[G.game].name) + ' – Ergebnis</h2><table class="res"><tr><th>Platz</th><th>Spieler</th><th>Details</th><th style="text-align:right">Wertung</th></tr>';
+    var arr = rankList();
+    for (var i = 0; i < arr.length; i++) {
+      var r = arr[i];
+      h += '<tr' + (i === 0 ? ' class="first"' : '') + '><td>' + (i + 1) + '.</td><td>' + esc(r.name) + '</td><td>' + esc(r.detail) + '</td><td class="n">' + esc(scoreText(r.game, r.score)) + '</td></tr>';
+    }
+    h += '</table>' + statsHTML() + '<p class="note">Das Ergebnis ist in der Bestenliste gespeichert.</p>';
+    h += '<button class="big" data-a="again">Nochmal spielen</button><div class="row2"><button class="big sec" data-a="best">Bestenliste</button><button class="big sec" data-a="tomenu">Anderes Spiel</button></div>';
+    h += '<button class="big sec" data-a="undo">↶ Letzte Eingabe zurücknehmen</button></div>';
+    return h;
+  }
+
+  function groups() {
+    var g = {}, order = [];
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      if (!GAMES[r.game]) continue;
+      var key = r.game + '|' + (r.variant || '');
+      if (!g[key]) { g[key] = []; order.push(key); }
+      g[key].push(r);
+    }
+    order.sort(function (a, b) {
+      var ka = Object.keys(GAMES).indexOf(a.split('|')[0]), kb = Object.keys(GAMES).indexOf(b.split('|')[0]);
+      return ka - kb || (a < b ? -1 : 1);
+    });
+    return { g: g, order: order };
+  }
+  function keyName(key) { var p = key.split('|'); return GAMES[p[0]].name + (p[1] ? ' · ' + p[1] : ''); }
+
+  function bestHTML() {
+    var gr = groups();
+    var h = '<div class="scroll"><h2>Bestenliste</h2>';
+    if (!gr.order.length) return h + '<p class="note">Noch keine Ergebnisse.</p><button class="big sec" data-a="tomenu">Zurück</button></div>';
+    if (!bestTab || !gr.g[bestTab]) bestTab = gr.order[0];
+    h += '<div class="tabs">';
+    for (var i = 0; i < gr.order.length; i++) h += '<button data-tab="' + esc(gr.order[i]) + '"' + (gr.order[i] === bestTab ? ' class="on"' : '') + '>' + esc(keyName(gr.order[i])) + '</button>';
+    h += '</div>';
+    var game = bestTab.split('|')[0], list = gr.g[bestTab], mode = GAMES[game].best;
+    // Bestwert je Spieler
+    var per = {}, k;
+    for (k = 0; k < list.length; k++) {
+      var r = list[k], key = r.name.toLowerCase(), e = per[key];
+      if (!e) e = per[key] = { name: r.name, best: r, n: 0, sum: 0 };
+      e.n++; e.sum += r.score; if (game === 'flow' && r.score >= FLOW_BONUS) e.bonus = (e.bonus || 0) + 1;
+      if (mode === 'min' ? r.score < e.best.score : r.score > e.best.score) e.best = r;
+    }
+    var arr = []; for (k in per) arr.push(per[k]);
+    arr.sort(function (a, b) {
+      if (mode === 'sum') return b.sum - a.sum || a.n - b.n;
+      return mode === 'min' ? a.best.score - b.best.score : b.best.score - a.best.score;
+    });
+    h += '<table class="res"><tr><th>#</th><th>Spieler</th><th>' + (mode === 'sum' ? 'Spiele' : 'Datum') + '</th><th>' + (mode === 'sum' ? '' : 'Details') + '</th><th style="text-align:right">' + (mode === 'sum' ? 'Siege' : 'Bestwert') + '</th></tr>';
+    for (k = 0; k < arr.length; k++) {
+      var a = arr[k], d = new Date(a.best.date);
+      h += '<tr' + (k === 0 ? ' class="first"' : '') + '><td>' + (k + 1) + '.</td><td>' + esc(a.name) + '</td><td>' + (mode === 'sum' ? a.n : d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear()) + '</td><td>' + (mode === 'sum' ? '' : esc((game === 'flow' ? 'Bonus-Striche: ' + (a.bonus || 0) + ' · ' : '') + a.best.detail)) + '</td><td class="n">' + esc(mode === 'sum' ? a.sum : scoreText(game, a.best.score)) + '</td></tr>';
+    }
+    h += '</table><h3>Letzte Ergebnisse</h3><table class="res">';
+    var recent = list.slice(-12).reverse();
+    for (k = 0; k < recent.length; k++) {
+      var q = recent[k], dd = new Date(q.date);
+      h += '<tr><td>' + dd.getDate() + '.' + (dd.getMonth() + 1) + '. ' + dd.getHours() + ':' + (dd.getMinutes() < 10 ? '0' : '') + dd.getMinutes() + '</td><td>' + esc(q.name) + '</td><td>' + esc(q.detail) + '</td><td class="n">' + esc(scoreText(game, q.score)) + '</td><td class="del"><button data-del="' + esc(q.id) + '">löschen</button></td></tr>';
+    }
+    h += '</table><button class="big sec" data-a="tomenu">Zurück</button></div>';
+    return h;
+  }
+
+  /* ---------- Bedienung ---------- */
+  function attr(t, n) { return t.getAttribute ? t.getAttribute(n) : null; }
+  var KEYS = ['data-dlg', 'data-a', 'data-game', 'data-opt', 'data-rm', 'data-pick', 'data-m', 'data-h', 'data-c', 'data-k', 'data-q', 'data-cn', 'data-kt', 'data-tab', 'data-del', 'data-tsel'];
+  function findT(t) {
+    while (t && t !== document.body) {
+      for (var i = 0; i < KEYS.length; i++) if (attr(t, KEYS[i]) !== null) return t;
+      t = t.parentNode;
+    }
+    return null;
+  }
+
+  function onTap(e) {
+    var t = findT(e.target); if (!t) return;
+    var a;
+    if ((a = attr(t, 'data-dlg')) !== null) { var b = dlgBtns[+a]; closeDlg(); if (b && b.fn) b.fn(); return; }
+
+    if (screen === 'play' && G && !G.finished) {
+      if ((a = attr(t, 'data-m')) !== null) { pushUndo(); if (G.game === 'shanghai') shMult(+a); else if (G.game === 'scoring') scMult(+a); else jdcMult(+a); return after(); }
+      if ((a = attr(t, 'data-h')) !== null) { pushUndo(); if (G.game === 'jdc') jdcHit(+a); else if (G.game === 'doubles') dblHit(+a); else if (G.game === 'flow') flowHit(+a); else atcHit(+a); return after(); }
+      if ((a = attr(t, 'data-c')) !== null) { pushUndo(); bobsCount(+a); return after(); }
+      if ((a = attr(t, 'data-cn')) !== null) { pushUndo(); cricketDart(+a, +attr(t, 'data-cm')); return after(); }
+      if ((a = attr(t, 'data-kt')) !== null) { pushUndo(); killerDart(+a, +attr(t, 'data-km')); return after(); }
+      if ((a = attr(t, 'data-q')) !== null) { typed = ''; submitScore(+a); return; }
+      if ((a = attr(t, 'data-k')) !== null) {
+        if (a === 'del') typed = typed.slice(0, -1);
+        else if (a === 'ok') { if (typed === '') { msg = 'Erst Punkte eingeben'; render(); return; } submitScore(parseInt(typed, 10)); return; }
+        else if (typed.length < 3) typed = (typed === '0' ? '' : typed) + a;
+        msg = ''; render(); return;
+      }
+    }
+
+    if ((a = attr(t, 'data-game')) !== null) { readInputs(); setup.game = a; msg = ''; render(); return; }
+    if ((a = attr(t, 'data-opt')) !== null) { readInputs(); var v = attr(t, 'data-val'); v = /^\d+$/.test(v) ? +v : v; if (a === 'cd') setup.cdm[setup.game] = v; else setup[a] = v; render(); return; }
+    if ((a = attr(t, 'data-tsel')) !== null) { readInputs(); var tn = +a, ti = setup.tset.indexOf(tn); if (ti >= 0) setup.tset.splice(ti, 1); else setup.tset.push(tn); render(); return; }
+    if ((a = attr(t, 'data-rm')) !== null) { readInputs(); setup.players.splice(+a, 1); render(); return; }
+    if ((a = attr(t, 'data-pick')) !== null) { readInputs(); addPlayer(a); render(); return; }
+    if ((a = attr(t, 'data-tab')) !== null) { bestTab = a; render(); return; }
+    if ((a = attr(t, 'data-del')) !== null) {
+      var id = a;
+      dialog('Ergebnis löschen?', 'Nur für Fehleingaben gedacht.', [
+        { label: 'Ja, löschen', fn: function () { xhr('DELETE', '/api/results/' + id, null, function () { loadResults(render); }); } },
+        { label: 'Abbrechen', sec: true }
+      ]);
+      return;
+    }
+
+    a = attr(t, 'data-a');
+    if (a === 'add') { readInputs(); var el = $('newp'); if (el && el.value.replace(/\s/g, '')) { addPlayer(el.value.replace(/^\s+|\s+$/g, '')); } render(); }
+    else if (a === 'start') startTraining();
+    else if (a === 'best') { screen = 'best'; render(); loadResults(render); }
+    else if (a === 'tomenu') { screen = 'menu'; G = null; undo = []; save(); render(); }
+    else if (a === 'match') { G = null; xhr('PUT', '/api/board/' + N, { status: 'idle' }, function () { location.href = '/' + N; }); }
+    else if (a === 'again') { var cfg = G.cfg ? clone(G.cfg) : { game: G.game, players: G.players.map(function (p) { return p.name; }), atc: G.opts.mode, start: G.opts.start, rounds: G.opts.rounds, own: G.opts.own, nums: {} }; for (var i = 0; i < G.players.length; i++) if (G.game === 'killer') cfg.nums[G.players[i].name] = G.pd[i].num; G = newGame(cfg); undo = []; screen = 'play'; banner('Game on!'); save(); render(); }
+    else if (a === 'undo') {
+      if (!undo.length) { toast('Nichts zum Rückgängigmachen'); return; }
+      if (G && G.finished && savedIds.length) { for (var d = 0; d < savedIds.length; d++) xhr('DELETE', '/api/results/' + savedIds[d], null, function () {}); savedIds = []; }
+      G = JSON.parse(undo.pop()); G.saved = false; typed = ''; msg = ''; screen = 'play'; save(); render();
+    }
+    else if (a === 'menu') {
+      dialog('Menü', GAMES[G.game].name, [
+        { label: 'Training abbrechen', fn: function () {
+          dialog('Wirklich abbrechen?', 'Das Training wird nicht gewertet.', [
+            { label: 'Ja, abbrechen', fn: function () { G = null; undo = []; screen = 'menu'; save(); render(); } },
+            { label: 'Nein, weiter', sec: true }
+          ]);
+        } },
+        { label: 'Weiter', sec: true }
+      ]);
+    }
+  }
+
+  function addPlayer(n) {
+    n = n.slice(0, 24);
+    for (var i = 0; i < setup.players.length; i++) if (setup.players[i].toLowerCase() === n.toLowerCase()) { msg = n + ' ist schon dabei'; return; }
+    if (setup.players.length >= MAXP) return;
+    setup.players.push(n); msg = '';
+  }
+
+  function readInputs() {
+    var cs = $('cstart'); if (cs && cs.value.replace(/\D/g, '')) setup.cs = parseInt(cs.value.replace(/\D/g, ''), 10);
+    var ins = document.querySelectorAll('input[data-num]');
+    for (var i = 0; i < ins.length; i++) setup.nums[ins[i].getAttribute('data-num')] = ins[i].value.replace(/\D/g, '');
+  }
+
+  function startTraining() {
+    readInputs();
+    var el = $('newp'); if (el && el.value.replace(/\s/g, '')) addPlayer(el.value.replace(/^\s+|\s+$/g, ''));
+    if (!setup.players.length) { msg = 'Bitte mindestens einen Spieler hinzufügen'; render(); return; }
+    if (setup.game === 'twodart') {
+      if (!(setup.cs >= 41 && setup.cs <= 110)) { msg = 'Startzahl zwischen 41 und 110 eingeben'; render(); return; }
+      var cs0 = setup.cs; while (TWO.indexOf(setup.cs) < 0) setup.cs++;
+      if (cs0 !== setup.cs) toast(cs0 + ' ist kein 2-Dart-Finish – Start bei ' + setup.cs);
+    }
+    if (setup.game === 'scoring' && setup.tset.length < 3) { msg = 'Bitte mindestens 3 verschiedene Triple auswählen'; render(); return; }
+    if ((setup.game === 'beat' || setup.game === 'gotcha') && setup.players.length < 2) { msg = GAMES[setup.game].name + ' braucht mindestens 2 Spieler'; render(); return; }
+    if (setup.game === 'killer') {
+      if (setup.players.length < 2) { msg = 'Killer braucht mindestens 2 Spieler'; render(); return; }
+      var used = {};
+      for (var i = 0; i < setup.players.length; i++) {
+        var nm = setup.players[i], z = parseInt(setup.nums[nm], 10);
+        if (!(z >= 1 && z <= 20)) { msg = 'Zahl für ' + nm + ' fehlt (1–20)'; render(); return; }
+        if (used[z]) { msg = 'Die ' + z + ' ist doppelt – ' + nm + ' wirft neu'; render(); return; }
+        used[z] = 1; setup.nums[nm] = z;
+      }
+    }
+    var cfg = clone(setup);
+    G = newGame(cfg); undo = []; screen = 'play'; msg = ''; banner('Game on!');
+    save(); render();
+  }
+
+  document.addEventListener('click', onTap, false);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.id === 'newp') { readInputs(); if (e.target.value.replace(/\s/g, '')) addPlayer(e.target.value.replace(/^\s+|\s+$/g, '')); render(); var n = $('newp'); if (n) n.focus(); return; }
+    if (screen !== 'play' || !G || G.finished || inputKind() !== 'score' || $('dlg').style.display === 'block') return;
+    var k = e.key || '';
+    if (/^[0-9]$/.test(k) && typed.length < 3) { typed = (typed === '0' ? '' : typed) + k; render(); }
+    else if (k === 'Backspace') { typed = typed.slice(0, -1); render(); }
+    else if (k === 'Enter' && typed) submitScore(parseInt(typed, 10));
+  }, false);
+  window.addEventListener('resize', scale, false);
+
+  scale(); render(); load(); loadResults();
+  window.__T = { get: function () { return G; } };
+})();
+</script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
+</body>
+</html>

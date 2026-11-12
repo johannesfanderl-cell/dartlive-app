@@ -105,7 +105,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 #dlg button.sec { background: #e3ebf7; color: #071d47; }
 #toast { display: none; position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); -webkit-transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; font-size: 1.2rem; padding: .6rem 1.2rem; border-radius: .5rem; z-index: 11; box-shadow: 0 .2rem 1rem rgba(0,0,0,.5); }
 @media (orientation: portrait) {
-  .play { flex-direction: column; } .side { flex: 0 0 auto; max-height: 40%; } .pad { padding: .6rem; }
+  .play { flex-direction: column; } .side { flex: 0 0 auto; max-height: 40%; overflow-y: auto; padding-bottom: 0; } .pad { padding: .6rem; }
+  .prow { flex: 0 0 auto; min-height: 3.4rem; } .prow .pv { font-size: 2rem; }
   .games button { flex-basis: 48%; }
 }
 </style>
@@ -226,7 +227,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     };
     if (body != null) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
   }
-  function setNet(ok, t) { var n = $('net'); n.className = ok ? '' : 'bad'; n.innerHTML = esc(t); }
+  function setNet(ok, t) { var n = $('net'); n.className = ok ? '' : 'bad'; n.innerHTML = esc(window.DART_PWA && ok ? 'TV Riedenburg' : t); }
+  if (window.DART_PWA) { var tb = $('top').getElementsByTagName('b')[0]; if (tb) tb.innerHTML = 'Dart Training'; document.title = 'Dart Training'; }
   function scale() {
     var w = window.innerWidth, h = window.innerHeight;
     var f = w > h ? Math.min(w / 62, h / 36) : Math.min(w / 36, h / 62);
@@ -1024,7 +1026,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (setup.game === 'killer') h += '<p class="note">Jeder wirft seine Zahl mit der schwachen Hand und trägt sie neben dem Namen ein (1–20, jede Zahl nur einmal).</p>';
     h += '<div class="hint">' + esc(msg) + '</div>';
     h += '<button class="big" data-a="start">Training starten</button>';
-    h += '<div class="row2"><button class="big sec" data-a="best">Bestenliste</button><button class="big sec" data-a="match">Zum Spielmodus</button></div></div>';
+    h += '<div class="row2"><button class="big sec" data-a="best">Bestenliste</button>' + (window.DART_PWA ? '' : '<button class="big sec" data-a="match">Zum Spielmodus</button>') + '</div></div>';
     return h;
   }
   function optHTML(label, key, vals, cur) {
