@@ -170,13 +170,18 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (t === 25) return v % 25 === 0 && v <= 150;
     return v % t === 0 && v <= 9 * t;
   }
-  function dblSeq(mode) {
-    var s = [], i;
-    if (mode === 'Alle Doppel') { for (i = 1; i <= 20; i++) s.push(i); s.push(25); }
-    else if (mode === 'D20/D16/D8') s = [20, 20, 20, 16, 16, 16, 8, 8, 8];
-    else { var n = parseInt(String(mode).replace(/\D/g, ''), 10) || 20; for (i = 0; i < 10; i++) s.push(n); }
+  // Doppel-Training: Reihenfolge der Ziele (je Eintrag = eine Aufnahme mit 3 Darts)
+  function dblSeq(mode, own) {
+    var s = [], i, k;
+    if (mode === 'Alle Doppel') { for (i = 1; i <= 20; i++) s.push(i); s.push(25); return s; }
+    if (mode === 'Eigenes Doppel') { for (i = 0; i < 10; i++) s.push(own || 20); return s; }
+    var nums = String(mode).match(/\d+/g) || ['20'];
+    if (nums.length === 1) { for (i = 0; i < 10; i++) s.push(+nums[0]); return s; }
+    for (k = 0; k < nums.length; k++) for (i = 0; i < 3; i++) s.push(+nums[k]);
     return s;
   }
+  function curDbl() { return dblSeq(G.opts.dbl, G.opts.dn); }
+  function dblName(o) { return o.dbl === 'Eigenes Doppel' ? dLabel(o.dn || 20) : o.dbl; }
   function dLabel(n) { return n === 25 ? 'Bull' : 'D' + n; }
   // Alle Zahlen, die mit 2 Darts (Double Out) gecheckt werden können: 41–98, 100, 101, 104, 107, 110
   var TWO = (function () {
@@ -207,7 +212,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   var names = [], results = [];
   var screen = 'menu';
-  var setup = { game: 'jdc', players: [], nums: {}, atc: 'Single', start: 121, rounds: 10, own: 'nichts', sh: 7, att: 10, dbl: 'Alle Doppel', tz: 20, tr: 10, tset: [20, 19, 18], cdm: { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 }, c40: 40, lives: 3, gt: 301, cs: 41, cn: 15, lm: '−1 zurück', fr: 12 };
+  var setup = { game: 'jdc', players: [], nums: {}, atc: 'Single', start: 121, rounds: 10, own: 'nichts', sh: 20, att: 10, dbl: 'Alle Doppel', tz: 20, tr: 10, tset: [20, 19, 18], cdm: { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 }, c40: 40, lives: 3, gt: 301, cs: 41, cn: 15, lm: '−1 zurück', fr: 12, dn: 18 };
   var G = null;            // laufendes Spiel
   var undo = [];
   var typed = '';
@@ -303,9 +308,9 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (g.game === 'checkout') g.opts.start = cfg.start;
     if (g.game === 'countup') g.opts.rounds = cfg.rounds;
     if (g.game === 'killer') g.opts.own = cfg.own;
-    g.opts.sh = cfg.sh; g.opts.att = cfg.att; g.opts.dbl = cfg.dbl; g.opts.tz = cfg.tz; g.opts.tr = cfg.tr; g.opts.tset = (cfg.tset || [20, 19, 18]).slice();
+    g.opts.sh = 20; g.opts.att = cfg.att; g.opts.dbl = cfg.dbl; g.opts.tz = cfg.tz; g.opts.tr = cfg.tr; g.opts.tset = (cfg.tset || [20, 19, 18]).slice();
     g.opts.cd = (cfg.cdm && cfg.cdm[cfg.game]) || CD_DEF[cfg.game] || 9;
-    g.opts.c40 = cfg.c40; g.opts.lives = cfg.lives; g.opts.gt = cfg.gt; g.opts.cs = cfg.cs; g.opts.cn = cfg.cn; g.opts.lm = cfg.lm; g.opts.fr = cfg.fr || 12;
+    g.opts.c40 = cfg.c40; g.opts.lives = cfg.lives; g.opts.gt = cfg.gt; g.opts.cs = cfg.cs; g.opts.cn = cfg.cn; g.opts.lm = cfg.lm; g.opts.fr = cfg.fr || 12; g.opts.dn = cfg.dn;
     if (isCatch(g.game)) g.seq = catchSeq(cfg);
     if (g.game === 'ladder') g.opts.start = 121;
     g.cfg = clone(cfg); g.bar = 0;
@@ -383,7 +388,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'shanghai': return String(p.num);
       case 'halveit': case 'bermuda': return hvLabel(HALVE[G.game][p.idx]);
       case 'ladder': return String(p.rem);
-      case 'doubles': return dLabel(dblSeq(G.opts.dbl)[p.vi]);
+      case 'doubles': return dLabel(curDbl()[p.vi]);
       case 'scoring': return 'T' + multNum();
       case 'catch40': case 'twodart': case 'randcheck': return String(p.rem);
       case 'beat': return G.bar ? 'mehr als ' + G.bar : 'vorlegen';
@@ -408,7 +413,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'shanghai': return 'Runde ' + p.num + '/' + G.opts.sh;
       case 'halveit': case 'bermuda': return 'Ziel ' + (p.idx + 1) + '/' + HALVE[G.game].length;
       case 'ladder': return 'Versuch ' + p.attempt + '/' + G.opts.att + ' · Aufnahme ' + (p.vis + 1) + '/' + visMax();
-      case 'doubles': return G.opts.dbl + ' · Aufnahme ' + (p.vi + 1) + '/' + dblSeq(G.opts.dbl).length;
+      case 'doubles': return dblName(G.opts) + ' · Aufnahme ' + (p.vi + 1) + '/' + curDbl().length;
       case 'scoring': return 'Triple ' + ((p.ti || 0) + 1) + '/' + tsetOf().length + ' · Aufnahme ' + (p.visits + 1) + '/' + G.opts.tr;
       case 'catch40': case 'twodart': case 'randcheck': return 'Zahl ' + (p.si + 1) + '/' + G.seq.length + ' · Aufnahme ' + (p.vis + 1) + '/' + visMax() + (G.game === 'randcheck' && G.seq.length - p.si > 1 ? ' · danach ' + G.seq.slice(p.si + 1, p.si + 4).join(', ') + (G.seq.length - p.si > 4 ? ' …' : '') : '');
       case 'beat': return 'Runde ' + G.round + ' · ' + G.opts.lives + ' Leben';
@@ -466,7 +471,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         break;
       case 'doubles':
         big = fmt(pct(p.hits, p.darts), 0) + '%';
-        small = p.hits + '/' + p.darts + ' Treffer' + (p.done ? ' · fertig' : ' · ' + dLabel(dblSeq(G.opts.dbl)[p.vi]));
+        small = p.hits + '/' + p.darts + ' Treffer' + (p.done ? ' · fertig' : ' · ' + dLabel(curDbl()[p.vi]));
         break;
       case 'scoring':
         big = p.tr;
@@ -693,7 +698,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
   }
   // Doppel-Training: Treffer/Daneben je Dart
   function dblHit(h) {
-    var p = G.pd[G.cur], seq = dblSeq(G.opts.dbl), t = seq[p.vi];
+    var p = G.pd[G.cur], seq = curDbl(), t = seq[p.vi];
     G.visit.push({ l: h ? dLabel(t) : '–' });
     p.darts++; if (h) p.hits++;
     p.per = p.per || {}; var e = p.per[t] || (p.per[t] = { h: 0, d: 0 }); e.d++; if (h) e.h++;
@@ -828,7 +833,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'shanghai': r.variant = G.opts.sh + ' Runden'; r.score = p.score; r.detail = (p.sh ? 'Shanghai in Runde ' + p.num + ' · ' : '') + (G.winner === i && G.players.length > 1 ? 'Sieg · ' : '') + p.score + ' Punkte'; break;
       case 'halveit': case 'bermuda': r.score = p.score; r.detail = p.halved + '× halbiert'; break;
       case 'ladder': r.variant = G.opts.att + ' Versuche' + (G.opts.cd && G.opts.cd !== 9 ? ' · ' + G.opts.cd + ' Darts' : '') + (G.opts.lm === 'bleibt stehen' ? ' · bleibt stehen' : ''); r.score = p.best; r.detail = p.checks + ' Checks · Endstand ' + p.target; break;
-      case 'doubles': r.variant = G.opts.dbl; r.score = pct(p.hits, p.darts); r.detail = p.hits + ' von ' + p.darts + ' Darts'; break;
+      case 'doubles': r.variant = dblName(G.opts); r.score = pct(p.hits, p.darts); r.detail = p.hits + ' von ' + p.darts + ' Darts'; break;
       case 'scoring': r.variant = 'je ' + G.opts.tr + ' Aufnahmen'; r.score = pct(p.tr, p.darts); r.detail = tsetOf().map(function (n) { return 'T' + n; }).join(', ') + ' · ' + p.tr + ' Triples · ' + p.pts + ' Punkte'; break;
       case 'catch40': r.variant = G.opts.c40 === 20 ? '61–80' : '61–100'; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' Checks'; break;
       case 'twodart': r.variant = 'ab ' + G.seq[0]; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' von ' + G.seq.length + ' gecheckt'; break;
@@ -998,13 +1003,17 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (setup.game === 'countup') h += optHTML('Aufnahmen', 'rounds', [10, 20, 30, 50], setup.rounds);
     if (setup.game === 'killer') h += optHTML('Eigene Zahl', 'own', ['nichts', 'Leben zurück', 'kostet Leben'], setup.own) + '<p class="note">Treffer auf die Zahl eines Gegners: Single −1, Double −2, Triple −3 Leben. Wer als Letzter übrig ist, gewinnt.</p>';
     if (setup.game === 'jdc') h += '<p class="note">Offizielle Wertung: Shanghai 10–15 und 15–20 (je Zahl 3 Darts, Shanghai +100), Doppel 1–20 je 1 Dart = 50, Bull = 100.</p>';
-    if (setup.game === 'shanghai') h += optHTML('Runden', 'sh', [7, 10, 20], setup.sh) + '<p class="note">Je Runde 3 Darts auf die Rundenzahl, Punkte = Zahl × Multiplikator. Single, Double und Triple in einer Aufnahme = Shanghai, gewinnt sofort.</p>';
+    if (setup.game === 'shanghai') h += '<p class="note">20 Runden, das ganze Board von 1 bis 20. Je Runde 3 Darts auf die Rundenzahl, Punkte = Zahl × Multiplikator. Single, Double und Triple in einer Aufnahme = Shanghai, gewinnt sofort.</p>';
     if (setup.game === 'halveit') h += '<p class="note">Ziele: 20 · 16 · beliebiges Doppel · 17 · beliebiges Triple · 18 · Bull. Eingegeben werden nur die Punkte, die aufs Ziel gehen. Kein Treffer: Punktestand wird halbiert.</p>';
     if (setup.game === 'bermuda') h += '<p class="note">Ziele: 12 · 13 · 14 · Doppel · 15 · 16 · 17 · Triple · 18 · 19 · 20 · Bull. Nur Punkte aufs Ziel zählen, kein Treffer: halbiert.</p>';
     if (setup.game === 'ladder') h += optHTML('Versuche', 'att', [10, 20, 30], setup.att) + optHTML('Nicht geschafft', 'lm', ['−1 zurück', 'bleibt stehen'], setup.lm) + '<p class="note">Start bei 121, je Versuch so viele Darts wie unten gewählt, Double Out. Geschafft: nächste Zahl +1. Nicht geschafft: „−1 zurück“ = eine Zahl runter, „bleibt stehen“ = dieselbe Zahl so lange, bis sie gecheckt ist. Wertung: höchster Check. Als Team einfach den Teamnamen als Spieler eintragen.</p>';
     if (setup.game === 'twodart') h += '<div class="opt"><span>Start bei</span><div class="seg"><input id="cstart" inputmode="numeric" maxlength="3" value="' + esc(setup.cs) + '" style="width:6rem;font-size:1.15rem;padding:.4rem .5rem;border-radius:.4rem;border:.15rem solid #3f6fbf;text-align:center"></div></div>' + optHTML('Schnellwahl', 'cs', [41, 61, 81, 100], setup.cs) + '<p class="note">Alle 2-Dart-Finishes: 41–98, 100, 101, 104, 107, 110 (' + TWO.length + ' Zahlen). Es geht ab der Startzahl aufwärts bis 110. Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1.</p>';
     if (setup.game === 'randcheck') h += optHTML('Anzahl', 'cn', [10, 15, 20, 25], setup.cn) + '<p class="note">Die App zieht zufällig verschiedene 2-Dart-Finishes (41–110). Alle Spieler bekommen dieselben Zahlen. Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1. Ideal zum Warm-up.</p>';
-    if (setup.game === 'doubles') h += optHTML('Ziel', 'dbl', ['Alle Doppel', 'D20', 'D16', 'D8', 'D20/D16/D8'], setup.dbl) + '<p class="note">Je Aufnahme 3 Darts aufs Doppel. Alle Doppel: D1–D20 und Bull. Einzelnes Doppel: 10 Aufnahmen. D20/D16/D8: je 3 Aufnahmen. Wertung: Trefferquote.</p>';
+    if (setup.game === 'doubles') {
+      h += optHTML('Ziel', 'dbl', ['Alle Doppel', 'D20/D10/D5', 'D16/D8/D4', 'D12/D6/D3', 'D4/D2/D1', 'Eigenes Doppel'], setup.dbl);
+      if (setup.dbl === 'Eigenes Doppel') h += '<div class="opt"><span>Doppel</span><div class="seg"><input id="dnum" inputmode="numeric" maxlength="2" value="' + esc(setup.dn) + '" style="width:6rem;font-size:1.15rem;padding:.4rem .5rem;border-radius:.4rem;border:.15rem solid #3f6fbf;text-align:center"></div></div>';
+      h += '<p class="note">Je Aufnahme 3 Darts aufs Doppel. Alle Doppel: D1–D20 und Bull, je eine Aufnahme. Dreier-Gruppen: je Doppel 3 Aufnahmen. Eigenes Doppel: Zahl 1–20 eingeben (25 = Bull), 10 Aufnahmen. Wertung: Trefferquote.</p>';
+    }
     if (setup.game === 'scoring') {
       h += '<div class="opt"><span>Triple (mind. 3)</span><div class="seg tsel">';
       for (var tn = 20; tn >= 1; tn--) h += '<button data-tsel="' + tn + '"' + (setup.tset.indexOf(tn) >= 0 ? ' class="on"' : '') + '>T' + tn + '</button>';
@@ -1287,6 +1296,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   function readInputs() {
     var cs = $('cstart'); if (cs && cs.value.replace(/\D/g, '')) setup.cs = parseInt(cs.value.replace(/\D/g, ''), 10);
+    var dn = $('dnum'); if (dn) setup.dn = parseInt(dn.value.replace(/\D/g, ''), 10) || 0;
     var ins = document.querySelectorAll('input[data-num]');
     for (var i = 0; i < ins.length; i++) setup.nums[ins[i].getAttribute('data-num')] = ins[i].value.replace(/\D/g, '');
   }
@@ -1300,6 +1310,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       var cs0 = setup.cs; while (TWO.indexOf(setup.cs) < 0) setup.cs++;
       if (cs0 !== setup.cs) toast(cs0 + ' ist kein 2-Dart-Finish – Start bei ' + setup.cs);
     }
+    if (setup.game === 'doubles' && setup.dbl === 'Eigenes Doppel' && !((setup.dn >= 1 && setup.dn <= 20) || setup.dn === 25)) { msg = 'Bitte ein Doppel von 1 bis 20 eingeben (25 = Bull)'; render(); return; }
     if (setup.game === 'scoring' && setup.tset.length < 3) { msg = 'Bitte mindestens 3 verschiedene Triple auswählen'; render(); return; }
     if ((setup.game === 'beat' || setup.game === 'gotcha') && setup.players.length < 2) { msg = GAMES[setup.game].name + ' braucht mindestens 2 Spieler'; render(); return; }
     if (setup.game === 'killer') {
