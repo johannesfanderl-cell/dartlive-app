@@ -374,7 +374,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         if (st.t === 'sh') return String(st.n);
         var tg = st.g[Math.min(k, st.g.length - 1)];
         return tg === 25 ? 'Bull' : 'D' + tg;
-      case 'atc': return atcLabel(p.target, G.opts.mode);
+      case 'atc': return 'Ziel ' + atcLabel(p.target, G.opts.mode);
       case 'bobs': return bobsLabel(p.target);
       case 'checkout': return String(p.rem);
       case 'countup': return 'Runde ' + (p.round + 1) + '/' + G.opts.rounds;
@@ -427,8 +427,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         small = p.done ? 'fertig · Shanghai ' + p.sh + ' · Doppel ' + p.dhits + '/21' : ('Teil ' + (JDC_STEPS[p.step].part + 1) + ' · T1 ' + p.parts[0] + ' · T2 ' + p.parts[1] + ' · T3 ' + p.parts[2]);
         break;
       case 'atc':
-        big = p.done ? '✓' : atcLabel(p.target, G.opts.mode);
-        small = p.darts + ' Darts' + (p.done ? ' · fertig' : '');
+        big = p.done ? '✓' : (p.target - 1) + '/21';
+        small = (p.done ? 'fertig' : 'Ziel ' + atcLabel(p.target, G.opts.mode)) + ' · ' + p.darts + ' Darts';
         break;
       case 'bobs':
         big = p.score;
