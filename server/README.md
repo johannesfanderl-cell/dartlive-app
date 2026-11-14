@@ -40,11 +40,15 @@ Checkout-Training (ab 61/81/101/121, 10 Versuche), Count Up (10/20 Aufnahmen), C
 Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
 
 ## Turnier (z. B. Vereinsmeisterschaft)
-- Turnierleitung: http://192.168.68.222:3000/turnier  (Spieler eintragen, Gesetzte antippen, Gruppen auslosen, starten)
+- Turnierleitung: http://192.168.68.222:3000/turnier  (Spieler eintragen, Gesetzte antippen, auslosen, starten)
+  – oder am Handy/Tablet mit der App „Dart Turnier“ (DartTurnier.apk), die direkt hier startet.
+- Drei Modi: Gruppen + K.-o. · Nur K.-o. (2–32 Spieler, Freilose für die Gesetzten) · Jeder gegen jeden (Tabellenerster gewinnt).
+  Gruppen und Jeder-gegen-jeden wahlweise mit Hin- und Rückrunde.
 - Fernseher: http://192.168.68.222:3000/turnier-tv  (Tabellen, laufende/nächste Spiele, K.-o.-Baum)
 - Die Tablets zeigen das zugeteilte Spiel automatisch an („… beginnt“ nach dem Ausbullen antippen).
   Das Ergebnis geht nach Spielende automatisch an die Turnierleitung, danach wird das nächste Spiel zugeteilt.
-- Ergebnisse können in der Turnierleitung korrigiert oder Spiele zurückgesetzt werden.
+- Ergebnisse können in der Turnierleitung korrigiert oder Spiele zurückgesetzt werden; „Rückgängig“ nimmt die letzte Eingabe zurück.
+  Wird ein Gruppenergebnis geändert, bevor in der K.-o.-Runde gespielt wurde, wird die K.-o.-Runde automatisch neu gesetzt.
 
 ## Liga-Heimspiel (6 Einzel, 3 Doppel, 6 Einzel – Spielbericht Bezirk Niederbayern)
 - Verwaltung: http://192.168.68.222:3000/liga  (Teams, 6 Spieler je Team mit Pass-Nr., Doppel festlegen, Auswechslungen)

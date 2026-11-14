@@ -1,8 +1,8 @@
-// Turnierlogik für Dart Live: Gruppenphase + K.-o.-Runde
+// Turnierlogik für Dart Live: Gruppenphase + K.-o.-Runde, reines K.-o.-Turnier, Jeder gegen jeden
 'use strict';
 
 const GROUP_NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
-const KO_NAMES = { 16: 'Achtelfinale', 8: 'Viertelfinale', 4: 'Halbfinale', 2: 'Finale' };
+const KO_NAMES = { 32: 'Sechzehntelfinale', 16: 'Achtelfinale', 8: 'Viertelfinale', 4: 'Halbfinale', 2: 'Finale' };
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 
@@ -17,13 +17,26 @@ function create(opts) {
   const players = (opts.players || []).map(s => String(s).replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean);
   const seen = {};
   const uniq = players.filter(p => { const k = p.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; });
-  if (uniq.length < 4) throw new Error('Mindestens 4 Spieler nötig');
-  const groups = Math.max(1, Math.min(6, Number(opts.groups) || 3));
-  if (uniq.length < groups * 2) throw new Error('Zu wenige Spieler für ' + groups + ' Gruppen');
-  const seeds = (opts.seeds || []).map(String).filter(s => uniq.indexOf(s) >= 0);
-  let koSize = Number(opts.koSize) || 8;
-  if ([2, 4, 8, 16].indexOf(koSize) < 0) koSize = 8;
-  while (koSize > uniq.length) koSize /= 2;
+  // Modus: 'gko' = Gruppen + K.-o. (Standard), 'ko' = nur K.-o. (mit Freilosen), 'liga' = jeder gegen jeden
+  const mode = ['ko', 'liga'].indexOf(opts.mode) >= 0 ? opts.mode : 'gko';
+  let groups, koSize;
+  if (mode === 'ko') {
+    if (uniq.length < 2) throw new Error('Mindestens 2 Spieler nötig');
+    if (uniq.length > 32) throw new Error('Im K.-o.-Modus sind höchstens 32 Spieler möglich');
+    groups = 0; koSize = 2;
+    while (koSize < uniq.length) koSize *= 2;
+  } else if (mode === 'liga') {
+    if (uniq.length < 3) throw new Error('Mindestens 3 Spieler nötig');
+    groups = 1; koSize = 0;
+  } else {
+    if (uniq.length < 4) throw new Error('Mindestens 4 Spieler nötig');
+    groups = Math.max(1, Math.min(6, Number(opts.groups) || 3));
+    if (uniq.length < groups * 2) throw new Error('Zu wenige Spieler für ' + groups + ' Gruppen');
+    koSize = Number(opts.koSize) || 8;
+    if ([2, 4, 8, 16].indexOf(koSize) < 0) koSize = 8;
+    while (koSize > uniq.length) koSize /= 2;
+  }
+  const seeds = mode === 'liga' ? [] : (opts.seeds || []).map(String).filter(s => uniq.indexOf(s) >= 0);
   const T = {
     id: uid(),
     name: String(opts.name || 'Vereinsmeisterschaft').slice(0, 60),
@@ -34,9 +47,11 @@ function create(opts) {
       koLegs: Math.max(1, Math.min(11, Number(opts.koLegs) || Number(opts.legs) || 3)),
       finalLegs: Math.max(1, Math.min(11, Number(opts.finalLegs) || Number(opts.koLegs) || Number(opts.legs) || 3)),
       doubleOut: opts.doubleOut !== false,
+      mode: mode,
+      rueck: mode !== 'ko' && !!opts.rueck,
       groups: groups,
       koSize: koSize,
-      third: !!opts.third,
+      third: mode !== 'liga' && !!opts.third && !(mode === 'ko' && uniq.length < 4),
       boards: Array.isArray(opts.boards) && opts.boards.length ? opts.boards.map(Number).filter(n => n >= 1 && n <= 5) : [1, 2, 3, 4, 5]
     },
     players: uniq,
@@ -51,6 +66,12 @@ function create(opts) {
 }
 
 function draw(T) {
+  if (T.cfg.mode === 'ko') {
+    // Setzliste: Gesetzte in ihrer Reihenfolge, der Rest zufällig. Die Besten bekommen die Freilose.
+    T.groups = [];
+    T.koOrder = T.seeds.concat(shuffle(T.players.filter(p => T.seeds.indexOf(p) < 0)));
+    return;
+  }
   const g = T.cfg.groups;
   const groups = [];
   for (let i = 0; i < g; i++) groups.push({ name: GROUP_NAMES[i], players: [] });
@@ -74,6 +95,7 @@ function draw(T) {
 
 function movePlayer(T, player, toGroup) {
   if (T.status !== 'setup') throw new Error('Gruppen können nur vor dem Start geändert werden');
+  if (T.cfg.mode === 'ko') throw new Error('Im K.-o.-Modus gibt es keine Gruppen');
   const to = T.groups.filter(g => g.name === toGroup)[0];
   if (!to) throw new Error('Gruppe unbekannt');
   T.groups.forEach(g => { g.players = g.players.filter(p => p !== player); });
@@ -254,11 +276,25 @@ function start(T) {
   if (T.status !== 'setup') throw new Error('Turnier läuft bereits');
   if (T.groups.some(g => g.players.length < 2)) throw new Error('Jede Gruppe braucht mindestens 2 Spieler');
   T.matches = [];
+  if (T.cfg.mode === 'ko') {
+    const q = (T.koOrder || T.players).map(n => ({ name: n, group: null, rank: null }));
+    bracket(T, q, T.cfg.koSize, null);
+    T.koSeeds = q.map((x, i) => ({ seed: i + 1, name: x.name, group: '', rank: '' }));
+    T.status = 'ko';
+    propagate(T);
+    return;
+  }
+  const liga = T.cfg.mode === 'liga';
   let order = 0;
   T.groups.forEach(g => {
-    roundRobin(g.players).forEach((pairs, r) => {
+    let rounds = roundRobin(g.players);
+    // Rückrunde: dieselben Paarungen noch einmal, der andere Spieler steht vorne
+    if (T.cfg.rueck) rounds = rounds.concat(rounds.map(pairs => pairs.map(p => [p[1], p[0]])));
+    rounds.forEach((pairs, r) => {
       pairs.forEach(p => {
-        T.matches.push({ id: uid(), phase: 'group', group: g.name, round: r + 1, p1: p[0], p2: p[1], status: 'pending', board: null, legs: null, winner: null, order: order++, legsToWin: T.cfg.legs });
+        const m = { id: uid(), phase: 'group', group: g.name, round: r + 1, p1: p[0], p2: p[1], status: 'pending', board: null, legs: null, winner: null, order: order++, legsToWin: T.cfg.legs };
+        if (liga) m.label = 'Runde ' + (r + 1);
+        T.matches.push(m);
       });
     });
   });
@@ -330,6 +366,7 @@ function permutations(a) {
 
 function qualifiers(T) {
   const g = T.groups.length, size = T.cfg.koSize;
+  if (!g || !size) return [];
   const tables = T.groups.map(gr => standings(T, gr.name));
   const per = Math.floor(size / g), extra = size - per * g;
   const cmp = (a, b) => (b.pts - a.pts) || (b.diff - a.diff) || (b.lf - a.lf) || a.name.localeCompare(b.name);
@@ -341,7 +378,8 @@ function qualifiers(T) {
   }
   if (extra > 0) {
     // Beste der nächsten Platzierung; bei ungleichen Gruppen zählen Spiele gegen Plätze > kleinste Gruppengröße nicht
-    const minSize = Math.min.apply(null, T.groups.map(x => x.players.length));
+    // (nur Gruppen, die auf diesem Platz überhaupt jemanden haben – sonst fällt der Kandidat selbst aus dem Vergleich)
+    const minSize = Math.min.apply(null, tables.filter(t => t[per]).map(t => t.length));
     const cands = [];
     tables.forEach((t, gi) => {
       const x = t[per];
@@ -356,6 +394,43 @@ function qualifiers(T) {
     cands.slice(0, extra).forEach(x => q.push(x));
   }
   return q.slice(0, size);
+}
+
+// Baut den K.-o.-Baum. q = Setzliste (darf kürzer als size sein: fehlende Plätze sind Freilose für die Besten),
+// lows = Reihenfolge der unteren Setzplätze je Paarung (null = Standard 1–8, 4–5, 2–7, 3–6 …)
+function bracket(T, q, size, lows) {
+  const order = seedOrder(size);
+  const pairs = [];
+  for (let i = 0; i < order.length; i += 2) pairs.push([order[i], order[i + 1]]);
+  const best = lows || pairs.map(p => p[1]);
+  const round1 = [];
+  let order2 = T.matches.length;
+  const name1 = KO_NAMES[size] || ('Runde der ' + size);
+  pairs.forEach((p, i) => {
+    const a = q[p[0] - 1], b = q[best[i] - 1];
+    const m = { id: uid(), phase: 'ko', koRound: size, slot: i, label: size === 2 ? name1 : name1 + ' ' + (i + 1), p1: a ? a.name : null, p2: b ? b.name : null,
+      seed1: p[0], seed2: best[i], status: 'pending', board: null, legs: null, winner: null, order: order2++,
+      legsToWin: size === 2 ? T.cfg.finalLegs : T.cfg.koLegs };
+    if (!a || !b) { m.bye = true; m.status = 'done'; m.winner = a ? a.name : (b ? b.name : null); }
+    round1.push(m);
+  });
+  T.matches = T.matches.concat(round1);
+  // Folgerunden als Platzhalter
+  let prev = round1, rs = size / 2;
+  while (rs >= 2) {
+    const cur = [];
+    for (let i = 0; i < prev.length; i += 2) {
+      cur.push({ id: uid(), phase: 'ko', koRound: rs, slot: i / 2, label: (KO_NAMES[rs] || 'Runde') + (rs > 2 ? ' ' + (i / 2 + 1) : ''),
+        p1: null, p2: null, from: [prev[i].id, prev[i + 1].id], status: 'pending', board: null, legs: null, winner: null, order: order2++,
+        legsToWin: rs === 2 ? T.cfg.finalLegs : T.cfg.koLegs });
+    }
+    if (rs === 2 && T.cfg.third && prev.length === 2 && !prev.some(m => m.bye)) {
+      cur.push({ id: uid(), phase: 'ko', koRound: 3, slot: 0, label: 'Spiel um Platz 3', p1: null, p2: null, from: [prev[0].id, prev[1].id], loserOf: true,
+        status: 'pending', board: null, legs: null, winner: null, order: order2++, legsToWin: T.cfg.koLegs });
+    }
+    T.matches = T.matches.concat(cur);
+    prev = cur.filter(m => !m.loserOf); rs /= 2;
+  }
 }
 
 function buildKO(T) {
@@ -381,34 +456,22 @@ function buildKO(T) {
       if (score < bestScore) { bestScore = score; best = perm; }
     });
   }
-  const round1 = [];
-  let order2 = T.matches.length;
-  const name1 = KO_NAMES[size] || ('Runde der ' + size);
-  pairs.forEach((p, i) => {
-    const a = q[p[0] - 1], b = q[best[i] - 1];
-    round1.push({ id: uid(), phase: 'ko', koRound: size, slot: i, label: name1 + ' ' + (i + 1), p1: a.name, p2: b.name,
-      seed1: p[0], seed2: best[i], status: 'pending', board: null, legs: null, winner: null, order: order2++,
-      legsToWin: size === 2 ? T.cfg.finalLegs : T.cfg.koLegs });
-  });
-  T.matches = T.matches.concat(round1);
-  // Folgerunden als Platzhalter
-  let prev = round1, rs = size / 2;
-  while (rs >= 2) {
-    const cur = [];
-    for (let i = 0; i < prev.length; i += 2) {
-      cur.push({ id: uid(), phase: 'ko', koRound: rs, slot: i / 2, label: (KO_NAMES[rs] || 'Runde') + (rs > 2 ? ' ' + (i / 2 + 1) : ''),
-        p1: null, p2: null, from: [prev[i].id, prev[i + 1].id], status: 'pending', board: null, legs: null, winner: null, order: order2++,
-        legsToWin: rs === 2 ? T.cfg.finalLegs : T.cfg.koLegs });
-    }
-    if (rs === 2 && T.cfg.third && prev.length === 2) {
-      cur.push({ id: uid(), phase: 'ko', koRound: 3, slot: 0, label: 'Spiel um Platz 3', p1: null, p2: null, from: [prev[0].id, prev[1].id], loserOf: true,
-        status: 'pending', board: null, legs: null, winner: null, order: order2++, legsToWin: T.cfg.koLegs });
-    }
-    T.matches = T.matches.concat(cur);
-    prev = cur.filter(m => !m.loserOf); rs /= 2;
-  }
+  bracket(T, q, size, best);
   T.koSeeds = q.map((x, i) => ({ seed: i + 1, name: x.name, group: x.group, rank: x.rank }));
   T.status = 'ko';
+}
+
+function koStarted(T) {
+  return T.matches.some(m => m.phase === 'ko' && !m.bye && (m.status === 'running' || m.status === 'done'));
+}
+
+// Wird ein Gruppenergebnis geändert, bevor in der K.-o.-Runde gespielt wurde, wird die K.-o.-Runde neu gesetzt
+function reopenGroups(T) {
+  if (T.cfg.mode === 'ko' || T.cfg.mode === 'liga' || T.status !== 'ko' || koStarted(T)) return false;
+  T.matches = T.matches.filter(m => m.phase !== 'ko');
+  T.koSeeds = null; T.champion = null;
+  T.status = 'groups';
+  return true;
 }
 
 function byId(T, id) { return T.matches.filter(m => m.id === id)[0]; }
@@ -416,6 +479,13 @@ function byId(T, id) { return T.matches.filter(m => m.id === id)[0]; }
 function loserOf(m) { return m.winner === m.p1 ? m.p2 : m.p1; }
 
 function propagate(T) {
+  if (T.cfg.mode === 'liga') {
+    // Jeder gegen jeden: Sieger ist der Tabellenerste, sobald alles gespielt ist
+    if (T.status === 'groups' && groupsDone(T)) { T.status = 'done'; T.champion = standings(T, T.groups[0].name)[0].name; }
+    else if (T.status === 'done' && !groupsDone(T)) { T.status = 'groups'; T.champion = null; }
+    else if (T.status === 'done') T.champion = standings(T, T.groups[0].name)[0].name;
+    return;
+  }
   T.matches.forEach(m => {
     if (!m.from) return;
     const a = byId(T, m.from[0]), b = byId(T, m.from[1]);
@@ -438,7 +508,9 @@ function setResult(T, id, legs) {
   const a = Math.max(0, Math.floor(Number(legs[0]) || 0)), b = Math.max(0, Math.floor(Number(legs[1]) || 0));
   const need = m.legsToWin;
   if (!((a === need && b < need) || (b === need && a < need))) throw new Error('Ergebnis muss ' + need + ':x oder x:' + need + ' sein');
+  if (m.bye) throw new Error('Freilos – hier gibt es kein Ergebnis');
   if (m.phase === 'ko' && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
+  if (m.phase === 'group') reopenGroups(T);
   m.legs = [a, b];
   m.winner = a > b ? m.p1 : m.p2;
   m.status = 'done';
@@ -455,9 +527,41 @@ function resetMatch(T, id) {
   const m = byId(T, id);
   if (!m) throw new Error('Spiel nicht gefunden');
   if (m.status === 'done' && m.phase === 'ko' && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
-  if (m.status === 'done' && m.phase === 'group' && T.status !== 'groups') throw new Error('K.-o.-Runde läuft schon – Gruppenergebnis bitte nur noch korrigieren, nicht zurücksetzen');
+  if (m.bye) throw new Error('Ein Freilos kann nicht zurückgesetzt werden');
+  if (m.phase === 'group' && T.cfg.mode !== 'liga' && T.status !== 'groups' && !reopenGroups(T)) throw new Error('K.-o.-Runde läuft schon – Gruppenergebnis bitte nur noch korrigieren, nicht zurücksetzen');
   m.status = 'pending'; m.legs = null; m.winner = null; m.board = null;
   afterChange(T);
+}
+
+/* ---------- Rückgängig (letzte Eingabe der Turnierleitung) ---------- */
+function snapshot(T, id) {
+  const m = byId(T, id);
+  if (!m) return null;
+  return { id: m.id, label: (m.p1 || '?') + ' – ' + (m.p2 || '?'), legs: m.status === 'done' && m.legs ? m.legs.slice() : null };
+}
+
+function undo(T) {
+  const u = T.lastAct;
+  if (!u) throw new Error('Nichts zum Rückgängigmachen');
+  if (!byId(T, u.id)) { T.lastAct = null; throw new Error('Das Spiel gibt es nicht mehr'); }
+  if (u.legs) setResult(T, u.id, u.legs); else resetMatch(T, u.id);
+  T.lastAct = null;
+}
+
+/* ---------- Plätze 1–3 ---------- */
+function podium(T) {
+  if (!T || T.status !== 'done' || T.type) return null;
+  if (T.cfg.mode === 'liga') {
+    const st = standings(T, T.groups[0].name);
+    return { first: st[0] ? st[0].name : null, second: st[1] ? st[1].name : null, third: st[2] ? [st[2].name] : [] };
+  }
+  const fin = T.matches.filter(m => m.phase === 'ko' && m.koRound === 2)[0];
+  if (!fin || fin.status !== 'done') return null;
+  const small = T.matches.filter(m => m.phase === 'ko' && m.koRound === 3)[0];
+  let third = [];
+  if (small) { if (small.status === 'done') third = [small.winner]; }
+  else third = T.matches.filter(m => m.phase === 'ko' && m.koRound === 4 && m.status === 'done' && !m.bye).map(loserOf);
+  return { first: fin.winner, second: loserOf(fin), third: third };
 }
 
 function afterChange(T) {
@@ -471,7 +575,7 @@ function afterChange(T) {
   }
   if (T.type === 'league') { if (T.matches.every(m => m.status === 'done')) T.status = 'done'; else T.status = 'league'; schedule(T); return; }
   propagate(T);
-  if (T.status === 'groups' && groupsDone(T)) buildKO(T);
+  if (T.cfg.mode !== 'liga' && T.status === 'groups' && groupsDone(T)) buildKO(T);
   schedule(T);
 }
 
@@ -534,7 +638,8 @@ function onBoard(T, n, b) {
     if (m.status === 'done') {
       // Rückgängig am Tablet nach Spielende: Ergebnis wieder öffnen, wenn noch nichts darauf aufbaut
       if (m.phase === 'ko' && dependentsStarted(T, m)) return false;
-      m.legs = null; m.winner = null; propagate(T);
+      if (m.phase === 'group' && T.cfg.mode !== 'liga' && T.status !== 'groups' && !reopenGroups(T)) return false;
+      m.legs = null; m.winner = null; m.status = 'running'; propagate(T);
     }
     m.status = 'running'; m.board = n;
     m.live = b.players ? [b.players[0].legs, b.players[1].legs] : null;
@@ -576,4 +681,4 @@ function unassign(T, id) {
   m.status = 'pending'; m.board = null;
 }
 
-module.exports = { createBlind, nextBlindRound, blindStandings, createLeague, setDoubles, substitute, leagueScore, create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };
+module.exports = { snapshot, undo, podium, createBlind, nextBlindRound, blindStandings, createLeague, setDoubles, substitute, leagueScore, create, draw, movePlayer, start, standings, qualifiers, buildKO, setResult, resetMatch, schedule, onBoard, boardFreed, assign, unassign, propagate, groupsDone };

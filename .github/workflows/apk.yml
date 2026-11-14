@@ -27,13 +27,14 @@ jobs:
         run: node server/build-local.js
 
       - name: APK bauen
-        run: gradle :app:assembleLiveRelease :app:assembleTrainingRelease :app:assembleDemoRelease --no-daemon --stacktrace
+        run: gradle :app:assembleLiveRelease :app:assembleTrainingRelease :app:assembleDemoRelease :app:assembleTurnierRelease --no-daemon --stacktrace
 
       - name: APK umbenennen
         run: |
           cp app/build/outputs/apk/live/release/app-live-release.apk DartLive.apk
           cp app/build/outputs/apk/training/release/app-training-release.apk DartTraining.apk
           cp app/build/outputs/apk/demo/release/app-demo-release.apk DartDemo.apk
+          cp app/build/outputs/apk/turnier/release/app-turnier-release.apk DartTurnier.apk
 
       - name: Als Download veröffentlichen
         uses: softprops/action-gh-release@v2
@@ -45,8 +46,10 @@ jobs:
             DartLive.apk – Spielbetrieb (Eingabe am Tablet, Spielstand am HDMI-Monitor)
             DartTraining.apk – Trainingsmodus mit Bestenliste
             DartDemo.apk – alles in einer App ohne Server, zum Ausprobieren auf dem Handy
+            DartTurnier.apk – Turnierleitung fürs Handy/Tablet (Gruppen + K.-o., nur K.-o., jeder gegen jeden)
           files: |
             DartLive.apk
             DartTraining.apk
             DartDemo.apk
+            DartTurnier.apk
           make_latest: true

@@ -63,12 +63,33 @@ tr.q td { background: rgba(140,196,255,.12); }
 #dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
 #toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 18px; border-radius: 8px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
 #toast.bad { background: #ffd6d6; color: #6b1d2d; }
+.champ small { display: block; font-size: 16px; font-weight: normal; margin-top: 6px; }
+.undo { float: right; margin: 0 0 6px 8px; }
+.st.bye { background: #23498f; color: #b7d3ff; }
+.legs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.legs button { flex: 1 1 44px; height: 50px; border-radius: 8px; background: #e3ebf7; color: #071d47; font-size: 22px; font-weight: bold; }
+.legs button.on { background: #0b2d6b; color: #fff; }
+.legs button.on.win { background: #2e9d5b; }
+#dlg .lg b { font-size: 26px; min-width: 28px; text-align: right; }
+.pair { display: flex; justify-content: space-between; gap: 8px; padding: 7px 0; border-bottom: 1px solid #23498f; }
+.pair i { font-style: normal; color: #b7d3ff; }
 @media (max-width: 600px) {
   #main { padding: 10px 8px 50px; }
   td, th { padding: 5px 3px; font-size: 14px; }
-  .btn.sm { padding: 5px 7px; font-size: 12px; margin: 2px; }
   .card { padding: 8px; }
-  .score .n { font-size: 36px; } .score .t { font-size: 15px; }
+  .seg button { min-width: 46px; min-height: 44px; }
+  .tabs button { flex: 1 1 auto; min-height: 46px; }
+  /* Spiele als Karten mit großen Tasten statt enger Tabellenzeilen */
+  table.mt, table.mt tbody { display: block; }
+  table.mt tr { display: flex; flex-wrap: wrap; align-items: center; padding: 8px 2px; border-bottom: 1px solid #23498f; }
+  table.mt tr:last-child { border-bottom: 0; }
+  table.mt td { border: 0; padding: 2px 4px; }
+  table.mt td.lab { flex: 1 1 50%; font-size: 12px; color: #b7d3ff; }
+  table.mt td.stt { flex: 0 0 auto; }
+  table.mt td.who { flex: 1 1 70%; font-size: 17px; order: 2; }
+  table.mt td.res { flex: 0 0 auto; font-size: 18px; font-weight: bold; order: 3; }
+  table.mt td.act { flex: 1 1 100%; order: 4; text-align: left !important; white-space: normal !important; }
+  table.mt .btn.sm { padding: 11px 14px; font-size: 14px; margin: 4px 6px 0 0; }
 }
 </style>
 </head>
@@ -81,7 +102,7 @@ tr.q td { background: rgba(140,196,255,.12); }
 (function () {
   'use strict';
   var S = null, version = 0, tab = 'spiele';
-  var form = { name: 'Vereinsmeisterschaft ' + new Date().getFullYear(), players: '', seeds: [], groups: 3, koSize: 8, legs: 3, koLegs: 3, finalLegs: 3, start: 501, third: false, boards: [1, 2, 3, 4, 5] };
+  var form = { mode: 'gko', rueck: false, name: 'Vereinsmeisterschaft ' + new Date().getFullYear(), players: '', seeds: [], groups: 3, koSize: 8, legs: 3, koLegs: 3, finalLegs: 3, start: 501, third: false, boards: [1, 2, 3, 4, 5] };
   var err = '';
   // Spieler aus einer Anmeldeliste übernehmen (/turnier?spieler=...&name=...)
   (function () {
@@ -153,19 +174,27 @@ tr.q td { background: rgba(140,196,255,.12); }
     var known = '';
     for (var i = 0; i < names.length; i++) if (pl.indexOf(names[i]) < 0) known += '<span data-addname="' + esc(names[i]) + '">' + esc(names[i]) + '</span>';
     if (known) h += '<p class="note">Bekannte Namen antippen zum Hinzufügen:</p><div class="chips">' + known + '</div>';
-    h += '<label class="f">Gesetzte Spieler (der Reihe nach antippen: Nr. 1, 2, 3 … – werden auf die Gruppen verteilt)</label><div class="chips" id="seedbox">' + seedChips() + '</div>';
-    h += '<div class="row"><div><label class="f">Gruppen</label>' + seg('groups', [2, 3, 4, 5, 6], form.groups) + '</div>';
-    h += '<div><label class="f">K.-o.-Runde ab</label>' + seg('koSize', [4, 8, 16], form.koSize, ['Halbfinale', 'Viertelfinale', 'Achtelfinale']) + '</div></div>';
-    h += '<div class="row"><div><label class="f">Gruppenspiele First to</label>' + seg('legs', [1, 2, 3, 4], form.legs) + '</div>';
-    h += '<div><label class="f">K.-o. First to</label>' + seg('koLegs', [2, 3, 4, 5], form.koLegs) + '</div>';
-    h += '<div><label class="f">Finale First to</label>' + seg('finalLegs', [3, 4, 5, 6], form.finalLegs) + '</div></div>';
-    h += '<div class="row"><div><label class="f">Punkte</label>' + seg('start', [301, 501], form.start) + '</div>';
-    h += '<div><label class="f">Spiel um Platz 3</label>' + seg('third', ['true', 'false'], String(form.third), ['Ja', 'Nein']) + '</div>';
+    h += '<label class="f">Turniermodus</label>' + seg('mode', ['gko', 'ko', 'liga'], form.mode, ['Gruppen + K.-o.', 'Nur K.-o.', 'Jeder gegen jeden']);
+    var yn = ['Ja', 'Nein'];
+    if (form.mode !== 'liga') h += '<label class="f">Gesetzte Spieler (der Reihe nach antippen: Nr. 1, 2, 3 … – ' + (form.mode === 'ko' ? 'treffen erst spät aufeinander und bekommen zuerst ein Freilos' : 'werden auf die Gruppen verteilt') + ')</label><div class="chips" id="seedbox">' + seedChips() + '</div>';
+    if (form.mode === 'gko') {
+      h += '<div class="row"><div><label class="f">Gruppen</label>' + seg('groups', [2, 3, 4, 5, 6], form.groups) + '</div>';
+      h += '<div><label class="f">K.-o.-Runde ab</label>' + seg('koSize', [4, 8, 16], form.koSize, ['Halbfinale', 'Viertelfinale', 'Achtelfinale']) + '</div></div>';
+    }
+    h += '<div class="row">';
+    if (form.mode !== 'ko') h += '<div><label class="f">' + (form.mode === 'liga' ? 'Spiele First to' : 'Gruppenspiele First to') + '</label>' + seg('legs', [1, 2, 3, 4], form.legs) + '</div>';
+    if (form.mode !== 'liga') {
+      h += '<div><label class="f">K.-o. First to</label>' + seg('koLegs', [2, 3, 4, 5], form.koLegs) + '</div>';
+      h += '<div><label class="f">Finale First to</label>' + seg('finalLegs', [3, 4, 5, 6], form.finalLegs) + '</div>';
+    }
+    h += '</div><div class="row"><div><label class="f">Punkte</label>' + seg('start', [301, 501], form.start) + '</div>';
+    if (form.mode !== 'liga') h += '<div><label class="f">Spiel um Platz 3</label>' + seg('third', ['true', 'false'], String(form.third), yn) + '</div>';
+    if (form.mode !== 'ko') h += '<div><label class="f">Hin- und Rückrunde</label>' + seg('rueck', ['true', 'false'], String(form.rueck), yn) + '</div>';
     h += '<div><label class="f">Scheiben</label><div class="seg">';
     for (var b = 1; b <= 5; b++) h += '<button data-board="' + b + '"' + (form.boards.indexOf(b) >= 0 ? ' class="on"' : '') + '>' + b + '</button>';
     h += '</div></div></div>';
     h += '<p class="note" id="plan">' + esc(planText(pl.length)) + '</p>';
-    h += '<div class="err">' + esc(err) + '</div><button class="btn" data-a="create">Gruppen auslosen</button><button class="btn sec" data-a="demo">15 Testspieler eintragen</button></div>';
+    h += '<div class="err">' + esc(err) + '</div><button class="btn" data-a="create">' + (form.mode === 'liga' ? 'Spielplan erstellen' : 'Auslosen') + '</button><button class="btn sec" data-a="demo">15 Testspieler eintragen</button></div>';
     return h;
   }
 
@@ -175,16 +204,50 @@ tr.q td { background: rgba(140,196,255,.12); }
     return h || '<span style="cursor:default">erst Spieler eintragen</span>';
   }
 
+  function minPlayers() { return form.mode === 'ko' ? 2 : (form.mode === 'liga' ? 3 : 4); }
   function planText(n) {
-    if (n < 4) return 'Mindestens 4 Spieler eintragen.';
+    if (n < minPlayers()) return 'Mindestens ' + minPlayers() + ' Spieler eintragen.';
+    var twice = form.rueck ? 2 : 1;
+    if (form.mode === 'ko') {
+      if (n > 32) return 'Im K.-o.-Modus sind höchstens 32 Spieler möglich.';
+      var size = 2; while (size < n) size *= 2;
+      var free = size - n, t3 = form.third && n >= 4;
+      return n + ' Spieler · Start im ' + ({ 2: 'Finale', 4: 'Halbfinale', 8: 'Viertelfinale', 16: 'Achtelfinale', 32: 'Sechzehntelfinale' })[size] + (free ? ' · ' + free + (free === 1 ? ' Freilos' : ' Freilose') + ' für die Gesetzten/Erstgelosten' : '') + ' · ' + (n - 1 + (t3 ? 1 : 0)) + (n === 2 ? ' Spiel' : ' Spiele') + (t3 ? ' (mit Spiel um Platz 3)' : '') + '.';
+    }
+    if (form.mode === 'liga') return n + ' Spieler · jeder gegen jeden' + (form.rueck ? ' mit Rückrunde' : '') + ' · ' + (n * (n - 1) / 2 * twice) + ' Spiele · Sieger ist der Tabellenerste.';
     var g = form.groups, sizes = [];
     for (var i = 0; i < g; i++) sizes.push(Math.floor(n / g) + (i < n % g ? 1 : 0));
     var games = 0; for (var k = 0; k < sizes.length; k++) games += sizes[k] * (sizes[k] - 1) / 2;
     var per = Math.floor(form.koSize / g), extra = form.koSize - per * g;
-    return 'Gruppen: ' + sizes.join(' / ') + ' Spieler · ' + games + ' Gruppenspiele · weiter: je ' + per + ' pro Gruppe' + (extra ? ' + ' + extra + ' beste Gruppen-' + (per + 1) + '.' : '') + ' → ' + form.koSize + ' Spieler in der K.-o.-Runde.';
+    return 'Gruppen: ' + sizes.join(' / ') + ' Spieler · ' + (games * twice) + ' Gruppenspiele' + (form.rueck ? ' (mit Rückrunde)' : '') + ' · weiter: je ' + per + ' pro Gruppe' + (extra ? ' + ' + extra + ' beste Gruppen-' + (per + 1) + '.' : '') + ' → ' + form.koSize + ' Spieler in der K.-o.-Runde.';
+  }
+
+  function seedOrder(size) {
+    var order = [1];
+    while (order.length < size) { var n = order.length * 2, next = []; for (var i = 0; i < order.length; i++) { next.push(order[i]); next.push(n + 1 - order[i]); } order = next; }
+    return order;
+  }
+  function koSetupHTML(T) {
+    var o = T.koOrder || [], size = T.cfg.koSize, ord = seedOrder(size);
+    var h = '<h2>' + esc(T.name) + ' – Auslosung prüfen</h2>';
+    h += '<p class="note">Gesetzt: ' + (T.seeds.length ? T.seeds.map(function (s, i) { return (i + 1) + '. ' + esc(s); }).join(', ') : 'niemand') + '. ' + (size > o.length ? (size - o.length) + (size - o.length === 1 ? ' Freilos' : ' Freilose') + ' in der ersten Runde.' : 'Keine Freilose.') + '</p>';
+    h += '<div class="card"><h3 style="margin-top:0">' + (size === 2 ? 'Finale' : 'Erste Runde') + '</h3>';
+    for (var i = 0; i < ord.length; i += 2) {
+      var a = o[ord[i] - 1], b = o[ord[i + 1] - 1];
+      h += '<div class="pair"><span>' + (T.seeds.indexOf(a) >= 0 ? '★ ' : '') + esc(a) + '</span><i>' + (b ? 'gegen' : '') + '</i><span>' + (b ? (T.seeds.indexOf(b) >= 0 ? '★ ' : '') + esc(b) : '<i>Freilos</i>') + '</span></div>';
+    }
+    h += '</div><button class="btn" data-a="start">Turnier starten</button><button class="btn sec" data-a="draw">Neu auslosen</button><button class="btn warn" data-a="delete">Verwerfen</button>';
+    return h;
   }
 
   function setupHTML(T) {
+    if (T.cfg.mode === 'ko') return koSetupHTML(T);
+    var liga = T.cfg.mode === 'liga';
+    if (liga) {
+      var n = T.groups[0].players.length;
+      return '<h2>' + esc(T.name) + ' – Teilnehmer prüfen</h2><div class="card"><p>' + T.groups[0].players.map(esc).join(' · ') + '</p><p class="note">' + n + ' Spieler · jeder gegen jeden' + (T.cfg.rueck ? ' mit Rückrunde' : '') + ' · ' + (n * (n - 1) / 2 * (T.cfg.rueck ? 2 : 1)) + ' Spiele · First to ' + T.cfg.legs + '</p></div>' +
+        '<button class="btn" data-a="start">Turnier starten</button><button class="btn warn" data-a="delete">Verwerfen</button>';
+    }
     var h = '<h2>' + esc(T.name) + ' – Gruppen prüfen</h2>';
     h += '<p class="note">Gesetzt: ' + (T.seeds.length ? T.seeds.map(function (s, i) { return (i + 1) + '. ' + esc(s); }).join(', ') : 'niemand') + '. Spieler lassen sich noch verschieben.</p><div class="groups">';
     for (var i = 0; i < T.groups.length; i++) {
@@ -202,15 +265,18 @@ tr.q td { background: rgba(140,196,255,.12); }
     return h;
   }
 
-  function stLabel(m) { return { pending: 'offen', assigned: 'Scheibe ' + m.board + ' – bereit', running: 'läuft auf ' + m.board, done: 'beendet' }[m.status]; }
-  function mLabel(m) { return m.phase === 'group' ? 'Gruppe ' + m.group + ' · Runde ' + m.round : m.label; }
+  function stLabel(m) { if (m.bye) return 'Freilos'; return { pending: 'offen', assigned: 'Scheibe ' + m.board + ' – bereit', running: 'läuft auf ' + m.board, done: 'beendet' }[m.status]; }
+  function mLabel(m) { return m.phase === 'group' ? (m.label || 'Gruppe ' + m.group + ' · Runde ' + m.round) : m.label; }
 
   function runHTML(T) {
     var h = '';
-    if (T.status === 'done') h += '<div class="champ">🏆 ' + esc(T.name) + ': ' + esc(T.champion) + '</div>';
+    var mode = T.cfg.mode || 'gko', pod = S.podium;
+    if (T.status === 'done') h += '<div class="champ">🏆 ' + esc(T.name) + ': ' + esc(T.champion) +
+      (pod && pod.second ? '<small>🥈 ' + esc(pod.second) + (pod.third && pod.third.length ? ' &nbsp;·&nbsp; 🥉 ' + pod.third.map(esc).join(' und ') : '') + '</small>' : '') + '</div>';
     var done = 0, total = 0;
-    for (var i = 0; i < T.matches.length; i++) { if (T.matches[i].p1 || T.matches[i].from) total++; if (T.matches[i].status === 'done') done++; }
-    h += '<h2>' + esc(T.name) + ' <span class="note">· ' + (T.status === 'groups' ? 'Gruppenphase' : (T.status === 'ko' ? 'K.-o.-Runde' : 'beendet')) + ' · ' + done + '/' + total + ' Spiele</span></h2>';
+    for (var i = 0; i < T.matches.length; i++) { if (T.matches[i].bye) continue; if (T.matches[i].p1 || T.matches[i].from) total++; if (T.matches[i].status === 'done') done++; }
+    if (T.lastAct) h += '<button class="btn sec sm undo" data-a="undo">↶ Rückgängig: ' + esc(T.lastAct.label) + '</button>';
+    h += '<h2>' + esc(T.name) + ' <span class="note">· ' + (T.status === 'groups' ? (mode === 'liga' ? 'Jeder gegen jeden' : 'Gruppenphase') : (T.status === 'ko' ? 'K.-o.-Runde' : 'beendet')) + ' · ' + done + '/' + total + ' Spiele</span></h2>';
     h += '<div class="boards">';
     for (var b = 1; b <= 5; b++) {
       var m = null;
@@ -222,7 +288,11 @@ tr.q td { background: rgba(140,196,255,.12); }
         (m ? '<div class="m">' + esc(m.p1) + ' – ' + esc(m.p2) + '</div><div class="s">' + esc(mLabel(m)) + ' · ' + (m.status === 'running' ? (live || 'läuft') : 'wartet auf Start') + '</div>' : '<div class="s">' + (bs && bs.status === 'play' && !bs.tmatch ? 'freies Spiel läuft' : 'frei') + '</div>') + '</div>';
     }
     h += '</div><div class="tabs">';
-    var tabs = [['spiele', 'Spiele'], ['tabellen', 'Tabellen'], ['ko', 'K.-o.-Runde'], ['setup', 'Einstellungen']];
+    var tabs = [['spiele', 'Spiele']];
+    if (mode !== 'ko') tabs.push(['tabellen', mode === 'liga' ? 'Tabelle' : 'Tabellen']);
+    if (mode !== 'liga') tabs.push(['ko', mode === 'ko' ? 'Turnierbaum' : 'K.-o.-Runde']);
+    tabs.push(['setup', 'Einstellungen']);
+    if ((tab === 'tabellen' && mode === 'ko') || (tab === 'ko' && mode === 'liga')) tab = 'spiele';
     for (var t = 0; t < tabs.length; t++) h += '<button data-tab="' + tabs[t][0] + '"' + (tab === tabs[t][0] ? ' class="on"' : '') + '>' + tabs[t][1] + '</button>';
     h += '</div>';
     if (tab === 'spiele') h += gamesHTML(T);
@@ -234,8 +304,10 @@ tr.q td { background: rgba(140,196,255,.12); }
 
   function matchRow(m) {
     var res = m.legs ? m.legs[0] + ' : ' + m.legs[1] : '';
-    var h = '<tr><td>' + esc(mLabel(m)) + '</td><td>' + (m.winner === m.p1 ? '<b>' + esc(m.p1) + '</b>' : esc(m.p1 || '?')) + ' – ' + (m.winner === m.p2 ? '<b>' + esc(m.p2) + '</b>' : esc(m.p2 || '?')) + '</td>' +
-      '<td class="n">' + res + '</td><td><span class="st ' + m.status + '">' + esc(stLabel(m)) + '</span></td><td style="text-align:right;white-space:nowrap">';
+    var none = m.bye ? 'Freilos' : '?';
+    var h = '<tr><td class="lab">' + esc(mLabel(m)) + '</td><td class="who">' + (m.winner && m.winner === m.p1 ? '<b>' + esc(m.p1) + '</b>' : esc(m.p1 || none)) + ' – ' + (m.winner && m.winner === m.p2 ? '<b>' + esc(m.p2) + '</b>' : esc(m.p2 || none)) + '</td>' +
+      '<td class="n res">' + res + '</td><td class="stt"><span class="st ' + (m.bye ? 'bye' : m.status) + '">' + esc(stLabel(m)) + '</span></td><td class="act" style="text-align:right;white-space:nowrap">';
+    if (m.bye) return h + '</td></tr>';
     if (m.p1 && m.p2) h += '<button class="btn sec sm" data-res="' + m.id + '">Ergebnis</button>';
     if (m.status === 'pending' && m.p1 && m.p2) h += '<button class="btn sec sm" data-assign="' + m.id + '">Scheibe…</button>';
     if (m.status === 'assigned') h += '<button class="btn sec sm" data-unassign="' + m.id + '">Freigeben</button>';
@@ -247,13 +319,13 @@ tr.q td { background: rgba(140,196,255,.12); }
     var groups = [['Laufend & zugeteilt', function (m) { return m.status === 'running' || m.status === 'assigned'; }],
       ['Offen', function (m) { return m.status === 'pending' && m.p1 && m.p2; }],
       ['Wartet auf Vorrunde', function (m) { return m.status === 'pending' && (!m.p1 || !m.p2); }],
-      ['Beendet', function (m) { return m.status === 'done'; }]];
+      ['Beendet', function (m) { return m.status === 'done' && !m.bye; }]];
     var h = '';
     for (var g = 0; g < groups.length; g++) {
       var list = T.matches.filter(groups[g][1]);
       if (g === 3) list.reverse();
       if (!list.length) continue;
-      h += '<h3>' + groups[g][0] + ' (' + list.length + ')</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table>';
+      h += '<h3>' + groups[g][0] + ' (' + list.length + ')</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table class="mt">';
       for (var i = 0; i < list.length; i++) h += matchRow(list[i]);
       h += '</table></div>';
     }
@@ -264,14 +336,14 @@ tr.q td { background: rgba(140,196,255,.12); }
     var tables = S.standings || {}, h = '<div class="groups">';
     for (var i = 0; i < T.groups.length; i++) {
       var g = T.groups[i], st = tables[g.name] || [];
-      h += '<div class="card" style="overflow-x:auto"><h3 style="margin-top:0">Gruppe ' + g.name + '</h3><table><tr><th>#</th><th>Spieler</th><th class="n">Sp</th><th class="n">S</th><th class="n">N</th><th class="n">Legs</th><th class="n">Diff</th><th class="n">Pkt</th></tr>';
+      h += '<div class="card" style="overflow-x:auto"><h3 style="margin-top:0">' + (T.cfg.mode === 'liga' ? 'Tabelle' : 'Gruppe ' + g.name) + '</h3><table><tr><th>#</th><th>Spieler</th><th class="n">Sp</th><th class="n">S</th><th class="n">N</th><th class="n">Legs</th><th class="n">Diff</th><th class="n">Pkt</th></tr>';
       for (var j = 0; j < st.length; j++) {
         var r = st[j];
         h += '<tr' + (r.q ? ' class="q"' : '') + '><td>' + r.rank + '.</td><td>' + esc(r.name) + '</td><td class="n">' + r.played + '</td><td class="n">' + r.won + '</td><td class="n">' + r.lost + '</td><td class="n">' + r.lf + ':' + r.la + '</td><td class="n">' + (r.diff > 0 ? '+' : '') + r.diff + '</td><td class="n"><b>' + r.pts + '</b></td></tr>';
       }
       h += '</table></div>';
     }
-    h += '</div><p class="note">Wertung: Punkte (Sieg 2) → Leg-Differenz → direkter Vergleich → mehr gewonnene Legs. Hellblau: aktuell für die K.-o.-Runde qualifiziert.</p>';
+    h += '</div><p class="note">Wertung: Punkte (Sieg 2) → Leg-Differenz → direkter Vergleich → mehr gewonnene Legs.' + (T.cfg.mode === 'liga' ? '' : ' Hellblau: aktuell für die K.-o.-Runde qualifiziert.') + '</p>';
     return h;
   }
 
@@ -279,12 +351,12 @@ tr.q td { background: rgba(140,196,255,.12); }
     var ko = T.matches.filter(function (m) { return m.phase === 'ko'; });
     if (!ko.length) return '<div class="card"><p class="note">Die K.-o.-Runde wird automatisch erstellt, sobald alle Gruppenspiele beendet sind.</p></div>';
     var h = '';
-    if (T.koSeeds) h += '<p class="note">Setzliste: ' + T.koSeeds.map(function (s) { return s.seed + '. ' + esc(s.name) + ' (' + s.group + s.rank + ')'; }).join(' · ') + '</p>';
+    if (T.koSeeds) h += '<p class="note">Setzliste: ' + T.koSeeds.map(function (s) { return s.seed + '. ' + esc(s.name) + (s.group ? ' (' + s.group + s.rank + ')' : ''); }).join(' · ') + '</p>';
     var rounds = [], seen = {};
     for (var i = 0; i < ko.length; i++) if (!seen[ko[i].koRound]) { seen[ko[i].koRound] = 1; rounds.push(ko[i].koRound); }
     for (var r = 0; r < rounds.length; r++) {
       var list = ko.filter(function (m) { return m.koRound === rounds[r]; });
-      h += '<h3>' + esc(list[0].label.replace(/ \d+$/, '')) + '</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table>';
+      h += '<h3>' + (rounds[r] === 3 ? 'Spiel um Platz 3' : esc(list[0].label.replace(/ \d+$/, ''))) + '</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table class="mt">';
       for (var j = 0; j < list.length; j++) h += matchRow(list[j]);
       h += '</table></div>';
     }
@@ -295,7 +367,10 @@ tr.q td { background: rgba(140,196,255,.12); }
     var h = '<div class="card"><h3 style="margin-top:0">Scheiben im Turnier</h3><div class="seg">';
     for (var b = 1; b <= 5; b++) h += '<button data-tboard="' + b + '"' + (T.cfg.boards.indexOf(b) >= 0 ? ' class="on"' : '') + '>Scheibe ' + b + '</button>';
     h += '</div><p class="note">Abgewählte Scheiben bekommen keine neuen Spiele (laufende Spiele bleiben).</p>';
-    h += '<h3>Modus</h3><p class="note">' + T.cfg.start + (T.cfg.doubleOut ? ' Double Out' : '') + ' · Gruppen First to ' + T.cfg.legs + ' · K.-o. First to ' + T.cfg.koLegs + ' · Finale First to ' + T.cfg.finalLegs + (T.cfg.third ? ' · mit Spiel um Platz 3' : '') + '</p>';
+    var md = T.cfg.mode || 'gko';
+    h += '<h3>Modus</h3><p class="note">' + ({ gko: 'Gruppen + K.-o.', ko: 'Nur K.-o.', liga: 'Jeder gegen jeden' })[md] + ' · ' + T.cfg.start + (T.cfg.doubleOut ? ' Double Out' : '') +
+      (md !== 'ko' ? ' · ' + (md === 'liga' ? 'Spiele' : 'Gruppen') + ' First to ' + T.cfg.legs + (T.cfg.rueck ? ' · mit Rückrunde' : '') : '') +
+      (md !== 'liga' ? ' · K.-o. First to ' + T.cfg.koLegs + ' · Finale First to ' + T.cfg.finalLegs + (T.cfg.third ? ' · mit Spiel um Platz 3' : '') : '') + '</p>';
     h += '<h3>Fernseher</h3><p class="note">Turnier-Anzeige: <b>' + esc(location.host) + '/turnier-tv</b> · Live-Spielstände: ' + esc(location.host) + '/tv</p>';
     h += '<h3>Turnier beenden</h3><button class="btn warn" data-a="delete">Turnier löschen</button><p class="note">Löscht Spielplan und Ergebnisse dieses Turniers endgültig.</p></div>';
     return h;
@@ -324,11 +399,12 @@ tr.q td { background: rgba(140,196,255,.12); }
   document.addEventListener('click', function (e) {
     var t = e.target;
     while (t && t !== document.body && !(t.getAttribute && (t.getAttribute('data-a') || t.getAttribute('data-f') || t.getAttribute('data-board') || t.getAttribute('data-seed') !== null && t.getAttribute('data-seed') !== undefined && t.hasAttribute('data-seed') ||
-      t.hasAttribute('data-addname') || t.hasAttribute('data-tab') || t.hasAttribute('data-res') || t.hasAttribute('data-assign') || t.hasAttribute('data-unassign') || t.hasAttribute('data-reset') || t.hasAttribute('data-dlg') || t.hasAttribute('data-tboard')))) t = t.parentNode;
+      t.hasAttribute('data-addname') || t.hasAttribute('data-tab') || t.hasAttribute('data-res') || t.hasAttribute('data-assign') || t.hasAttribute('data-unassign') || t.hasAttribute('data-reset') || t.hasAttribute('data-dlg') || t.hasAttribute('data-tboard') || t.hasAttribute('data-leg')))) t = t.parentNode;
     if (!t || t === document.body || !t.getAttribute) return;
     var a;
+    if (t.hasAttribute('data-leg')) { pickLeg(+t.getAttribute('data-leg'), +t.getAttribute('data-v')); return; }
     if (t.hasAttribute('data-dlg')) { var b = dlgFns[+t.getAttribute('data-dlg')]; var keep = b && b.keep; if (!keep) closeDlg(); if (b && b.fn) b.fn(); return; }
-    if ((a = t.getAttribute('data-f'))) { readForm(); var v = t.getAttribute('data-v'); form[a] = v === 'true' ? true : (v === 'false' ? false : +v); err = ''; render(); return; }
+    if ((a = t.getAttribute('data-f'))) { readForm(); var v = t.getAttribute('data-v'); form[a] = a === 'mode' ? v : (v === 'true' ? true : (v === 'false' ? false : +v)); err = ''; render(); return; }
     if ((a = t.getAttribute('data-board'))) { readForm(); var n = +a, i = form.boards.indexOf(n); if (i >= 0) form.boards.splice(i, 1); else form.boards.push(n); form.boards.sort(); render(); return; }
     if (t.hasAttribute('data-seed')) { readForm(); var s = t.getAttribute('data-seed'), si = form.seeds.indexOf(s); if (si >= 0) form.seeds.splice(si, 1); else form.seeds.push(s); render(); return; }
     if (t.hasAttribute('data-addname')) { readForm(); form.players = (form.players.replace(/\s+$/, '') + (form.players.replace(/\s/g, '') ? '\n' : '') + t.getAttribute('data-addname')); render(); return; }
@@ -354,10 +430,11 @@ tr.q td { background: rgba(140,196,255,.12); }
     if (a === 'create') {
       readForm();
       var pl = plist();
-      if (pl.length < 4) { err = 'Bitte mindestens 4 Spieler eintragen'; render(); return; }
-      act({ action: 'create', name: form.name, players: pl, seeds: form.seeds, groups: form.groups, koSize: form.koSize, legs: form.legs, koLegs: form.koLegs, finalLegs: form.finalLegs, start: form.start, third: form.third, boards: form.boards }, 'Gruppen ausgelost');
-    } else if (a === 'draw') act({ action: 'draw' }, 'Neu ausgelost');
-    else if (a === 'start') confirmDo('Turnier starten?', 'Danach lassen sich die Gruppen nicht mehr ändern. Die ersten Spiele werden sofort den Scheiben zugeteilt.', function () { act({ action: 'start' }, 'Turnier gestartet'); });
+      if (pl.length < minPlayers()) { err = 'Bitte mindestens ' + minPlayers() + ' Spieler eintragen'; render(); return; }
+      act({ action: 'create', mode: form.mode, rueck: form.rueck, name: form.name, players: pl, seeds: form.seeds, groups: form.groups, koSize: form.koSize, legs: form.legs, koLegs: form.koLegs, finalLegs: form.finalLegs, start: form.start, third: form.third, boards: form.boards }, form.mode === 'liga' ? 'Spielplan erstellt' : 'Ausgelost');
+    } else if (a === 'undo') act({ action: 'undo' }, 'Rückgängig gemacht');
+    else if (a === 'draw') act({ action: 'draw' }, 'Neu ausgelost');
+    else if (a === 'start') confirmDo('Turnier starten?', 'Danach lässt sich die Auslosung nicht mehr ändern. Die ersten Spiele werden sofort den Scheiben zugeteilt.', function () { act({ action: 'start' }, 'Turnier gestartet'); });
     else if (a === 'delete') confirmDo('Turnier löschen?', 'Alle Spiele und Ergebnisse dieses Turniers gehen verloren.', function () { act({ action: 'delete' }, 'Turnier gelöscht'); });
   }, false);
 
@@ -377,15 +454,28 @@ tr.q td { background: rgba(140,196,255,.12); }
     if (e.target.id === 'f-players' || e.target.id === 'f-name') { readForm(); setTimeout(function () { if (!S || !S.tournament) { var ae = document.activeElement; if (!ae || !/INPUT|TEXTAREA/.test(ae.tagName)) render(); } }, 150); }
   }, false);
 
+  // Ergebnis eintippen: Legs des Verlierers antippen genügt, der Sieger bekommt automatisch die volle Zahl
+  var rd = null;
+  function legButtons(k) {
+    var h = '';
+    for (var i = 0; i <= rd.need; i++) h += '<button data-leg="' + k + '" data-v="' + i + '"' + (rd.legs[k] === i ? ' class="on' + (i === rd.need ? ' win' : '') + '"' : '') + '>' + i + '</button>';
+    return h;
+  }
+  function pickLeg(k, v) {
+    if (!rd) return;
+    var o = k ? 0 : 1;
+    rd.legs[k] = v;
+    if (v < rd.need) rd.legs[o] = rd.need; else if (rd.legs[o] === rd.need) rd.legs[o] = null;
+    for (var i = 0; i < 2; i++) { $('lgb' + i).innerHTML = legButtons(i); $('lgn' + i).innerHTML = rd.legs[i] == null ? '–' : rd.legs[i]; }
+  }
   function resultDialog(m) {
     if (!m) return;
-    var l = m.legs || [0, 0];
-    dialog('<h4>Ergebnis ' + esc(mLabel(m)) + '</h4><p class="note" style="color:#3f5f99">First to ' + m.legsToWin + '</p>' +
-      '<div class="lg"><span>' + esc(m.p1) + '</span><input id="l1" inputmode="numeric" value="' + l[0] + '"></div>' +
-      '<div class="lg"><span>' + esc(m.p2) + '</span><input id="l2" inputmode="numeric" value="' + l[1] + '"></div>',
-      [{ label: 'Speichern', keep: true, fn: function () {
-        var a = parseInt($('l1').value, 10) || 0, b = parseInt($('l2').value, 10) || 0;
-        act({ action: 'result', id: m.id, legs: [a, b] }, 'Ergebnis gespeichert', function () { closeDlg(); });
+    rd = { need: m.legsToWin, legs: m.legs ? [m.legs[0], m.legs[1]] : [null, null] };
+    var names = [m.p1, m.p2], h = '<h4>Ergebnis ' + esc(mLabel(m)) + '</h4><p class="note" style="color:#3f5f99">First to ' + m.legsToWin + ' – Legs des Verlierers antippen</p>';
+    for (var i = 0; i < 2; i++) h += '<div class="lg"><span>' + esc(names[i]) + '</span><b id="lgn' + i + '">' + (rd.legs[i] == null ? '–' : rd.legs[i]) + '</b></div><div class="legs" id="lgb' + i + '">' + legButtons(i) + '</div>';
+    dialog(h, [{ label: 'Speichern', keep: true, fn: function () {
+        if (rd.legs[0] == null || rd.legs[1] == null) { toast('Bitte das Ergebnis antippen', true); return; }
+        act({ action: 'result', id: m.id, legs: rd.legs }, 'Ergebnis gespeichert', function () { closeDlg(); });
       } }, { label: 'Abbrechen', sec: true }]);
   }
 

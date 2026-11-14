@@ -6,11 +6,15 @@ Die App braucht den Dart-Live-Server (Chromebook) im WLAN „TVR Dart“.
 **Download der neuesten Version:** unter „Releases“ → `DartLive.apk`
 (direkt: `https://github.com/<BENUTZER>/dartlive-app/releases/latest/download/DartLive.apk`)
 
-Zwei Apps:
+Die Apps:
 - DartLive.apk – Spielbetrieb (startet mit Server)
 - DartTraining.apk – Trainingsmodus (startet ohne Server; Bestenliste dann nur auf dem Tablet)
+- DartTurnier.apk – Turnierleitung fürs Handy oder Tablet: startet direkt in der Turnierleitung des Servers
+  (Gruppen + K.-o., nur K.-o., jeder gegen jeden). Ein per HDMI angeschlossener Bildschirm zeigt die Turnier-Anzeige.
+  Mit „Ohne Server“ läuft ein Turnier auch allein auf dem Gerät, die Ergebnisse werden dann von Hand eingetragen.
+- DartDemo.apk – alles in einer App ohne Server, zum Ausprobieren
 
-„Ohne Server“ lässt sich in den Einstellungen beider Apps ein- und ausschalten.
+„Ohne Server“ lässt sich in den Einstellungen aller Apps ein- und ausschalten.
 
 Bedienung:
 - Beim ersten Start: Scheibe (1–5) und Server-Adresse eintragen (Standard `http://192.168.68.222:3000`).

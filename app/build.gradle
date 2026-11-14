@@ -40,6 +40,8 @@ android {
             dimension 'modus'
             resValue 'string', 'app_name', 'Dart Live'
             resValue 'string', 'start_prefix', ''
+            resValue 'string', 'start_page', ''
+            resValue 'string', 'display_page', ''
             resValue 'bool', 'offline_default', 'false'
             resValue 'bool', 'start_home', 'false'
             manifestPlaceholders = [orientation: 'sensorLandscape']
@@ -49,6 +51,8 @@ android {
             applicationIdSuffix '.training'
             resValue 'string', 'app_name', 'Dart Training'
             resValue 'string', 'start_prefix', 't'
+            resValue 'string', 'start_page', ''
+            resValue 'string', 'display_page', ''
             resValue 'bool', 'offline_default', 'true'
             resValue 'bool', 'start_home', 'false'
             manifestPlaceholders = [orientation: 'sensorLandscape']
@@ -58,8 +62,22 @@ android {
             applicationIdSuffix '.demo'
             resValue 'string', 'app_name', 'Dart Demo'
             resValue 'string', 'start_prefix', ''
+            resValue 'string', 'start_page', ''
+            resValue 'string', 'display_page', ''
             resValue 'bool', 'offline_default', 'true'
             resValue 'bool', 'start_home', 'true'
+            manifestPlaceholders = [orientation: 'fullSensor']
+        }
+        // Turnierleitung: startet direkt in /turnier, ein angeschlossener HDMI-Bildschirm zeigt /turnier-tv
+        turnier {
+            dimension 'modus'
+            applicationIdSuffix '.turnier'
+            resValue 'string', 'app_name', 'Dart Turnier'
+            resValue 'string', 'start_prefix', ''
+            resValue 'string', 'start_page', 'turnier'
+            resValue 'string', 'display_page', 'turnier-tv'
+            resValue 'bool', 'offline_default', 'false'
+            resValue 'bool', 'start_home', 'false'
             manifestPlaceholders = [orientation: 'fullSensor']
         }
     }

@@ -236,7 +236,7 @@ input { font-family: inherit; }
     return null;
   }
   function assignKey() { var m = myMatch(); return m ? m.id : ''; }
-  function tLabel(m) { return m.phase === 'group' ? 'Gruppe ' + m.group + ' · Runde ' + m.round : m.label; }
+  function tLabel(m) { return m.phase === 'group' ? (m.label || 'Gruppe ' + m.group + ' · Runde ' + m.round) : m.label; }
   // Hält die Turnierdaten aktuell, damit neue Spielzuteilungen sofort erscheinen
   function watch() {
     var r = new XMLHttpRequest(), done = false;

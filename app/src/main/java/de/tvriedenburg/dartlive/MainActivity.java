@@ -104,9 +104,20 @@ public class MainActivity extends Activity {
 
     private boolean startHome() { return getResources().getBoolean(R.bool.start_home); }
 
-    private String inputUrl() { return startHome() ? server() + "/" : server() + "/" + getString(R.string.start_prefix) + board(); }
+    /** Feste Startseite (Dart Turnier: „turnier“) – dann spielt die Scheiben-Nummer keine Rolle. */
+    private String startPage() { return getString(R.string.start_page); }
 
-    private String scoreUrl() { return server() + "/m" + board(); }
+    private boolean fixedPage() { return !startPage().isEmpty(); }
+
+    private String inputUrl() {
+        if (fixedPage()) return server() + "/" + startPage();
+        return startHome() ? server() + "/" : server() + "/" + getString(R.string.start_prefix) + board();
+    }
+
+    private String scoreUrl() {
+        String page = getString(R.string.display_page);
+        return page.isEmpty() ? server() + "/m" + board() : server() + "/" + page;
+    }
 
     private void loadAll() {
         if (offline()) web.addJavascriptInterface(LocalServer.get(this), "DartLocal");
@@ -177,9 +188,26 @@ public class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
         // Demo-App: Zurück-Taste blättert zurück wie im Browser, auf der Startseite kommt das Menü
-        if (startHome() && web.canGoBack()) {
+        if ((startHome() || fixedPage()) && web.canGoBack()) {
             String u = web.getUrl();
-            if (u != null && !u.equals(server() + "/")) { web.goBack(); return; }
+            if (u != null && u.startsWith("http") && !u.equals(inputUrl())) { web.goBack(); return; }
+        }
+        if (fixedPage()) {
+            // Dart Turnier: Turnierleitung, Fernseher-Ansicht, Einstellungen
+            new AlertDialog.Builder(this)
+                    .setTitle(getString(R.string.app_name))
+                    .setItems(new String[] { "Turnierleitung (neu laden)", "Turnier-Anzeige (wie am Fernseher)", "Einstellungen (Server)", "App beenden" },
+                            new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d, int which) {
+                            if (which == 0) loadAll();
+                            else if (which == 1) web.loadUrl(scoreUrl());
+                            else if (which == 2) showSettings(false);
+                            else finish();
+                        }
+                    })
+                    .setNegativeButton("Abbrechen", null)
+                    .show();
+            return;
         }
         String[] items = startHome()
                 ? new String[] { "Startseite", "Einstellungen (Scheibe / Server)", "App beenden" }
@@ -220,16 +248,19 @@ public class MainActivity extends Activity {
         }
         boards.check(1000 + board());
         box.addView(boards);
+        if (fixedPage()) { l1.setVisibility(View.GONE); boards.setVisibility(View.GONE); }
 
         final android.widget.CheckBox offlineBox = new android.widget.CheckBox(this);
-        offlineBox.setText("Ohne Server – nur dieses Tablet\n(Bestenliste wird auf dem Tablet gespeichert)");
+        offlineBox.setText(fixedPage()
+                ? "Ohne Server – Turnier nur auf diesem Gerät\n(Ergebnisse werden von Hand eingetragen)"
+                : "Ohne Server – nur dieses Tablet\n(Bestenliste wird auf dem Tablet gespeichert)");
         offlineBox.setTextSize(17);
         offlineBox.setChecked(offline());
         offlineBox.setPadding(0, dp(10), 0, dp(4));
         box.addView(offlineBox);
 
         TextView l2 = new TextView(this);
-        l2.setText("\nAdresse des Servers (Chromebook), wenn mit Server:");
+        l2.setText("\nAdresse des Servers (Raspberry Pi oder Chromebook), wenn mit Server:");
         l2.setTextSize(18);
         box.addView(l2);
 
@@ -251,7 +282,7 @@ public class MainActivity extends Activity {
                         String s = serverField.getText().toString().trim();
                         if (s.isEmpty()) s = DEFAULT_SERVER;
                         prefs.edit().putInt("board", n).putString("server", s).putBoolean("offline", offlineBox.isChecked()).apply();
-                        Toast.makeText(MainActivity.this, "Scheibe " + n + " gespeichert", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, fixedPage() ? "Gespeichert" : "Scheibe " + n + " gespeichert", Toast.LENGTH_SHORT).show();
                         loadAll();
                     }
                 });

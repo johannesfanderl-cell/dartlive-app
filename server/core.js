@@ -31,7 +31,7 @@ function createCore(storage) {
 
   function backup() {
     const live = JSON.parse(JSON.stringify(state));
-    delete live.standings; delete live.leagueScore;
+    delete live.standings; delete live.leagueScore; delete live.blindTable; delete live.podium;
     return { app: 'Dart Live', format: 1, date: new Date().toISOString(), live: live, matches: archive, results: results, extra: extra };
   }
   function restore(b) {
@@ -51,6 +51,7 @@ function createCore(storage) {
     const T = state.tournament;
     delete state.leagueScore;
     delete state.blindTable;
+    delete state.podium;
     if (T && T.type === 'league') { delete state.standings; state.leagueScore = TN.leagueScore(T); return; }
     if (T && T.type === 'blind') { delete state.standings; state.blindTable = TN.blindStandings(T); return; }
     if (!T || T.status === 'setup') { delete state.standings; return; }
@@ -58,6 +59,8 @@ function createCore(storage) {
     try { TN.qualifiers(T).forEach(function (x) { q[x.name] = 1; }); } catch (e) { /* noch keine Ergebnisse */ }
     state.standings = {};
     T.groups.forEach(function (g) { state.standings[g.name] = TN.standings(T, g.name).map(function (r) { r.q = !!q[r.name]; return r; }); });
+    const pod = TN.podium(T);
+    if (pod) state.podium = pod;
   }
 
   function changed() {
@@ -135,8 +138,9 @@ function createCore(storage) {
             if (q.action === 'draw') { if (T.status !== 'setup') throw new Error('Turnier läuft bereits'); TN.draw(T); }
             else if (q.action === 'move') TN.movePlayer(T, q.player, q.group);
             else if (q.action === 'start') { TN.start(T); TN.schedule(T, state.boards); }
-            else if (q.action === 'result') TN.setResult(T, q.id, q.legs);
-            else if (q.action === 'reset') TN.resetMatch(T, q.id);
+            else if (q.action === 'result') { const u = TN.snapshot(T, q.id); TN.setResult(T, q.id, q.legs); T.lastAct = u; }
+            else if (q.action === 'reset') { const u = TN.snapshot(T, q.id); TN.resetMatch(T, q.id); T.lastAct = u && u.legs ? u : null; }
+            else if (q.action === 'undo') TN.undo(T);
             else if (q.action === 'assign') TN.assign(T, q.id, q.board);
             else if (q.action === 'unassign') TN.unassign(T, q.id);
             else if (q.action === 'boards') { T.cfg.boards = (q.boards || []).map(Number).filter(function (n) { return n >= 1 && n <= 5; }); TN.schedule(T, state.boards); }
