@@ -52,6 +52,27 @@ EXT.vliga = {
   }
 };
 
+/* ---------- Turnier-Archiv (wird vom Kern bei Turnierende befüllt) ---------- */
+EXT.archiv = {
+  empty: function () { return { list: [] }; },
+  act: function (d, q) {
+    if (!Array.isArray(d.list)) d.list = [];
+    if (q.action === 'delete') {
+      const n = d.list.length;
+      d.list = d.list.filter(e => e.id !== q.id);
+      if (d.list.length === n) throw new Error('Turnier nicht im Archiv');
+      return;
+    }
+    if (q.action === 'rename') {
+      const e = d.list.filter(x => x.id === q.id)[0];
+      if (!e) throw new Error('Turnier nicht im Archiv');
+      e.name = clean(q.name, 60) || e.name;
+      return;
+    }
+    throw new Error('Unbekannte Aktion');
+  }
+};
+
 /* ---------- Getränke-Strichliste ---------- */
 EXT.drinks = {
   empty: function () {

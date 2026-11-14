@@ -75,6 +75,7 @@ table.t tr.q td.nm { font-weight: bold; }
     if (T.type === 'blind') { el('title').innerHTML = esc(T.name) + ' &middot; <span class="ph">' + (T.status === 'done' ? 'Beendet' : 'Runde ' + T.round + ' von ' + T.cfg.rounds) + '</span>'; el('wrap').innerHTML = blindView(T); return; }
     if (T.status === 'setup') el('wrap').innerHTML = setupView(T);
     else if (T.status === 'groups' || liga) el('wrap').innerHTML = (T.status === 'done' ? champ(T) : '') + groupView(T);
+    else if (T.cfg && T.cfg.mode === 'dko') el('wrap').innerHTML = dkoView(T);
     else el('wrap').innerHTML = koView(T);
   }
   function blindView(T) {
@@ -103,12 +104,12 @@ table.t tr.q td.nm { font-weight: bold; }
   }
   function setupView(T) {
     var i, j;
-    if (T.cfg && T.cfg.mode === 'ko') {
+    if (T.cfg && (T.cfg.mode === 'ko' || T.cfg.mode === 'dko')) {
       // Nur K.-o.: Paarungen der ersten Runde in bis zu vier Spalten
       var o = T.koOrder || [], ord = seedOrder(T.cfg.koSize), pairs = ord.length / 2, cols = pairs > 8 ? 4 : (pairs > 4 ? 2 : 1), per = Math.ceil(pairs / cols);
       var k = '<table class="cols"><tr>';
       for (i = 0; i < cols; i++) {
-        k += '<td><div class="box"><div class="h">Erste Runde</div><table class="t">';
+        k += '<td><div class="box"><div class="h">' + (T.cfg.mode === 'dko' ? 'Gewinnerrunde 1' : 'Erste Runde') + '</div><table class="t">';
         for (j = i * per; j < (i + 1) * per && j < pairs; j++) { var a = o[ord[2 * j] - 1], b = o[ord[2 * j + 1] - 1]; k += '<tr><td>' + esc(a) + '</td><td>' + (b ? esc(b) : '<span class="ph" style="color:#b7d3ff">Freilos</span>') + '</td></tr>'; }
         k += '</table></div></td>';
       }
@@ -166,7 +167,7 @@ table.t tr.q td.nm { font-weight: bold; }
     var h = '<div class="km' + (m.status === 'running' ? ' run' : '') + '"><div class="lab">' + esc(m.label) +
       (m.status === 'running' ? ' &middot; Scheibe ' + m.board + ' &middot; läuft' : (m.status === 'assigned' ? ' &middot; Scheibe ' + m.board : '')) + '</div><table>';
     var l = m.legs || (lv ? lv.split(':') : ['', '']);
-    var none = m.bye ? 'Freilos' : '…';
+    var none = m.skip ? 'entfällt' : (m.bye ? 'Freilos' : '…');
     h += '<tr' + (m.winner && m.winner === m.p1 ? ' class="w"' : '') + '><td>' + esc(m.p1 || none) + '</td><td class="s">' + l[0] + '</td></tr>';
     h += '<tr' + (m.winner && m.winner === m.p2 ? ' class="w"' : '') + '><td>' + esc(m.p2 || none) + '</td><td class="s">' + l[1] + '</td></tr>';
     return h + '</table></div>';
@@ -202,6 +203,38 @@ table.t tr.q td.nm { font-weight: bold; }
       h += column(list, pad, title(list));
     }
     return h + '</tr></table>';
+  }
+  // Doppel-K.-o.: oben Gewinnerrunde + Finale, unten Verliererrunde. Fertig gespielte frühe Runden werden ausgeblendet.
+  function dkoView(T) {
+    var cols = { W: [], L: [], F: [] }, seen = {}, i, j;
+    for (i = 0; i < T.matches.length; i++) {
+      var m = T.matches[i];
+      if (m.phase !== 'dko') continue;
+      if (!seen[m.col]) { seen[m.col] = { title: m.col, br: m.br, list: [] }; cols[m.br].push(seen[m.col]); }
+      seen[m.col].list.push(m);
+    }
+    function finished(c) { for (var x = 0; x < c.list.length; x++) if (c.list[x].status !== 'done') return false; return true; }
+    function trim(arr, keep) { while (arr.length > keep && finished(arr[0])) arr.shift(); return arr; }
+    var top = trim(cols.W.slice(), 3), bottom = trim(cols.L.slice(), 3);
+    // Eine gemeinsame Schriftgröße für beide Hälften, passend zur Zahl der Spiele in der jeweils vollsten Spalte
+    function most(arr) { var n = 1; for (var x = 0; x < arr.length; x++) if (arr[x].list.length > n) n = arr[x].list.length; return n; }
+    var f = (T.status === 'done' ? 19 : 25) / ((most(top) + most(bottom)) * 4.7 + 2.5);
+    var fs = f < 1 ? ' style="font-size:' + (Math.round(f * 100) / 100) + 'em"' : '';
+    function row(arr, extra) {
+      var mx = most(arr);
+      var h = '<table class="cols"><tr>';
+      for (i = 0; i < arr.length; i++) {
+        var c = arr[i], pad = Math.max(0, mx / c.list.length - 1) * 2.4;
+        h += '<td><div class="h" style="margin-bottom:0.4em">' + esc(c.title) + '</div>';
+        for (j = 0; j < c.list.length; j++) h += '<div style="padding-top:' + (j === 0 ? pad / 2 : pad) + 'em">' + kmatch(c.list[j]) + '</div>';
+        h += '</td>';
+      }
+      return h + (extra || '') + '</tr></table>';
+    }
+    var fin = '<td><div class="h" style="margin-bottom:0.4em">Finale</div>';
+    for (i = 0; i < cols.F.length; i++) for (j = 0; j < cols.F[i].list.length; j++) fin += kmatch(cols.F[i].list[j]);
+    fin += '</td>';
+    return (T.status === 'done' ? champ(T) : '') + '<div' + fs + '>' + row(top, fin) + '<div class="h" style="margin:0.2em 0.4em 0;background:#0b2d6b">Verliererrunde</div>' + row(bottom) + '</div>';
   }
   function poll() {
     var r = new XMLHttpRequest(), done = false;

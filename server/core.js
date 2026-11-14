@@ -69,6 +69,50 @@ function createCore(storage) {
     listeners.slice().forEach(function (fn) { try { fn(state); } catch (e) { /* egal */ } });
   }
 
+  /* ---------- Turnier-Archiv: beendete Turniere bleiben erhalten ---------- */
+  function archiveEntry(T) {
+    const ids = {};
+    const matches = T.matches.map(function (m) {
+      ids[m.id] = 1;
+      const c = Object.assign({}, m);
+      delete c.board; delete c.live; delete c.assigned; delete c.order;
+      return c;
+    });
+    // Werte von den Tablets (Average, 180er, Highfinish), soweit dort gespielt wurde
+    const st = {};
+    archive.forEach(function (a) {
+      if (!a.tmatch || !ids[a.tmatch] || !a.players) return;
+      a.players.forEach(function (p) {
+        const s = st[p.name] || (st[p.name] = { name: p.name, sum: 0, darts: 0, c180: 0, c140: 0, c100: 0, hf: 0, legs: 0 });
+        s.sum += p.sum || 0; s.darts += p.darts || 0; s.c180 += p.c180 || 0; s.c140 += p.c140 || 0; s.c100 += p.c100 || 0; s.legs += p.legs || 0;
+        if ((p.hf || 0) > s.hf) s.hf = p.hf;
+      });
+    });
+    const stats = Object.keys(st).map(function (k) { const s = st[k]; s.avg = s.darts ? Math.round(s.sum / s.darts * 300) / 100 : 0; return s; })
+      .sort(function (a, b) { return b.avg - a.avg; });
+    const standings = {};
+    (T.groups || []).forEach(function (g) { standings[g.name] = TN.standings(T, g.name); });
+    return {
+      id: T.id, name: T.name, created: T.created, finished: new Date().toISOString(), cfg: T.cfg, players: T.players,
+      groups: T.groups, koSeeds: T.koSeeds || null, champion: T.champion, podium: TN.podium(T), standings: standings, matches: matches, stats: stats
+    };
+  }
+  function syncArchive() {
+    const T = state.tournament;
+    if (!T || T.type || !T.id) return;
+    if (!extra.archiv || !Array.isArray(extra.archiv.list)) extra.archiv = { list: [] };
+    const list = extra.archiv.list, i = list.findIndex(function (e) { return e.id === T.id; });
+    if (T.status === 'done') {
+      const e = archiveEntry(T);
+      if (i >= 0) { e.finished = list[i].finished; list[i] = e; } else list.unshift(e);
+      if (list.length > 200) list.length = 200;
+      saveExtra();
+    } else if (i >= 0) {
+      // Turnier wurde wieder geöffnet (Rückgängig/Korrektur) – kommt nach dem neuen Ende wieder ins Archiv
+      list.splice(i, 1); saveExtra();
+    }
+  }
+
   function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
 
   function archiveBoard(n, b) {
@@ -111,7 +155,7 @@ function createCore(storage) {
       state.boards[m[1]] = b;
       archiveBoard(Number(m[1]), b);
       if (state.tournament) {
-        try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); }
+        try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); syncArchive(); }
         catch (e) { /* Turnierfehler nicht an das Tablet melden */ }
       }
       let extChanged = false;
@@ -151,6 +195,7 @@ function createCore(storage) {
             else throw new Error('Unbekannte Aktion');
         }
       } catch (e) { return bad(e.message); }
+      try { syncArchive(); } catch (e) { /* Archiv ist Nebensache */ }
       changed(); save();
       return ok({ ok: true, tournament: state.tournament });
     }

@@ -10,7 +10,7 @@ Die Apps:
 - DartLive.apk – Spielbetrieb (startet mit Server)
 - DartTraining.apk – Trainingsmodus (startet ohne Server; Bestenliste dann nur auf dem Tablet)
 - DartTurnier.apk – Turnierleitung fürs Handy oder Tablet: startet direkt in der Turnierleitung des Servers
-  (Gruppen + K.-o., nur K.-o., jeder gegen jeden). Ein per HDMI angeschlossener Bildschirm zeigt die Turnier-Anzeige.
+  (Gruppen + K.-o., nur K.-o., Doppel-K.-o., jeder gegen jeden; beendete Turniere im Turnier-Archiv). Ein per HDMI angeschlossener Bildschirm zeigt die Turnier-Anzeige.
   Mit „Ohne Server“ läuft ein Turnier auch allein auf dem Gerät, die Ergebnisse werden dann von Hand eingetragen.
 - DartDemo.apk – alles in einer App ohne Server, zum Ausprobieren
 

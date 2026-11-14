@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Turnier-Archiv – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
+#top a { color: #b7d3ff; font-size: 14px; text-decoration: none; }
+#main { max-width: 1100px; margin: 0 auto; padding: 14px 16px 60px; }
+h2 { font-size: 21px; margin: 4px 0 6px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 20px 0 8px; }
+.note { color: #b7d3ff; font-size: 14px; margin: 4px 0 10px; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.item { display: block; width: 100%; text-align: left; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 14px; margin-bottom: 10px; }
+.item .t { font-size: 18px; font-weight: bold; }
+.item .s { color: #b7d3ff; font-size: 14px; margin-top: 4px; }
+.item .w { margin-top: 8px; font-size: 17px; }
+.btn { display: inline-block; padding: 12px 16px; border-radius: 7px; background: #fff; color: #071d47; font-weight: bold; margin: 4px 6px 4px 0; }
+.btn.sec { background: #10377f; color: #fff; border: 1px solid #3f6fbf; }
+.btn.warn { background: #6b1d2d; color: #fff; }
+.champ { text-align: center; padding: 18px 12px; background: #fff; color: #071d47; border-radius: 10px; margin: 8px 0 12px; }
+.champ .n { font-size: 28px; font-weight: bold; }
+.champ .r { margin-top: 6px; font-size: 16px; }
+.groups { display: flex; flex-wrap: wrap; gap: 12px; } .groups .card { flex: 1 1 300px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 7px 6px; border-bottom: 1px solid #23498f; text-align: left; vertical-align: middle; }
+th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; }
+td.n, th.n { text-align: center; }
+.res { font-weight: bold; text-align: center; white-space: nowrap; }
+.lab { color: #b7d3ff; font-size: 13px; }
+.mut { color: #8ea6cf; }
+#dlg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 20; }
+#dlg .box { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 380px; max-width: 94%; background: #fff; color: #071d47; border-radius: 10px; padding: 16px; }
+#dlg h4 { font-size: 19px; margin-bottom: 8px; }
+#dlg .btn { background: #6b1d2d; color: #fff; } #dlg .btn.sec { background: #e3ebf7; color: #071d47; border: 0; }
+@media (max-width: 600px) { #main { padding: 10px 8px 50px; } td, th { padding: 6px 3px; font-size: 14px; } .card { padding: 8px; } }
+</style>
+</head>
+<body>
+<div id="top"><b>Turnier-Archiv</b><a href="/turnier">← Turnierleitung</a></div>
+<div id="main">Lade …</div>
+<div id="dlg"><div class="box" id="dlgbox"></div></div>
+<script>
+(function () {
+  'use strict';
+  var list = [], open = null;
+  var MODE = { gko: 'Gruppen + K.-o.', ko: 'Nur K.-o.', dko: 'Doppel-K.-o.', liga: 'Jeder gegen jeden' };
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function req(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d);
+    };
+    if (body) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); } else r.send();
+  }
+  function load() {
+    req('GET', '/api/x/archiv', null, function (e, d) {
+      if (e) { $('main').innerHTML = '<div class="card">⚠ ' + esc(e) + '</div>'; return; }
+      list = (d && d.list) || [];
+      if (open && !find(open)) open = null;
+      render();
+    });
+  }
+  function find(id) { for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i]; return null; }
+  function day(iso) { if (!iso) return ''; var d = new Date(iso); return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }); }
+  function modeText(c) { return (MODE[c.mode || 'gko'] || '') + ' · ' + c.start + (c.doubleOut ? ' Double Out' : ''); }
+
+  function render() { $('main').innerHTML = open ? detail(find(open)) : overview(); window.scrollTo(0, 0); }
+
+  function overview() {
+    if (!list.length) return '<div class="card"><p>Noch keine Turniere im Archiv.</p><p class="note">Sobald ein Turnier beendet ist, wird es hier automatisch gespeichert – mit Endstand, Tabellen und Turnierbaum.</p></div>';
+    var h = '<p class="note">' + list.length + (list.length === 1 ? ' beendetes Turnier' : ' beendete Turniere') + ' · antippen für alle Ergebnisse</p>';
+    for (var i = 0; i < list.length; i++) {
+      var e = list[i], p = e.podium || {};
+      h += '<button class="item" data-open="' + esc(e.id) + '"><div class="t">' + esc(e.name) + '</div><div class="s">' + day(e.finished) + ' · ' + esc(modeText(e.cfg)) + ' · ' + (e.players ? e.players.length : 0) + ' Spieler</div>' +
+        '<div class="w">🏆 <b>' + esc(e.champion) + '</b>' + (p.second ? ' &nbsp; 🥈 ' + esc(p.second) : '') + (p.third && p.third.length ? ' &nbsp; 🥉 ' + p.third.map(esc).join(', ') : '') + '</div></button>';
+    }
+    return h;
+  }
+
+  function matchRows(ms) {
+    var h = '<table>';
+    for (var i = 0; i < ms.length; i++) {
+      var m = ms[i];
+      if (m.skip) continue;
+      var a = m.p1 || (m.bye ? 'Freilos' : '?'), b = m.p2 || (m.bye ? 'Freilos' : '?');
+      h += '<tr><td>' + (m.winner && m.winner === m.p1 ? '<b>' + esc(a) + '</b>' : esc(a)) + '</td><td class="res">' + (m.legs ? m.legs[0] + ' : ' + m.legs[1] : '<span class="mut">–</span>') + '</td><td style="text-align:right">' + (m.winner && m.winner === m.p2 ? '<b>' + esc(b) + '</b>' : esc(b)) + '</td></tr>';
+    }
+    return h + '</table>';
+  }
+  function section(title, ms) { return ms.length ? '<h3>' + esc(title) + '</h3><div class="card" style="padding:4px 8px">' + matchRows(ms) + '</div>' : ''; }
+
+  function detail(e) {
+    var p = e.podium || {}, c = e.cfg, h = '<button class="btn sec" data-a="back">← Alle Turniere</button>';
+    h += '<h2>' + esc(e.name) + '</h2><p class="note">' + day(e.finished) + ' · ' + esc(modeText(c)) + ' · ' + (e.players ? e.players.length : 0) + ' Spieler</p>';
+    h += '<div class="champ"><div class="n">🏆 ' + esc(e.champion) + '</div><div class="r">' + (p.second ? '🥈 ' + esc(p.second) : '') + (p.third && p.third.length ? ' &nbsp;·&nbsp; 🥉 ' + p.third.map(esc).join(' und ') : '') + '</div></div>';
+    // Werte von den Tablets
+    if (e.stats && e.stats.length) {
+      h += '<h3>Spielerwerte (von den Tablets)</h3><div class="card" style="padding:4px 8px;overflow-x:auto"><table><tr><th>Spieler</th><th class="n">Average</th><th class="n">180</th><th class="n">140+</th><th class="n">100+</th><th class="n">High&nbsp;Finish</th></tr>';
+      for (var s = 0; s < e.stats.length; s++) { var x = e.stats[s]; h += '<tr><td>' + esc(x.name) + '</td><td class="n"><b>' + (x.avg ? x.avg.toFixed(2).replace('.', ',') : '–') + '</b></td><td class="n">' + x.c180 + '</td><td class="n">' + x.c140 + '</td><td class="n">' + x.c100 + '</td><td class="n">' + (x.hf || '–') + '</td></tr>'; }
+      h += '</table></div>';
+    }
+    var ms = e.matches || [], i;
+    // Tabellen
+    var groups = e.groups || [];
+    if (groups.length && e.standings) {
+      h += '<h3>' + (c.mode === 'liga' ? 'Tabelle' : 'Gruppen') + '</h3><div class="groups">';
+      for (i = 0; i < groups.length; i++) {
+        var g = groups[i], st = e.standings[g.name] || [];
+        h += '<div class="card" style="overflow-x:auto">' + (c.mode === 'liga' ? '' : '<b>Gruppe ' + esc(g.name) + '</b>') + '<table><tr><th>#</th><th>Spieler</th><th class="n">Sp</th><th class="n">S</th><th class="n">N</th><th class="n">Legs</th><th class="n">Pkt</th></tr>';
+        for (var j = 0; j < st.length; j++) { var r = st[j]; h += '<tr><td>' + r.rank + '.</td><td>' + esc(r.name) + '</td><td class="n">' + r.played + '</td><td class="n">' + r.won + '</td><td class="n">' + r.lost + '</td><td class="n">' + r.lf + ':' + r.la + '</td><td class="n"><b>' + r.pts + '</b></td></tr>'; }
+        h += '</table></div>';
+      }
+      h += '</div>';
+    }
+    // K.-o.-Runde
+    var ko = ms.filter(function (m) { return m.phase === 'ko'; });
+    if (ko.length) {
+      var rounds = [], seen = {};
+      for (i = 0; i < ko.length; i++) if (!seen[ko[i].koRound]) { seen[ko[i].koRound] = 1; rounds.push(ko[i].koRound); }
+      rounds.sort(function (a, b) { if (a === 3) return 1; if (b === 3) return -1; return b - a; });
+      for (i = 0; i < rounds.length; i++) {
+        var l = ko.filter(function (m) { return m.koRound === rounds[i]; });
+        h += section(rounds[i] === 3 ? 'Spiel um Platz 3' : l[0].label.replace(/ \d+$/, ''), l.filter(function (m) { return !(m.bye && !m.p2 && !m.p1); }));
+      }
+    }
+    // Doppel-K.-o.
+    var dko = ms.filter(function (m) { return m.phase === 'dko'; }), cols = [], by = {};
+    for (i = 0; i < dko.length; i++) { if (!by[dko[i].col]) { by[dko[i].col] = []; cols.push(dko[i].col); } by[dko[i].col].push(dko[i]); }
+    for (i = 0; i < cols.length; i++) h += section(cols[i], by[cols[i]].filter(function (m) { return !(m.bye && !m.p1 && !m.p2); }));
+    // Gruppenspiele
+    for (i = 0; i < groups.length; i++) {
+      var gn = groups[i].name;
+      h += '<details><summary class="btn sec" style="margin-top:12px">' + (c.mode === 'liga' ? 'Alle Spiele' : 'Spiele Gruppe ' + esc(gn)) + '</summary>' + section('', ms.filter(function (m) { return m.phase === 'group' && m.group === gn; })) + '</details>';
+    }
+    h += '<div style="margin-top:22px"><button class="btn warn" data-a="del">Aus dem Archiv löschen</button></div>';
+    return h;
+  }
+
+  document.addEventListener('click', function (ev) {
+    var t = ev.target;
+    while (t && t !== document.body && !(t.hasAttribute && (t.hasAttribute('data-open') || t.hasAttribute('data-a')))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    if (t.hasAttribute('data-open')) { open = t.getAttribute('data-open'); render(); return; }
+    var a = t.getAttribute('data-a');
+    if (a === 'back') { open = null; render(); }
+    else if (a === 'del') {
+      var e = find(open);
+      $('dlgbox').innerHTML = '<h4>Aus dem Archiv löschen?</h4><p>' + esc(e.name) + ' (' + day(e.finished) + ') wird endgültig entfernt.</p><p style="margin-top:12px"><button class="btn" data-a="delyes">Löschen</button><button class="btn sec" data-a="no">Abbrechen</button></p>';
+      $('dlg').style.display = 'block';
+    } else if (a === 'no') $('dlg').style.display = 'none';
+    else if (a === 'delyes') {
+      $('dlg').style.display = 'none';
+      req('POST', '/api/x/archiv', { action: 'delete', id: open }, function (err) { if (err) { alertBox(err); return; } open = null; load(); });
+    }
+  }, false);
+  function alertBox(t) { $('dlgbox').innerHTML = '<h4>Fehler</h4><p>' + esc(t) + '</p><p style="margin-top:12px"><button class="btn sec" data-a="no">OK</button></p>'; $('dlg').style.display = 'block'; }
+  load();
+})();
+</script>
+</body>
+</html>

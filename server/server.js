@@ -71,7 +71,7 @@ const PAGES = {
   '/liga-tv': 'liga-tv.html',
   '/liga-bericht': 'liga-bericht.html',
   '/statistik-tv': 'statistik-tv.html',
-  '/turnier-tv': 'turnier-tv.html',
+  '/turnier-tv': 'turnier-tv.html', '/turnier-archiv': 'turnier-archiv.html',
   '/verwaltung': 'verwaltung.html', '/checkliste': 'checkliste.html',
   '/rangliste': 'rangliste.html', '/rangliste-tv': 'rangliste-tv.html',
   '/getraenke': 'getraenke.html', '/sponsoren': 'sponsoren.html', '/sponsoren-tv': 'sponsoren-tv.html', '/kurzanleitung': 'kurzanleitung.html', '/termine': 'termine.html',

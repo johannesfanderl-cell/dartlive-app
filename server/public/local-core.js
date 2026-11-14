@@ -5,7 +5,7 @@ var __mods = {};
 function __req(n) { return n.indexOf("tournament") >= 0 ? __mods.tournament : __mods.core; }
 /* tournament */
 (function (module, exports, require) {
-// Turnierlogik für Dart Live: Gruppenphase + K.-o.-Runde, reines K.-o.-Turnier, Jeder gegen jeden
+// Turnierlogik für Dart Live: Gruppenphase + K.-o.-Runde, reines K.-o.-Turnier, Doppel-K.-o., Jeder gegen jeden
 'use strict';
 
 const GROUP_NAMES = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -24,12 +24,14 @@ function create(opts) {
   const players = (opts.players || []).map(s => String(s).replace(/[<>]/g, '').trim().slice(0, 24)).filter(Boolean);
   const seen = {};
   const uniq = players.filter(p => { const k = p.toLowerCase(); if (seen[k]) return false; seen[k] = 1; return true; });
-  // Modus: 'gko' = Gruppen + K.-o. (Standard), 'ko' = nur K.-o. (mit Freilosen), 'liga' = jeder gegen jeden
-  const mode = ['ko', 'liga'].indexOf(opts.mode) >= 0 ? opts.mode : 'gko';
+  // Modus: 'gko' = Gruppen + K.-o. (Standard), 'ko' = nur K.-o. (mit Freilosen),
+  // 'dko' = Doppel-K.-o. (erst nach zwei Niederlagen raus), 'liga' = jeder gegen jeden
+  const mode = ['ko', 'dko', 'liga'].indexOf(opts.mode) >= 0 ? opts.mode : 'gko';
   let groups, koSize;
-  if (mode === 'ko') {
-    if (uniq.length < 2) throw new Error('Mindestens 2 Spieler nötig');
-    if (uniq.length > 32) throw new Error('Im K.-o.-Modus sind höchstens 32 Spieler möglich');
+  if (mode === 'ko' || mode === 'dko') {
+    const min = mode === 'dko' ? 3 : 2;
+    if (uniq.length < min) throw new Error('Mindestens ' + min + ' Spieler nötig');
+    if (uniq.length > 32) throw new Error('Im ' + (mode === 'dko' ? 'Doppel-K.-o.' : 'K.-o.') + '-Modus sind höchstens 32 Spieler möglich');
     groups = 0; koSize = 2;
     while (koSize < uniq.length) koSize *= 2;
   } else if (mode === 'liga') {
@@ -55,10 +57,12 @@ function create(opts) {
       finalLegs: Math.max(1, Math.min(11, Number(opts.finalLegs) || Number(opts.koLegs) || Number(opts.legs) || 3)),
       doubleOut: opts.doubleOut !== false,
       mode: mode,
-      rueck: mode !== 'ko' && !!opts.rueck,
+      rueck: (mode === 'gko' || mode === 'liga') && !!opts.rueck,
+      // Doppel-K.-o.: gewinnt der Spieler aus der Verliererrunde das Große Finale, folgt ein Entscheidungsspiel
+      reset: mode === 'dko' && !!opts.reset,
       groups: groups,
       koSize: koSize,
-      third: mode !== 'liga' && !!opts.third && !(mode === 'ko' && uniq.length < 4),
+      third: (mode === 'gko' || mode === 'ko') && !!opts.third && !(mode === 'ko' && uniq.length < 4),
       boards: Array.isArray(opts.boards) && opts.boards.length ? opts.boards.map(Number).filter(n => n >= 1 && n <= 5) : [1, 2, 3, 4, 5]
     },
     players: uniq,
@@ -72,8 +76,10 @@ function create(opts) {
   return T;
 }
 
+function isKoOnly(T) { return T.cfg.mode === 'ko' || T.cfg.mode === 'dko'; }
+
 function draw(T) {
-  if (T.cfg.mode === 'ko') {
+  if (isKoOnly(T)) {
     // Setzliste: Gesetzte in ihrer Reihenfolge, der Rest zufällig. Die Besten bekommen die Freilose.
     T.groups = [];
     T.koOrder = T.seeds.concat(shuffle(T.players.filter(p => T.seeds.indexOf(p) < 0)));
@@ -102,7 +108,7 @@ function draw(T) {
 
 function movePlayer(T, player, toGroup) {
   if (T.status !== 'setup') throw new Error('Gruppen können nur vor dem Start geändert werden');
-  if (T.cfg.mode === 'ko') throw new Error('Im K.-o.-Modus gibt es keine Gruppen');
+  if (isKoOnly(T)) throw new Error('Im K.-o.-Modus gibt es keine Gruppen');
   const to = T.groups.filter(g => g.name === toGroup)[0];
   if (!to) throw new Error('Gruppe unbekannt');
   T.groups.forEach(g => { g.players = g.players.filter(p => p !== player); });
@@ -283,9 +289,9 @@ function start(T) {
   if (T.status !== 'setup') throw new Error('Turnier läuft bereits');
   if (T.groups.some(g => g.players.length < 2)) throw new Error('Jede Gruppe braucht mindestens 2 Spieler');
   T.matches = [];
-  if (T.cfg.mode === 'ko') {
+  if (isKoOnly(T)) {
     const q = (T.koOrder || T.players).map(n => ({ name: n, group: null, rank: null }));
-    bracket(T, q, T.cfg.koSize, null);
+    if (T.cfg.mode === 'dko') doubleBracket(T, q, T.cfg.koSize); else bracket(T, q, T.cfg.koSize, null);
     T.koSeeds = q.map((x, i) => ({ seed: i + 1, name: x.name, group: '', rank: '' }));
     T.status = 'ko';
     propagate(T);
@@ -440,6 +446,127 @@ function bracket(T, q, size, lows) {
   }
 }
 
+/* ---------- Doppel-K.-o. ----------
+   Gewinnerrunde (br 'W') wie ein normaler K.-o.-Baum. Wer dort verliert, fällt in die Verliererrunde (br 'L'),
+   wer dort verliert, ist ausgeschieden. Die Sieger beider Seiten spielen das Große Finale (br 'F').
+   Jedes Spiel holt seine Spieler über src: [{ id, take: 'w' | 'l' }, …] (Sieger bzw. Verlierer eines anderen Spiels).
+   Fehlt ein Gegner (Freilos), geht der andere automatisch weiter (autoBye). */
+function doubleBracket(T, q, size) {
+  const R = Math.log2(size), order = seedOrder(size), W = [], L = [];
+  let no = T.matches.length;
+  const make = (o) => Object.assign({ id: uid(), phase: 'dko', p1: null, p2: null, status: 'pending', board: null, legs: null, winner: null, order: no++, legsToWin: T.cfg.koLegs }, o);
+  // Gewinnerrunde
+  for (let r = 0; r < R; r++) {
+    W[r] = [];
+    const cnt = size >> (r + 1), last = r === R - 1;
+    for (let i = 0; i < cnt; i++) {
+      const m = make({ br: 'W', rnd: r + 1, slot: i, lvl: 2 * r,
+        col: last ? 'Finale Gewinnerrunde' : 'Gewinnerrunde ' + (r + 1),
+        label: last ? 'Finale Gewinnerrunde' : 'Gewinnerrunde ' + (r + 1) + ' · Spiel ' + (i + 1) });
+      if (r === 0) {
+        const a = q[order[2 * i] - 1], b = q[order[2 * i + 1] - 1];
+        m.p1 = a ? a.name : null; m.p2 = b ? b.name : null; m.seed1 = order[2 * i]; m.seed2 = order[2 * i + 1];
+        if (!a || !b) { m.bye = true; m.status = 'done'; m.winner = a ? a.name : (b ? b.name : null); }
+      } else m.src = [{ id: W[r - 1][2 * i].id, take: 'w' }, { id: W[r - 1][2 * i + 1].id, take: 'w' }];
+      W[r].push(m);
+    }
+  }
+  // Verliererrunde: abwechselnd „Verlierer aus der Gewinnerrunde kommen dazu“ und „Verliererrunde unter sich“
+  const LR = 2 * (R - 1);
+  T.__tmp = {};
+  W.forEach(r => r.forEach(m => { T.__tmp[m.id] = m; }));
+  const lvlOf = m => m.lvl;
+  for (let k = 1; k <= LR; k++) {
+    L[k] = [];
+    let cnt;
+    if (k === 1) cnt = size >> 2;
+    else if (k % 2 === 0) cnt = size >> (k / 2 + 1);
+    else cnt = size >> ((k - 1) / 2 + 2);
+    for (let i = 0; i < cnt; i++) {
+      let src;
+      if (k === 1) src = [{ id: W[0][2 * i].id, take: 'l' }, { id: W[0][2 * i + 1].id, take: 'l' }];
+      else if (k % 2 === 0) {
+        const j = k / 2, wr = W[j], from = j % 2 ? wr[cnt - 1 - i] : wr[i];   // gespiegelt, damit sich Paarungen nicht gleich wiederholen
+        src = [{ id: L[k - 1][i].id, take: 'w' }, { id: from.id, take: 'l' }];
+      } else src = [{ id: L[k - 1][2 * i].id, take: 'w' }, { id: L[k - 1][2 * i + 1].id, take: 'w' }];
+      const last = k === LR;
+      const lv = Math.max.apply(null, src.map(s => lvlOf(T.__tmp[s.id]))) + 1;
+      const m = make({ br: 'L', rnd: k, slot: i, lvl: lv, src: src,
+        col: last ? 'Finale Verliererrunde' : 'Verliererrunde ' + k,
+        label: last ? 'Finale Verliererrunde' : 'Verliererrunde ' + k + ' · Spiel ' + (i + 1) });
+      L[k].push(m);
+      T.__tmp[m.id] = m;
+    }
+  }
+  delete T.__tmp;
+  const wf = W[R - 1][0], lf = LR ? L[LR][0] : null;
+  const gf = make({ br: 'F', rnd: 1, slot: 0, lvl: Math.max(wf.lvl, lf ? lf.lvl : 0) + 1, col: 'Großes Finale', label: 'Großes Finale',
+    src: [{ id: wf.id, take: 'w' }, { id: lf.id, take: 'w' }], legsToWin: T.cfg.finalLegs });
+  const all = [];
+  W.forEach(r => r.forEach(m => all.push(m)));
+  for (let k = 1; k <= LR; k++) L[k].forEach(m => all.push(m));
+  all.push(gf);
+  if (T.cfg.reset) {
+    all.push(make({ br: 'F', rnd: 2, slot: 0, lvl: gf.lvl + 1, col: 'Großes Finale', label: 'Entscheidungsspiel', resetOf: gf.id,
+      src: [{ id: gf.id, take: 'p1' }, { id: gf.id, take: 'p2' }], legsToWin: T.cfg.finalLegs }));
+  }
+  T.matches = T.matches.concat(all);
+}
+
+// Wert einer Quelle: undefined = noch offen, null = niemand (Freilos), sonst der Spielername
+function srcValue(T, s) {
+  const m = byId(T, s.id);
+  if (!m || m.status !== 'done') return undefined;
+  if (s.take === 'p1') return m.p1;
+  if (s.take === 'p2') return m.p2;
+  if (s.take === 'w') return m.winner || null;
+  return m.bye ? null : loserOf(m);
+}
+
+function propagateDouble(T) {
+  T.matches.forEach(m => {
+    if (m.phase !== 'dko' || !m.src) return;
+    if (m.status === 'running' || (m.status === 'done' && !m.autoBye)) return;
+    if (m.resetOf) {
+      // Entscheidungsspiel nur, wenn der Spieler aus der Verliererrunde das Große Finale gewonnen hat
+      const gf = byId(T, m.resetOf);
+      if (gf.status === 'done') {
+        if (gf.winner === gf.p1) { setAuto(m, gf.p1, null, gf.p1, true); return; }
+        if (m.autoBye) clearAuto(m);
+        if (m.p1 !== gf.p1 || m.p2 !== gf.p2) { m.p1 = gf.p1; m.p2 = gf.p2; }
+      } else {
+        if (m.autoBye) clearAuto(m);
+        if (m.status === 'assigned') { m.status = 'pending'; m.board = null; }
+        m.p1 = null; m.p2 = null;
+      }
+      return;
+    }
+    const v1 = srcValue(T, m.src[0]), v2 = srcValue(T, m.src[1]);
+    if (v1 !== undefined && v2 !== undefined && (!v1 || !v2)) { setAuto(m, v1 || null, v2 || null, v1 || v2 || null, false); return; }
+    if (m.autoBye) clearAuto(m);
+    const p1 = v1 || null, p2 = v2 || null;
+    if (m.p1 !== p1 || m.p2 !== p2) {
+      m.p1 = p1; m.p2 = p2;
+      if (m.status === 'assigned' && (!p1 || !p2)) { m.status = 'pending'; m.board = null; }
+    }
+  });
+  const fin = finalDouble(T);
+  if (fin && fin.status === 'done') { T.champion = fin.winner; T.status = 'done'; }
+  else if (T.status === 'done') { T.status = 'ko'; T.champion = null; }
+}
+
+function setAuto(m, p1, p2, w, skip) {
+  m.p1 = p1; m.p2 = p2; m.winner = w; m.status = 'done'; m.bye = true; m.autoBye = true; m.board = null; m.legs = null;
+  if (skip) m.skip = true; else delete m.skip;
+}
+function clearAuto(m) { m.status = 'pending'; m.winner = null; m.bye = false; m.autoBye = false; delete m.skip; m.board = null; }
+
+// Das Spiel, das das Turnier entscheidet: Entscheidungsspiel (falls vorhanden) bzw. Großes Finale
+function finalDouble(T) {
+  const f = T.matches.filter(m => m.phase === 'dko' && m.br === 'F');
+  return f.length ? f[f.length - 1] : null;
+}
+
 function buildKO(T) {
   if (T.status !== 'groups') throw new Error('K.-o.-Runde schon erstellt');
   if (!groupsDone(T)) throw new Error('Noch nicht alle Gruppenspiele beendet');
@@ -486,6 +613,7 @@ function byId(T, id) { return T.matches.filter(m => m.id === id)[0]; }
 function loserOf(m) { return m.winner === m.p1 ? m.p2 : m.p1; }
 
 function propagate(T) {
+  if (T.cfg.mode === 'dko') { propagateDouble(T); return; }
   if (T.cfg.mode === 'liga') {
     // Jeder gegen jeden: Sieger ist der Tabellenerste, sobald alles gespielt ist
     if (T.status === 'groups' && groupsDone(T)) { T.status = 'done'; T.champion = standings(T, T.groups[0].name)[0].name; }
@@ -516,7 +644,7 @@ function setResult(T, id, legs) {
   const need = m.legsToWin;
   if (!((a === need && b < need) || (b === need && a < need))) throw new Error('Ergebnis muss ' + need + ':x oder x:' + need + ' sein');
   if (m.bye) throw new Error('Freilos – hier gibt es kein Ergebnis');
-  if (m.phase === 'ko' && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
+  if ((m.phase === 'ko' || m.phase === 'dko') && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
   if (m.phase === 'group') reopenGroups(T);
   m.legs = [a, b];
   m.winner = a > b ? m.p1 : m.p2;
@@ -527,13 +655,19 @@ function setResult(T, id, legs) {
 }
 
 function dependentsStarted(T, m) {
-  return T.matches.some(x => x.from && x.from.indexOf(m.id) >= 0 && (x.status === 'running' || x.status === 'done'));
+  return T.matches.some(x => {
+    const dep = (x.from && x.from.indexOf(m.id) >= 0) || (x.src && x.src.some(s => s.id === m.id));
+    if (!dep) return false;
+    // automatisch weitergegebene Freilose zählen nicht – aber das, was danach kommt
+    if (x.autoBye) return dependentsStarted(T, x);
+    return x.status === 'running' || x.status === 'done';
+  });
 }
 
 function resetMatch(T, id) {
   const m = byId(T, id);
   if (!m) throw new Error('Spiel nicht gefunden');
-  if (m.status === 'done' && m.phase === 'ko' && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
+  if (m.status === 'done' && (m.phase === 'ko' || m.phase === 'dko') && dependentsStarted(T, m)) throw new Error('Das nächste Spiel läuft schon – erst dort zurücksetzen');
   if (m.bye) throw new Error('Ein Freilos kann nicht zurückgesetzt werden');
   if (m.phase === 'group' && T.cfg.mode !== 'liga' && T.status !== 'groups' && !reopenGroups(T)) throw new Error('K.-o.-Runde läuft schon – Gruppenergebnis bitte nur noch korrigieren, nicht zurücksetzen');
   m.status = 'pending'; m.legs = null; m.winner = null; m.board = null;
@@ -561,6 +695,12 @@ function podium(T) {
   if (T.cfg.mode === 'liga') {
     const st = standings(T, T.groups[0].name);
     return { first: st[0] ? st[0].name : null, second: st[1] ? st[1].name : null, third: st[2] ? [st[2].name] : [] };
+  }
+  if (T.cfg.mode === 'dko') {
+    const fd = finalDouble(T), gf = T.matches.filter(m => m.phase === 'dko' && m.br === 'F')[0];
+    if (!fd || fd.status !== 'done') return null;
+    const lfin = T.matches.filter(m => m.phase === 'dko' && m.br === 'L').pop();
+    return { first: fd.winner, second: gf.winner === gf.p1 && fd !== gf ? gf.p2 : loserOf(fd), third: lfin && lfin.status === 'done' && !lfin.bye ? [loserOf(lfin)] : [] };
   }
   const fin = T.matches.filter(m => m.phase === 'ko' && m.koRound === 2)[0];
   if (!fin || fin.status !== 'done') return null;
@@ -619,6 +759,7 @@ function schedule(T, boardsState) {
     if (!cands.length) return;
     cands.sort((a, b) => {
       if (a.phase !== b.phase) return a.phase === 'group' ? -1 : 1;
+      if (a.phase === 'dko' && a.lvl !== b.lvl) return a.lvl - b.lvl;
       if (a.phase === 'ko' && a.koRound !== b.koRound) return b.koRound - a.koRound;
       if (a.phase === 'ko' && a.koRound === 3) return 1;
       if (b.phase === 'ko' && b.koRound === 3) return -1;
@@ -644,7 +785,7 @@ function onBoard(T, n, b) {
   if (b.status === 'play' && (m.status === 'assigned' || m.status === 'running' || m.status === 'done')) {
     if (m.status === 'done') {
       // Rückgängig am Tablet nach Spielende: Ergebnis wieder öffnen, wenn noch nichts darauf aufbaut
-      if (m.phase === 'ko' && dependentsStarted(T, m)) return false;
+      if ((m.phase === 'ko' || m.phase === 'dko') && dependentsStarted(T, m)) return false;
       if (m.phase === 'group' && T.cfg.mode !== 'liga' && T.status !== 'groups' && !reopenGroups(T)) return false;
       m.legs = null; m.winner = null; m.status = 'running'; propagate(T);
     }
@@ -765,6 +906,50 @@ function createCore(storage) {
     listeners.slice().forEach(function (fn) { try { fn(state); } catch (e) { /* egal */ } });
   }
 
+  /* ---------- Turnier-Archiv: beendete Turniere bleiben erhalten ---------- */
+  function archiveEntry(T) {
+    const ids = {};
+    const matches = T.matches.map(function (m) {
+      ids[m.id] = 1;
+      const c = Object.assign({}, m);
+      delete c.board; delete c.live; delete c.assigned; delete c.order;
+      return c;
+    });
+    // Werte von den Tablets (Average, 180er, Highfinish), soweit dort gespielt wurde
+    const st = {};
+    archive.forEach(function (a) {
+      if (!a.tmatch || !ids[a.tmatch] || !a.players) return;
+      a.players.forEach(function (p) {
+        const s = st[p.name] || (st[p.name] = { name: p.name, sum: 0, darts: 0, c180: 0, c140: 0, c100: 0, hf: 0, legs: 0 });
+        s.sum += p.sum || 0; s.darts += p.darts || 0; s.c180 += p.c180 || 0; s.c140 += p.c140 || 0; s.c100 += p.c100 || 0; s.legs += p.legs || 0;
+        if ((p.hf || 0) > s.hf) s.hf = p.hf;
+      });
+    });
+    const stats = Object.keys(st).map(function (k) { const s = st[k]; s.avg = s.darts ? Math.round(s.sum / s.darts * 300) / 100 : 0; return s; })
+      .sort(function (a, b) { return b.avg - a.avg; });
+    const standings = {};
+    (T.groups || []).forEach(function (g) { standings[g.name] = TN.standings(T, g.name); });
+    return {
+      id: T.id, name: T.name, created: T.created, finished: new Date().toISOString(), cfg: T.cfg, players: T.players,
+      groups: T.groups, koSeeds: T.koSeeds || null, champion: T.champion, podium: TN.podium(T), standings: standings, matches: matches, stats: stats
+    };
+  }
+  function syncArchive() {
+    const T = state.tournament;
+    if (!T || T.type || !T.id) return;
+    if (!extra.archiv || !Array.isArray(extra.archiv.list)) extra.archiv = { list: [] };
+    const list = extra.archiv.list, i = list.findIndex(function (e) { return e.id === T.id; });
+    if (T.status === 'done') {
+      const e = archiveEntry(T);
+      if (i >= 0) { e.finished = list[i].finished; list[i] = e; } else list.unshift(e);
+      if (list.length > 200) list.length = 200;
+      saveExtra();
+    } else if (i >= 0) {
+      // Turnier wurde wieder geöffnet (Rückgängig/Korrektur) – kommt nach dem neuen Ende wieder ins Archiv
+      list.splice(i, 1); saveExtra();
+    }
+  }
+
   function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
 
   function archiveBoard(n, b) {
@@ -807,7 +992,7 @@ function createCore(storage) {
       state.boards[m[1]] = b;
       archiveBoard(Number(m[1]), b);
       if (state.tournament) {
-        try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); }
+        try { TN.onBoard(state.tournament, Number(m[1]), b); TN.schedule(state.tournament, state.boards); syncArchive(); }
         catch (e) { /* Turnierfehler nicht an das Tablet melden */ }
       }
       let extChanged = false;
@@ -847,6 +1032,7 @@ function createCore(storage) {
             else throw new Error('Unbekannte Aktion');
         }
       } catch (e) { return bad(e.message); }
+      try { syncArchive(); } catch (e) { /* Archiv ist Nebensache */ }
       changed(); save();
       return ok({ ok: true, tournament: state.tournament });
     }
@@ -976,6 +1162,27 @@ EXT.vliga = {
       g.legs = [b.players[0].legs, b.players[1].legs]; g.winner = g.legs[0] > g.legs[1] ? g.p1 : g.p2;
       g.status = 'done'; g.date = new Date().toISOString(); g.mid = b.mid;
     } else if (b.status === 'idle' && g.status === 'running') { g.status = 'open'; g.board = null; }
+  }
+};
+
+/* ---------- Turnier-Archiv (wird vom Kern bei Turnierende befüllt) ---------- */
+EXT.archiv = {
+  empty: function () { return { list: [] }; },
+  act: function (d, q) {
+    if (!Array.isArray(d.list)) d.list = [];
+    if (q.action === 'delete') {
+      const n = d.list.length;
+      d.list = d.list.filter(e => e.id !== q.id);
+      if (d.list.length === n) throw new Error('Turnier nicht im Archiv');
+      return;
+    }
+    if (q.action === 'rename') {
+      const e = d.list.filter(x => x.id === q.id)[0];
+      if (!e) throw new Error('Turnier nicht im Archiv');
+      e.name = clean(q.name, 60) || e.name;
+      return;
+    }
+    throw new Error('Unbekannte Aktion');
   }
 };
 

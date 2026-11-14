@@ -42,8 +42,11 @@ Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
 ## Turnier (z. B. Vereinsmeisterschaft)
 - Turnierleitung: http://192.168.68.222:3000/turnier  (Spieler eintragen, Gesetzte antippen, auslosen, starten)
   – oder am Handy/Tablet mit der App „Dart Turnier“ (DartTurnier.apk), die direkt hier startet.
-- Drei Modi: Gruppen + K.-o. · Nur K.-o. (2–32 Spieler, Freilose für die Gesetzten) · Jeder gegen jeden (Tabellenerster gewinnt).
-  Gruppen und Jeder-gegen-jeden wahlweise mit Hin- und Rückrunde.
+- Vier Modi: Gruppen + K.-o. · Nur K.-o. (2–32 Spieler, Freilose für die Gesetzten) · Doppel-K.-o. (3–32 Spieler,
+  erst nach der zweiten Niederlage raus; wahlweise Entscheidungsspiel, wenn die Verliererseite das Große Finale gewinnt)
+  · Jeder gegen jeden (Tabellenerster gewinnt). Gruppen und Jeder-gegen-jeden wahlweise mit Hin- und Rückrunde.
+- Turnier-Archiv: http://192.168.68.222:3000/turnier-archiv – jedes beendete Turnier wird automatisch gespeichert
+  (Endstand, Tabellen, Turnierbaum, Average/180er/Highfinish von den Tablets). Ist Teil der Datensicherung.
 - Fernseher: http://192.168.68.222:3000/turnier-tv  (Tabellen, laufende/nächste Spiele, K.-o.-Baum)
 - Die Tablets zeigen das zugeteilte Spiel automatisch an („… beginnt“ nach dem Ausbullen antippen).
   Das Ergebnis geht nach Spielende automatisch an die Turnierleitung, danach wird das nächste Spiel zugeteilt.
