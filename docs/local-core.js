@@ -1194,10 +1194,11 @@ EXT.drinks = {
         { id: 'p1', name: 'Bier 0,5', price: 3.5 }, { id: 'p2', name: 'Radler 0,5', price: 3.5 }, { id: 'p3', name: 'Spezi', price: 2.5 },
         { id: 'p4', name: 'Wasser', price: 2 }, { id: 'p5', name: 'Kaffee', price: 1.5 }, { id: 'p6', name: 'Schnaps', price: 2 }
       ],
-      people: [], entries: [], settlements: []
+      people: [], entries: [], settlements: [], purchases: []
     };
   },
   act: function (d, q) {
+    if (!d.purchases) d.purchases = [];
     if (q.action === 'add') {
       const name = clean(q.name, 24), pr = d.products.filter(p => p.id === q.product)[0];
       if (!name) throw new Error('Name fehlt');
@@ -1233,6 +1234,46 @@ EXT.drinks = {
       return;
     }
     if (q.action === 'removeProduct') { d.products = d.products.filter(p => p.id !== q.id); return; }
+    if (q.action === 'settle' && Array.isArray(q.ids)) {
+      // nur bestimmte Striche abrechnen (z. B. einen Monat), je Person eine Abrechnung
+      const set = {}; q.ids.forEach(id => { set[id] = 1; });
+      const open = d.entries.filter(e => set[e.id] && !e.settled && (!q.name || e.name === q.name));
+      if (!open.length) throw new Error('Nichts offen');
+      const by = {}; open.forEach(e => { (by[e.name] = by[e.name] || []).push(e); });
+      const sids = []; let total = 0;
+      Object.keys(by).forEach(n => {
+        const list = by[n], sum = Math.round(list.reduce((s, e) => s + e.price, 0) * 100) / 100, sid = uid();
+        list.forEach(e => { e.settled = sid; });
+        d.settlements.push({ id: sid, name: n, amount: sum, count: list.length, date: new Date().toISOString(), note: clean(q.note, 40) });
+        sids.push(sid); total += sum;
+      });
+      return { ok: true, amount: Math.round(total * 100) / 100, sids: sids, people: Object.keys(by).length };
+    }
+    if (q.action === 'unsettleMany') {
+      const ids = q.ids || [];
+      d.entries.forEach(e => { if (ids.indexOf(e.settled) >= 0) e.settled = false; });
+      d.settlements = d.settlements.filter(s => ids.indexOf(s.id) < 0);
+      return;
+    }
+    if (q.action === 'purchase') {
+      // Kassenbuch: Einkauf (Ausgabe) eintragen
+      const text = clean(q.text, 60), amount = money(q.amount);
+      if (!text) throw new Error('Bitte eintragen, was gekauft wurde');
+      if (!(amount > 0)) throw new Error('Bitte einen Betrag eingeben');
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(q.date || '')) ? q.date + 'T12:00:00.000Z' : new Date().toISOString();
+      const id = uid();
+      d.purchases.push({ id: id, text: text, amount: amount, date: date });
+      d.purchases.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      return { ok: true, id: id };
+    }
+    if (q.action === 'removePurchase') { d.purchases = d.purchases.filter(x => x.id !== q.id); return; }
+    if (q.action === 'restorePurchase') {
+      if (q.item && q.item.id && !d.purchases.some(x => x.id === q.item.id)) {
+        d.purchases.push({ id: String(q.item.id), text: clean(q.item.text, 60), amount: money(q.item.amount), date: String(q.item.date) });
+        d.purchases.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      }
+      return;
+    }
     if (q.action === 'settle') {
       const open = d.entries.filter(e => e.name === q.name && !e.settled);
       if (!open.length) throw new Error('Nichts offen');

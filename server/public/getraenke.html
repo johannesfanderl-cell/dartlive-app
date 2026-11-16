@@ -38,7 +38,17 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
 .mnav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; } .mnav b { font-size: 20px; }
 .mnav button { width: 48px; height: 44px; border-radius: 8px; background: #10377f; border: 1px solid #3f6fbf; font-size: 22px; }
 .mnav button:disabled { opacity: .35; }
-.kpi { display: flex; gap: 8px; margin-bottom: 12px; } .kpi .card { flex: 1 1 0; margin: 0; text-align: center; } .kpi .sum { font-size: 20px; }
+.kpi { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; } .kpi .card { flex: 1 1 40%; margin: 0; text-align: center; } .kpi .sum { font-size: 20px; }
+.seg2 { display: flex; margin-bottom: 10px; } .seg2 button { flex: 1 1 0; padding: 8px; border: 1px solid #3f6fbf; background: #10377f; font-weight: bold; } .seg2 button:first-child { border-radius: 8px 0 0 8px; } .seg2 button:last-child { border-radius: 0 8px 8px 0; } .seg2 button.on { background: #fff; color: #071d47; }
+.chart { display: flex; align-items: flex-end; gap: 4px; height: 170px; padding: 8px 4px 0; }
+.chart .m { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; cursor: pointer; }
+.chart .bars { display: flex; align-items: flex-end; gap: 2px; width: 100%; flex: 1 1 auto; justify-content: center; }
+.chart .b1 { width: 45%; background: #fff; border-radius: 3px 3px 0 0; min-height: 1px; } .chart .b2 { width: 45%; background: #ffc56b; border-radius: 3px 3px 0 0; min-height: 1px; }
+.chart .m span { font-size: 11px; color: #b7d3ff; margin-top: 4px; } .chart .m.cur span { color: #fff; font-weight: bold; }
+.legend { font-size: 13px; color: #b7d3ff; margin-top: 6px; } .legend i { display: inline-block; width: 10px; height: 10px; margin: 0 4px 0 10px; border-radius: 2px; }
+.neg { color: #ff8a8a; } .pos { color: #7fd99a; }
+.form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .form input { flex: 1 1 120px; min-width: 0; }
+input[type=date] { padding: 8px; border-radius: 6px; border: 2px solid #3f6fbf; background: #fff; color: #071d47; font-family: inherit; font-size: inherit; }
 tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { background: #071d47; font-size: 14px; }
 .paid { color: #7fd99a; } .open { color: #ffc56b; }
 @media print {
@@ -55,7 +65,7 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
 (function () {
   'use strict';
   var D = null, names = [], version = 0, tab = 'liste', person = null, count = 1;
-  var now0 = new Date(), mon = { y: now0.getFullYear(), m: now0.getMonth() }, mOpen = null;
+  var now0 = new Date(), mon = { y: now0.getFullYear(), m: now0.getMonth() }, mOpen = null, mView = 'monat', undoFn = null;
   var MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -63,8 +73,10 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
   var tt, lastIds = null;
   function toast(t, bad, undo) {
     var el = $('toast'); el.innerHTML = esc(t) + (undo ? '<button data-undo="1">Rückgängig</button>' : ''); el.className = bad ? 'bad' : ''; el.style.display = 'block';
-    clearTimeout(tt); tt = setTimeout(function () { el.style.display = 'none'; lastIds = null; }, undo ? 6000 : 3000);
+    if (typeof undo === 'function') undoFn = undo; else undoFn = null;
+    clearTimeout(tt); tt = setTimeout(function () { el.style.display = 'none'; lastIds = null; undoFn = null; }, undo ? 8000 : 3000);
   }
+  function hideToast() { $('toast').style.display = 'none'; }
   function req(method, url, body, cb) {
     var r = new XMLHttpRequest(); r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true);
     r.onreadystatechange = function () { if (r.readyState !== 4) return; var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(r.status >= 200 && r.status < 300 ? null : ((d && d.error) || 'Keine Verbindung zum Server'), d); };
@@ -117,7 +129,7 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
     h += '</table></div><h3>Bezahlt</h3><div class="card"><table>';
     var st = D.settlements.slice(-30).reverse();
     if (!st.length) h += '<tr><td class="note">Noch keine Abrechnungen.</td></tr>';
-    st.forEach(function (s) { var d = new Date(s.date); h += '<tr><td>' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + '</td><td>' + esc(s.name) + '</td><td class="r">' + s.count + ' Striche</td><td class="r"><b>' + eur(s.amount) + '</b></td><td class="r"><button class="btn sec sm" data-unsettle="' + s.id + '">zurücknehmen</button></td></tr>'; });
+    st.forEach(function (s) { var d = new Date(s.date); h += '<tr><td>' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + '</td><td>' + esc(s.name) + (s.note ? '<br><span class="note">für ' + esc(s.note) + '</span>' : '') + '</td><td class="r">' + s.count + ' Striche</td><td class="r"><b>' + eur(s.amount) + '</b></td><td class="r"><button class="btn sec sm" data-unsettle="' + s.id + '">zurücknehmen</button></td></tr>'; });
     return h + '</table></div>';
   }
   function detail(n) {
@@ -149,32 +161,98 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
     var t = Infinity; D.entries.forEach(function (e) { var d = new Date(e.date), v = d.getFullYear() * 12 + d.getMonth(); if (v < t) t = v; });
     return t;
   }
+  function purchasesIn(y, mo) { return (D.purchases || []).filter(function (p) { var d = new Date(p.date); return d.getFullYear() === y && (mo == null || d.getMonth() === mo); }); }
+  function sumOf(a, k) { var t = 0; a.forEach(function (x) { t += x[k]; }); return Math.round(t * 100) / 100; }
+  function pad(n) { return ('0' + n).slice(-2); }
+  function money(v) { return eur(v); }
+  function viewSwitch() { return '<div class="seg2 noprint"><button data-mview="monat"' + (mView === 'monat' ? ' class="on"' : '') + '>Monat</button><button data-mview="jahr"' + (mView === 'jahr' ? ' class="on"' : '') + '>Jahr</button></div>'; }
   function monthHTML() {
+    if (mView === 'jahr') return yearHTML();
     var md = monthData(), cur = mon.y * 12 + mon.m, n0 = new Date(), max = n0.getFullYear() * 12 + n0.getMonth(), min = Math.min(firstMonth(), max);
-    var h = '<div class="mnav"><button data-mon="-1"' + (cur <= min ? ' disabled' : '') + '>‹</button><b>' + MONATE[mon.m] + ' ' + mon.y + '</b><button data-mon="1"' + (cur >= max ? ' disabled' : '') + '>›</button></div>';
-    h += '<div class="kpi"><div class="card"><span class="note">Umsatz</span><div class="sum">' + eur(md.tot.sum) + '</div></div>' +
-      '<div class="card"><span class="note">Striche</span><div class="sum">' + md.tot.count + '</div></div>' +
+    var buys = purchasesIn(mon.y, mon.m), bsum = sumOf(buys, 'amount'), gain = Math.round((md.tot.sum - bsum) * 100) / 100;
+    var h = viewSwitch() + '<div class="mnav"><button data-mon="-1"' + (cur <= min ? ' disabled' : '') + '>‹</button><b>' + MONATE[mon.m] + ' ' + mon.y + '</b><button data-mon="1"' + (cur >= max ? ' disabled' : '') + '>›</button></div>';
+    h += '<div class="kpi"><div class="card"><span class="note">Umsatz (' + md.tot.count + ' Striche)</span><div class="sum">' + eur(md.tot.sum) + '</div></div>' +
+      '<div class="card"><span class="note">Einkäufe</span><div class="sum">' + eur(bsum) + '</div></div>' +
+      '<div class="card"><span class="note">Gewinn</span><div class="sum ' + (gain < 0 ? 'neg' : 'pos') + '">' + eur(gain) + '</div></div>' +
       '<div class="card"><span class="note">davon offen</span><div class="sum open">' + eur(md.tot.open) + '</div></div></div>';
-    if (!md.rows.length) return h + '<div class="card note">In diesem Monat gibt es keine Striche.</div>';
-    h += '<h3>Pro Person</h3><div class="card"><table><tr><th>Name</th><th class="r">Striche</th><th class="r">Betrag</th><th class="r">offen</th></tr>';
-    md.rows.forEach(function (r) {
-      var op = mOpen === r.name;
-      h += '<tr class="pick' + (op ? ' open' : '') + '" data-mp="' + esc(r.name) + '"><td><b>' + esc(r.name) + '</b><br><span class="note">' + prodList(r.prod) + '</span></td><td class="r">' + r.count + '</td><td class="r"><b>' + eur(r.sum) + '</b></td><td class="r">' + (r.open ? '<span class="open">' + eur(r.open) + '</span>' : '<span class="paid">bezahlt ✓</span>') + '</td></tr>';
-      if (op) {
-        var ks = Object.keys(r.prod).sort(function (a, b) { return r.prod[b].n - r.prod[a].n; });
-        ks.forEach(function (k) { h += '<tr class="sub"><td>&nbsp;&nbsp;' + esc(k) + '</td><td class="r">' + r.prod[k].n + '×</td><td class="r">' + eur(r.prod[k].sum) + '</td><td></td></tr>'; });
-        Object.keys(r.days).map(Number).sort(function (a, b) { return a - b; }).forEach(function (d) {
-          var es = r.days[d], s = 0; es.forEach(function (e) { s += e.price; });
-          var c = {}; es.forEach(function (e) { c[e.product] = (c[e.product] || 0) + 1; });
-          h += '<tr class="sub"><td class="note">&nbsp;&nbsp;' + d + '.' + (mon.m + 1) + '.: ' + Object.keys(c).map(function (k) { return c[k] + '× ' + esc(k); }).join(', ') + '</td><td class="r note">' + es.length + '</td><td class="r note">' + eur(s) + '</td><td></td></tr>';
-        });
-      }
-    });
-    h += '<tr><td><b>Gesamt</b></td><td class="r"><b>' + md.tot.count + '</b></td><td class="r"><b>' + eur(md.tot.sum) + '</b></td><td class="r"><b>' + eur(md.tot.open) + '</b></td></tr></table></div>';
-    h += '<h3>Pro Getränk</h3><div class="card"><table><tr><th>Getränk</th><th class="r">Anzahl</th><th class="r">Betrag</th></tr>';
-    Object.keys(md.tot.prod).sort(function (a, b) { return md.tot.prod[b].n - md.tot.prod[a].n; }).forEach(function (k) { h += '<tr><td>' + esc(k) + '</td><td class="r">' + md.tot.prod[k].n + '</td><td class="r">' + eur(md.tot.prod[k].sum) + '</td></tr>'; });
-    h += '</table></div><p class="note noprint">Tippe auf einen Namen für die Einzelheiten nach Tagen. Gezählt wird alles, was im Monat gestrichen wurde, bezahlt oder noch offen.</p>';
+    if (!md.rows.length) h += '<div class="card note">In diesem Monat gibt es keine Striche.</div>';
+    else {
+      h += '<h3>Pro Person</h3><div class="card"><table><tr><th>Name</th><th class="r">Striche</th><th class="r">Betrag</th><th class="r">offen</th></tr>';
+      md.rows.forEach(function (r) {
+        var op = mOpen === r.name;
+        h += '<tr class="pick' + (op ? ' open' : '') + '" data-mp="' + esc(r.name) + '"><td><b>' + esc(r.name) + '</b><br><span class="note">' + prodList(r.prod) + '</span></td><td class="r">' + r.count + '</td><td class="r"><b>' + eur(r.sum) + '</b></td><td class="r">' +
+          (r.open ? '<span class="open">' + eur(r.open) + '</span><br><button class="btn sm noprint" data-mpay="' + esc(r.name) + '">bezahlt</button>' : '<span class="paid">bezahlt ✓</span>') + '</td></tr>';
+        if (op) {
+          var ks = Object.keys(r.prod).sort(function (a, b) { return r.prod[b].n - r.prod[a].n; });
+          ks.forEach(function (k) { h += '<tr class="sub"><td>&nbsp;&nbsp;' + esc(k) + '</td><td class="r">' + r.prod[k].n + '×</td><td class="r">' + eur(r.prod[k].sum) + '</td><td></td></tr>'; });
+          Object.keys(r.days).map(Number).sort(function (a, b) { return a - b; }).forEach(function (d) {
+            var es = r.days[d], s = 0; es.forEach(function (e) { s += e.price; });
+            var c = {}; es.forEach(function (e) { c[e.product] = (c[e.product] || 0) + 1; });
+            h += '<tr class="sub"><td class="note">&nbsp;&nbsp;' + d + '.' + (mon.m + 1) + '.: ' + Object.keys(c).map(function (k) { return c[k] + '× ' + esc(k); }).join(', ') + '</td><td class="r note">' + es.length + '</td><td class="r note">' + eur(s) + '</td><td></td></tr>';
+          });
+        }
+      });
+      h += '<tr><td><b>Gesamt</b></td><td class="r"><b>' + md.tot.count + '</b></td><td class="r"><b>' + eur(md.tot.sum) + '</b></td><td class="r"><b>' + eur(md.tot.open) + '</b></td></tr></table>';
+      if (md.tot.open > 0) h += '<button class="btn noprint" data-a="payall" style="margin-top:8px">Alle offenen Beträge im ' + MONATE[mon.m] + ' als bezahlt markieren</button>';
+      h += '</div>';
+      h += '<h3>Pro Getränk</h3><div class="card"><table><tr><th>Getränk</th><th class="r">Anzahl</th><th class="r">Betrag</th></tr>';
+      Object.keys(md.tot.prod).sort(function (a, b) { return md.tot.prod[b].n - md.tot.prod[a].n; }).forEach(function (k) { h += '<tr><td>' + esc(k) + '</td><td class="r">' + md.tot.prod[k].n + '</td><td class="r">' + eur(md.tot.prod[k].sum) + '</td></tr>'; });
+      h += '</table></div>';
+    }
+    // Kassenbuch
+    var today = new Date(), defDate = (today.getFullYear() === mon.y && today.getMonth() === mon.m) ? today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate()) : mon.y + '-' + pad(mon.m + 1) + '-01';
+    h += '<h3>Kassenbuch – Einkäufe</h3><div class="card"><table>';
+    if (!buys.length) h += '<tr><td class="note">Keine Einkäufe in diesem Monat.</td></tr>';
+    buys.forEach(function (b) { var d = new Date(b.date); h += '<tr><td class="note" style="white-space:nowrap">' + d.getDate() + '.' + (d.getMonth() + 1) + '.</td><td>' + esc(b.text) + '</td><td class="r"><b>' + eur(b.amount) + '</b></td><td class="r noprint"><button class="btn warn sm" data-rmbuy="' + b.id + '">✕</button></td></tr>'; });
+    if (buys.length) h += '<tr><td></td><td><b>Summe</b></td><td class="r"><b>' + eur(bsum) + '</b></td><td class="noprint"></td></tr>';
+    h += '</table><div class="form noprint" style="margin-top:10px"><input type="text" id="buy-text" placeholder="Was? z. B. 2 Kisten Bier"><input type="text" id="buy-amount" inputmode="decimal" placeholder="Betrag €" style="flex:0 1 110px"><input type="date" id="buy-date" value="' + defDate + '" style="flex:0 1 150px"><button class="btn" data-a="addbuy">Eintragen</button></div>' +
+      '<p class="note">Gewinn = Umsatz aus den Strichen minus Einkäufe des Monats.</p></div>';
+    h += '<p class="note noprint">Tippe auf einen Namen für die Einzelheiten nach Tagen. Gezählt wird alles, was im Monat gestrichen wurde, bezahlt oder noch offen.</p>';
     h += '<button class="btn sec noprint" data-a="print">Monatsübersicht drucken</button>';
+    return h;
+  }
+  /* ---------- Jahresübersicht ---------- */
+  function yearHTML() {
+    var y = mon.y, n0 = new Date(), months = [], i, maxV = 1, tot = { sum: 0, count: 0, buy: 0, open: 0 }, per = {}, prod = {};
+    for (i = 0; i < 12; i++) months.push({ sum: 0, count: 0, buy: 0 });
+    D.entries.forEach(function (e) {
+      var d = new Date(e.date); if (d.getFullYear() !== y) return;
+      var mo = months[d.getMonth()]; mo.sum += e.price; mo.count++; tot.sum += e.price; tot.count++; if (!e.settled) tot.open += e.price;
+      var p = per[e.name] || (per[e.name] = { name: e.name, sum: 0, count: 0, open: 0 }); p.sum += e.price; p.count++; if (!e.settled) p.open += e.price;
+      var pr = prod[e.product] || (prod[e.product] = { n: 0, sum: 0 }); pr.n++; pr.sum += e.price;
+    });
+    purchasesIn(y).forEach(function (b) { var d = new Date(b.date); months[d.getMonth()].buy += b.amount; tot.buy += b.amount; });
+    months.forEach(function (m) { maxV = Math.max(maxV, m.sum, m.buy); });
+    var minY = Math.floor(Math.min(firstMonth(), n0.getFullYear() * 12 + n0.getMonth()) / 12);
+    (D.purchases || []).forEach(function (b) { minY = Math.min(minY, new Date(b.date).getFullYear()); });
+    var gain = Math.round((tot.sum - tot.buy) * 100) / 100;
+    var h = viewSwitch() + '<div class="mnav"><button data-year="-1"' + (y <= minY ? ' disabled' : '') + '>‹</button><b>Jahr ' + y + '</b><button data-year="1"' + (y >= n0.getFullYear() ? ' disabled' : '') + '>›</button></div>';
+    h += '<div class="kpi"><div class="card"><span class="note">Umsatz (' + tot.count + ' Striche)</span><div class="sum">' + eur(tot.sum) + '</div></div>' +
+      '<div class="card"><span class="note">Einkäufe</span><div class="sum">' + eur(tot.buy) + '</div></div>' +
+      '<div class="card"><span class="note">Gewinn</span><div class="sum ' + (gain < 0 ? 'neg' : 'pos') + '">' + eur(gain) + '</div></div>' +
+      '<div class="card"><span class="note">noch offen</span><div class="sum open">' + eur(tot.open) + '</div></div></div>';
+    h += '<div class="card"><div class="chart">';
+    var KM = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+    months.forEach(function (m, k) {
+      h += '<div class="m' + (y === n0.getFullYear() && k === n0.getMonth() ? ' cur' : '') + '" data-gomon="' + k + '" title="' + MONATE[k] + ': ' + eur(m.sum) + ' Umsatz, ' + eur(m.buy) + ' Einkauf"><div class="bars"><div class="b1" style="height:' + Math.round(m.sum / maxV * 100) + '%"></div><div class="b2" style="height:' + Math.round(m.buy / maxV * 100) + '%"></div></div><span>' + KM[k] + '</span></div>';
+    });
+    h += '</div><div class="legend"><i style="background:#fff"></i>Umsatz<i style="background:#ffc56b"></i>Einkäufe</div></div>';
+    h += '<h3>Pro Monat</h3><div class="card"><table><tr><th>Monat</th><th class="r">Striche</th><th class="r">Umsatz</th><th class="r">Einkauf</th><th class="r">Gewinn</th></tr>';
+    months.forEach(function (m, k) {
+      if (!m.count && !m.buy) return;
+      var gg = Math.round((m.sum - m.buy) * 100) / 100;
+      h += '<tr class="pick" data-gomon="' + k + '"><td>' + MONATE[k] + '</td><td class="r">' + m.count + '</td><td class="r">' + eur(m.sum) + '</td><td class="r">' + eur(m.buy) + '</td><td class="r ' + (gg < 0 ? 'neg' : 'pos') + '"><b>' + eur(gg) + '</b></td></tr>';
+    });
+    h += '<tr><td><b>Gesamt</b></td><td class="r"><b>' + tot.count + '</b></td><td class="r"><b>' + eur(tot.sum) + '</b></td><td class="r"><b>' + eur(tot.buy) + '</b></td><td class="r"><b>' + eur(gain) + '</b></td></tr></table></div>';
+    var rows = Object.keys(per).map(function (k) { return per[k]; }).sort(function (a, b) { return b.sum - a.sum; });
+    if (rows.length) {
+      h += '<h3>Pro Person</h3><div class="card"><table><tr><th>Name</th><th class="r">Striche</th><th class="r">Betrag</th><th class="r">offen</th></tr>';
+      rows.forEach(function (r) { h += '<tr><td>' + esc(r.name) + '</td><td class="r">' + r.count + '</td><td class="r">' + eur(r.sum) + '</td><td class="r">' + (r.open ? '<span class="open">' + eur(r.open) + '</span>' : '<span class="paid">✓</span>') + '</td></tr>'; });
+      h += '</table></div><h3>Pro Getränk</h3><div class="card"><table><tr><th>Getränk</th><th class="r">Anzahl</th><th class="r">Betrag</th></tr>';
+      Object.keys(prod).sort(function (a, b) { return prod[b].n - prod[a].n; }).forEach(function (k) { h += '<tr><td>' + esc(k) + '</td><td class="r">' + prod[k].n + '</td><td class="r">' + eur(prod[k].sum) + '</td></tr>'; });
+      h += '</table></div>';
+    }
+    h += '<p class="note noprint">Tippe auf einen Monat (Balken oder Zeile), um ihn im Detail zu sehen.</p><button class="btn sec noprint" data-a="print">Jahresübersicht drucken</button>';
     return h;
   }
   function setupHTML() {
@@ -191,9 +269,32 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
     while (t && t !== document.body && !(t.attributes && Array.prototype.some.call(t.attributes, function (a) { return /^data-/.test(a.name); }))) t = t.parentNode;
     if (!t || t === document.body) return;
     var g = function (k) { return t.getAttribute(k); };
-    if (g('data-undo')) { if (lastIds) act({ action: 'undo', ids: lastIds }, function () { toast('Strich entfernt'); lastIds = null; }); return; }
+    if (g('data-undo')) { if (undoFn) { var uf = undoFn; undoFn = null; hideToast(); uf(); return; } if (lastIds) act({ action: 'undo', ids: lastIds }, function () { toast('Strich entfernt'); lastIds = null; }); return; }
     if (g('data-tab')) { tab = g('data-tab'); person = null; mOpen = null; return render(); }
     if (g('data-mon')) { var mv = mon.y * 12 + mon.m + (+g('data-mon')); mon = { y: Math.floor(mv / 12), m: mv % 12 }; mOpen = null; return render(); }
+    if (g('data-mpay')) {
+      var pn = g('data-mpay'), pids = D.entries.filter(function (x) { return x.name === pn && !x.settled && inMonth(x); }).map(function (x) { return x.id; });
+      var psum = 0; D.entries.forEach(function (x) { if (pids.indexOf(x.id) >= 0) psum += x.price; });
+      if (!pids.length || !confirm(pn + ' hat ' + eur(psum) + ' für ' + MONATE[mon.m] + ' bezahlt?')) return;
+      return act({ action: 'settle', ids: pids, name: pn, note: MONATE[mon.m] + ' ' + mon.y }, function (d) { var sids = d.sids; toast(pn + ': ' + eur(d.amount) + ' bezahlt ✓', false, function () { act({ action: 'unsettleMany', ids: sids }, function () { toast('Zurückgenommen'); }); }); });
+    }
+    if (g('data-a') === 'payall') {
+      var aids = D.entries.filter(function (x) { return !x.settled && inMonth(x); }).map(function (x) { return x.id; });
+      var asum = 0; D.entries.forEach(function (x) { if (aids.indexOf(x.id) >= 0) asum += x.price; });
+      if (!aids.length || !confirm('Alle offenen Beträge im ' + MONATE[mon.m] + ' (' + eur(asum) + ') als bezahlt markieren?')) return;
+      return act({ action: 'settle', ids: aids, note: MONATE[mon.m] + ' ' + mon.y }, function (d) { var sids = d.sids; toast(d.people + ' Personen, ' + eur(d.amount) + ' bezahlt ✓', false, function () { act({ action: 'unsettleMany', ids: sids }, function () { toast('Zurückgenommen'); }); }); });
+    }
+    if (g('data-a') === 'addbuy') {
+      return act({ action: 'purchase', text: $('buy-text').value, amount: $('buy-amount').value, date: $('buy-date').value }, function (d) { var bid = d.id; toast('Einkauf eingetragen ✓', false, function () { act({ action: 'removePurchase', id: bid }, function () { toast('Einkauf entfernt'); }); }); });
+    }
+    if (g('data-rmbuy')) {
+      var item = (D.purchases || []).filter(function (x) { return x.id === g('data-rmbuy'); })[0];
+      if (!item) return;
+      return act({ action: 'removePurchase', id: item.id }, function () { toast('Einkauf gelöscht', false, function () { act({ action: 'restorePurchase', item: item }, function () { toast('Wiederhergestellt'); }); }); });
+    }
+    if (g('data-mview')) { mView = g('data-mview'); mOpen = null; return render(); }
+    if (g('data-year')) { var n1 = new Date(); mon = { y: mon.y + (+g('data-year')), m: mon.m }; if (mon.y === n1.getFullYear() && mon.m > n1.getMonth()) mon.m = n1.getMonth(); return render(); }
+    if (g('data-gomon')) { mon = { y: mon.y, m: +g('data-gomon') }; mView = 'monat'; mOpen = null; window.scrollTo(0, 0); return render(); }
     if (g('data-mp')) { mOpen = mOpen === g('data-mp') ? null : g('data-mp'); return render(); }
     if (g('data-a') === 'print') { window.print(); return; }
     if (g('data-person')) { person = g('data-person'); count = 1; window.scrollTo(0, 0); return render(); }
