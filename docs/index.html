@@ -152,6 +152,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     ladder:   { name: '121-Checkout-Leiter', desc: 'Ab 121: geschafft +1 – sonst −1 oder stehen bleiben', best: 'max' },
     doubles:  { name: 'Doppel-Training', desc: 'Alle Doppel oder Lieblingsdoppel – Trefferquote', best: 'max' },
     scoring:  { name: 'Triple-Training', desc: 'Mind. 3 Triple aussuchen, je 10+ Aufnahmen – Triple-Quote', best: 'max' },
+    bull500:  { name: 'Bull 500', desc: 'Erst Bull treffen (zählt nicht), dann nur auf die 20 bis genau 500', best: 'min' },
     catch40:  { name: 'Catch 40', desc: '61 bis 100 auschecken – 3, 6 oder 9 Darts je Zahl', best: 'max' },
     twodart:  { name: '2-Dart-Finishes', desc: 'Alle 2-Dart-Finishes 41–110 ab Wunschzahl – 3, 6 oder 9 Darts', best: 'max' },
     randcheck:{ name: 'Zufalls-Checkouts', desc: 'Zufällige 2-Dart-Finishes (z. B. 15) – 3, 6 oder 9 Darts', best: 'max' },
@@ -212,7 +213,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   var names = [], results = [];
   var screen = 'menu';
-  var setup = { game: 'jdc', players: [], nums: {}, atc: 'Single', start: 121, rounds: 10, own: 'nichts', sh: 20, att: 10, dbl: 'Alle Doppel', tz: 20, tr: 10, tset: [20, 19, 18], cdm: { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 }, c40: 40, lives: 3, gt: 301, cs: 41, cn: 15, lm: '−1 zurück', fr: 12, dn: 18 };
+  var setup = { game: 'jdc', players: [], nums: {}, atc: 'Single', start: 121, rounds: 10, own: 'nichts', sh: 20, att: 10, dbl: 'Alle Doppel', tz: 20, tr: 10, tset: [20, 19, 18], cdm: { checkout: 3, ladder: 9, catch40: 6, twodart: 6, randcheck: 6 }, c40: 40, lives: 3, gt: 301, cs: 41, cn: 15, lm: '−1 zurück', fr: 12, dn: 18, b5t: 20, b5m: 'genau 500', b5u: '1. Dart der Aufnahme' };
   var G = null;            // laufendes Spiel
   var undo = [];
   var typed = '';
@@ -311,6 +312,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     g.opts.sh = 20; g.opts.att = cfg.att; g.opts.dbl = cfg.dbl; g.opts.tz = cfg.tz; g.opts.tr = cfg.tr; g.opts.tset = (cfg.tset || [20, 19, 18]).slice();
     g.opts.cd = (cfg.cdm && cfg.cdm[cfg.game]) || CD_DEF[cfg.game] || 9;
     g.opts.c40 = cfg.c40; g.opts.lives = cfg.lives; g.opts.gt = cfg.gt; g.opts.cs = cfg.cs; g.opts.cn = cfg.cn; g.opts.lm = cfg.lm; g.opts.fr = cfg.fr || 12; g.opts.dn = cfg.dn;
+    g.opts.b5t = cfg.b5t || 20; g.opts.b5m = (500 % g.opts.b5t === 0) ? cfg.b5m : '500 oder mehr'; g.opts.b5u = cfg.b5u;
     if (isCatch(g.game)) g.seq = catchSeq(cfg);
     if (g.game === 'ladder') g.opts.start = 121;
     g.cfg = clone(cfg); g.bar = 0;
@@ -334,6 +336,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         case 'beat': p = { lives: cfg.lives || 3, out: false, place: 0, vs: [] }; break;
         case 'gotcha': p = { score: 0, got: 0, gotBy: 0, vs: [] }; break;
         case 'flow': p = { r: 0, st: 0, hits: 0, darts: 0, per: {}, rh: [] }; break;
+        case 'bull500': p = { score: 0, unlocked: false, darts: 0, bullDarts: 0, hits: 0, trip: 0, busts: 0, vs0: 0, vp: [], dAfter: 0 }; break;
       }
       p.done = false;
       g.pd.push(p);
@@ -353,6 +356,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'killer': return 'killer';
       case 'shanghai': case 'scoring': return 'mult';
       case 'doubles': case 'flow': return 'hit';
+      case 'bull500': return G.pd[G.cur].unlocked ? 'mult' : 'hit';
       default: return 'score';
     }
   }
@@ -360,6 +364,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     var p = G.pd[G.cur];
     if (G.game === 'jdc') return JDC_STEPS[p.step].n;
     if (G.game === 'shanghai') return p.num;
+    if (G.game === 'bull500') return G.opts.b5t;
     return tsetOf()[Math.min(p.ti || 0, tsetOf().length - 1)];
   }
 
@@ -394,6 +399,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'beat': return G.bar ? 'mehr als ' + G.bar : 'vorlegen';
       case 'gotcha': return 'Rest ' + (G.opts.gt - p.score);
       case 'flow': return FLOW[p.st][Math.min(k, 2)];
+      case 'bull500': return p.unlocked ? 'auf ' + G.opts.b5t + ' · noch ' + (500 - p.score) : 'Bull';
     }
     return '';
   }
@@ -419,6 +425,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'beat': return 'Runde ' + G.round + ' · ' + G.opts.lives + ' Leben';
       case 'gotcha': return 'genau ' + G.opts.gt + ' · Runde ' + G.round;
       case 'flow': return 'Runde ' + (p.r + 1) + '/' + G.opts.fr + ' · ' + FLOWN[p.st];
+      case 'bull500': return (p.unlocked ? 'Punkte auf die ' + G.opts.b5t : 'Erst Bull treffen' + (G.opts.b5u === 'beliebiger Dart' ? '' : ' – mit dem 1. Dart')) + ' · ' + (G.opts.b5m === 'genau 500' ? 'genau 500' : '500 oder mehr');
     }
     return '';
   }
@@ -484,6 +491,10 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'beat':
         big = p.out ? '✗' : p.lives;
         small = p.out ? 'raus' : (p.lives === 1 ? '1 Leben' : p.lives + ' Leben');
+        break;
+      case 'bull500':
+        big = p.score;
+        small = (p.unlocked ? 'noch ' + Math.max(0, 500 - p.score) : 'Bull fehlt noch') + ' · ' + p.darts + ' Darts' + (p.busts ? ' · ' + p.busts + '× überworfen' : '');
         break;
       case 'flow':
         big = p.hits;
@@ -706,6 +717,35 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     p.vi++; if (p.vi >= seq.length) p.done = true;
     endVisit();
   }
+  // Bull 500: erst Bull (0 Punkte), dann nur das Zielfeld
+  function b5Bull(h) {
+    var p = G.pd[G.cur];
+    if (!G.visit.length) p.vs0 = p.score;
+    G.visit.push({ l: h ? 'Bull' : '–' });
+    p.darts++; p.bullDarts++;
+    if (h) { p.unlocked = true; banner(G.players[G.cur].name + ': Bull! Punkte freigeschaltet'); }
+    else if (G.opts.b5u !== 'beliebiger Dart') { toast('Kein Bull – Aufnahme vorbei'); p.vp.push(0); endVisit(); return; }
+    if (G.visit.length < 3) return;
+    p.vp.push(0); endVisit();
+  }
+  function b5Mult(m) {
+    var p = G.pd[G.cur], n = G.opts.b5t, pts = m * n, exact = G.opts.b5m === 'genau 500';
+    if (!G.visit.length) p.vs0 = p.score;
+    G.visit.push({ m: m, l: m ? ['', 'S', 'D', 'T'][m] + n : '–' });
+    p.darts++; p.dAfter++; if (m) p.hits++; if (m === 3) p.trip++;
+    if (exact && p.score + pts > 500) {
+      p.score = p.vs0; p.busts++; p.vp.push(0);
+      toast('Überworfen – zurück auf ' + p.score); endVisit(); return;
+    }
+    p.score += pts;
+    if (p.score >= 500) {
+      p.vp.push(p.score - p.vs0);
+      G.winner = G.cur; G.finished = true; p.done = true;
+      banner(G.players[G.cur].name + ' erreicht ' + p.score + ' mit ' + p.darts + ' Darts!'); finish(); return;
+    }
+    if (G.visit.length < 3) return;
+    p.vp.push(p.score - p.vs0); endVisit();
+  }
   // Darts Flow: Treffer/Daneben je Dart, 1 Punkt je Treffer
   function flowHit(h) {
     var p = G.pd[G.cur], lab = FLOW[p.st][G.visit.length], name = FLOWN[p.st];
@@ -839,6 +879,10 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'twodart': r.variant = 'ab ' + G.seq[0]; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' von ' + G.seq.length + ' gecheckt'; break;
       case 'randcheck': r.variant = G.seq.length + ' Zahlen'; if (G.opts.cd && G.opts.cd !== 6) r.variant += ' · ' + G.opts.cd + ' Darts'; r.score = p.pts; r.detail = p.checks + ' von ' + G.seq.length + ' gecheckt'; break;
       case 'beat': r.score = G.winner === i ? 1 : 0; r.detail = 'Platz ' + (p.place || '?'); break;
+      case 'bull500':
+        if (G.winner !== i) { r.variant = 'auf ' + G.opts.b5t; r.score = p.score; r.disp = p.score + ' Pkt.'; r.noSave = true; r.detail = p.unlocked ? 'nicht ins Ziel gekommen' : 'kein Bull'; break; }
+        r.variant = 'auf ' + G.opts.b5t + (G.opts.b5m === 'genau 500' ? ' · genau 500' : '') + (G.opts.b5u === 'beliebiger Dart' ? ' · Bull frei' : '');
+        r.score = p.darts; r.detail = 'Bull nach ' + p.bullDarts + ' Darts' + (p.busts ? ' · ' + p.busts + '× überworfen' : '') + (G.players.length > 1 ? ' · Sieg' : ''); break;
       case 'flow': r.variant = G.opts.fr + ' Runden'; r.score = p.hits; r.detail = (p.hits >= FLOW_BONUS ? 'Bonus-Strich · ' : '') + 'Quote ' + fmt(pct(p.hits, p.darts), 0) + ' %'; break;
       case 'gotcha': r.score = G.winner === i ? 1 : 0; r.detail = (G.winner === i ? 'Sieg' : 'Stand ' + p.score) + (p.got ? ' · ' + p.got + '× erwischt' : ''); break;
     }
@@ -933,6 +977,11 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'beat':
         add('Platz', p.place || '–'); add('Ø pro Aufnahme', avg(p.vs)); add('Höchste Aufnahme', maxOf(p.vs)); add('Leben verloren', (G.opts.lives || 3) - (p.out ? 0 : p.lives));
         break;
+      case 'bull500':
+        add('Punkte', p.score); add('Darts gesamt', p.darts); add('Darts bis zum Bull', p.unlocked ? p.bullDarts : p.bullDarts + ' (kein Bull)');
+        add('Trefferquote auf die ' + G.opts.b5t, q(p.hits, p.dAfter)); add('Triples', p.trip);
+        var vv = p.vp.slice(); if (vv.length) add('Ø Punkte pro Aufnahme', avg(vv)); add('Beste Aufnahme', maxOf(vv)); add('Überworfen', p.busts);
+        break;
       case 'flow':
         add('Trefferquote', q(p.hits, p.darts));
         for (k = 0; k < FLOWN.length; k++) { var fe = (p.per || {})[FLOWN[k]]; add('Quote ' + FLOWN[k], fe ? q(fe.h, fe.d) + ' (' + fe.h + '/' + fe.d + ')' : '–'); }
@@ -977,7 +1026,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (!G.saved) {
       G.saved = true;
       var list = [];
-      for (var i = 0; i < G.players.length; i++) list.push(resultOf(i));
+      for (var i = 0; i < G.players.length; i++) { var rr = resultOf(i); if (!rr.noSave) list.push(rr); }
       savedIds = [];
       xhr('POST', '/api/results', list, function (err, d) { if (err) toast('Ergebnis konnte nicht gespeichert werden'); else { savedIds = (d && d.ids) || []; loadResults(); } });
     }
@@ -1022,6 +1071,12 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (CD_DEF[setup.game]) h += optHTML('Darts je Zahl', 'cd', [3, 6, 9], setup.cdm[setup.game]);
     if (setup.game === 'catch40') h += optHTML('Zahlen', 'c40', [20, 40], setup.c40) + '<p class="note">Jede Zahl ab 61 auschecken, Darts je Zahl unten wählbar (Standard 6), Double Out. Punkte: in 2 Darts 3, in 3 Darts 2, mit mehr Darts 1. 40 Zahlen = 61–100, 20 Zahlen = 61–80.</p>';
     if (setup.game === 'beat') h += optHTML('Leben', 'lives', [3, 5], setup.lives) + '<p class="note">Jeder muss mehr werfen als der Spieler vor ihm. Schafft er es nicht, verliert er ein Leben und die Runde beginnt neu. Wer übrig bleibt, gewinnt. Ab 2 Spielern.</p>';
+    if (setup.game === 'bull500') {
+      h += optHTML('Zahl', 'b5t', [20, 19, 18], setup.b5t);
+      if (500 % setup.b5t === 0) h += optHTML('Ziel', 'b5m', ['genau 500', '500 oder mehr'], setup.b5m);
+      h += optHTML('Bull freischalten', 'b5u', ['1. Dart der Aufnahme', 'beliebiger Dart'], setup.b5u);
+      h += '<p class="note">Zuerst muss das Bull (25 oder 50) getroffen werden, dieser Dart zählt 0 Punkte. „1. Dart der Aufnahme“: Nur der erste Dart einer Aufnahme darf aufs Bull, daneben = Aufnahme vorbei. Danach zählen nur noch Treffer auf die ' + setup.b5t + ' (S, D, T). ' + (500 % setup.b5t === 0 ? 'Bei „genau 500“ ist Überwerfen ein Bust: Die Aufnahme zählt nicht.' : 'Mit der ' + setup.b5t + ' ist genau 500 nicht erreichbar, es gilt 500 oder mehr.') + ' Wer zuerst 500 hat, gewinnt. Bestenliste: wenigste Darts.</p>';
+    }
     if (setup.game === 'flow') h += optHTML('Runden', 'fr', [10, 12], setup.fr) + '<p class="note">Je Runde: je 3 Darts auf 20, 19 und 18 (S, D und T zählen), 3 Darts auf Bull (Single Bull und Bull zählen), dann je ein Dart auf D16, D8, D4 und auf D20, D10, D5. Jeder Treffer = 1 Punkt, höchstens 18 je Runde. Ab ' + FLOW_BONUS + ' Punkten gibt es einen Strich auf der Bonus-Liste.</p>';
     if (setup.game === 'gotcha') h += optHTML('Ziel', 'gt', [301, 501], setup.gt) + '<p class="note">Punkte zählen nach oben, genau auf das Ziel kommen gewinnt (kein Doppel nötig). Wer zu viel wirft, bleibt stehen. Triffst du genau den Stand eines Gegners, muss er zurück auf 0. Ab 2 Spielern.</p>';
     if (setup.game === 'cricket') h += '<p class="note">Allein: so schnell wie möglich alles schließen. Mit mehreren: wer alles zu hat und vorne liegt, gewinnt. Wertung: Marks pro Runde (MPR).</p>';
@@ -1130,8 +1185,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     var lower = GAMES[G.game].best === 'min';
     arr.sort(function (a, b) {
       if (G.game === 'killer' || G.game === 'beat') return (G.pd[a.i].place || 99) - (G.pd[b.i].place || 99);
-      if ((G.game === 'shanghai' || G.game === 'gotcha') && G.winner >= 0) { if (a.i === G.winner) return -1; if (b.i === G.winner) return 1; }
-      if (G.game === 'gotcha') return G.pd[b.i].score - G.pd[a.i].score;
+      if ((G.game === 'shanghai' || G.game === 'gotcha' || G.game === 'bull500') && G.winner >= 0) { if (a.i === G.winner) return -1; if (b.i === G.winner) return 1; }
+      if (G.game === 'gotcha' || G.game === 'bull500') return G.pd[b.i].score - G.pd[a.i].score;
       if (G.game === 'cricket' && G.winner >= 0) { if (a.i === G.winner) return -1; if (b.i === G.winner) return 1; }
       return lower ? a.score - b.score : b.score - a.score;
     });
@@ -1145,6 +1200,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (game === 'killer' || game === 'beat' || game === 'gotcha') return s ? 'Sieg' : '–';
     if (game === 'doubles' || game === 'scoring') return fmt(s, 1) + ' %';
     if (isCatch(game)) return s + ' Pkt.';
+    if (game === 'bull500') return s + ' Darts';
     if (game === 'ladder') return s ? 'Check ' + s : '–';
     return String(s);
   }
@@ -1154,7 +1210,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     var arr = rankList();
     for (var i = 0; i < arr.length; i++) {
       var r = arr[i];
-      h += '<tr' + (i === 0 ? ' class="first"' : '') + '><td>' + (i + 1) + '.</td><td>' + esc(r.name) + '</td><td>' + esc(r.detail) + '</td><td class="n">' + esc(scoreText(r.game, r.score)) + '</td></tr>';
+      h += '<tr' + (i === 0 ? ' class="first"' : '') + '><td>' + (i + 1) + '.</td><td>' + esc(r.name) + '</td><td>' + esc(r.detail) + '</td><td class="n">' + esc(r.disp || scoreText(r.game, r.score)) + '</td></tr>';
     }
     h += '</table>' + statsHTML() + '<p class="note">Das Ergebnis ist in der Bestenliste gespeichert.</p>';
     h += '<button class="big" data-a="again">Nochmal spielen</button><div class="row2"><button class="big sec" data-a="best">Bestenliste</button><button class="big sec" data-a="tomenu">Anderes Spiel</button></div>';
@@ -1233,8 +1289,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if ((a = attr(t, 'data-dlg')) !== null) { var b = dlgBtns[+a]; closeDlg(); if (b && b.fn) b.fn(); return; }
 
     if (screen === 'play' && G && !G.finished) {
-      if ((a = attr(t, 'data-m')) !== null) { pushUndo(); if (G.game === 'shanghai') shMult(+a); else if (G.game === 'scoring') scMult(+a); else jdcMult(+a); return after(); }
-      if ((a = attr(t, 'data-h')) !== null) { pushUndo(); if (G.game === 'jdc') jdcHit(+a); else if (G.game === 'doubles') dblHit(+a); else if (G.game === 'flow') flowHit(+a); else atcHit(+a); return after(); }
+      if ((a = attr(t, 'data-m')) !== null) { pushUndo(); if (G.game === 'shanghai') shMult(+a); else if (G.game === 'scoring') scMult(+a); else if (G.game === 'bull500') b5Mult(+a); else jdcMult(+a); return after(); }
+      if ((a = attr(t, 'data-h')) !== null) { pushUndo(); if (G.game === 'jdc') jdcHit(+a); else if (G.game === 'doubles') dblHit(+a); else if (G.game === 'flow') flowHit(+a); else if (G.game === 'bull500') b5Bull(+a); else atcHit(+a); return after(); }
       if ((a = attr(t, 'data-c')) !== null) { pushUndo(); bobsCount(+a); return after(); }
       if ((a = attr(t, 'data-cn')) !== null) { pushUndo(); cricketDart(+a, +attr(t, 'data-cm')); return after(); }
       if ((a = attr(t, 'data-kt')) !== null) { pushUndo(); killerDart(+a, +attr(t, 'data-km')); return after(); }
