@@ -35,6 +35,16 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
 #toast { display: none; position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; padding: 10px 14px; border-radius: 10px; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,.5); white-space: nowrap; }
 #toast button { margin-left: 12px; padding: 6px 10px; border-radius: 6px; background: #0b2d6b; color: #fff; font-weight: bold; }
 #toast.bad { background: #ffd6d6; color: #6b1d2d; }
+.mnav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; } .mnav b { font-size: 20px; }
+.mnav button { width: 48px; height: 44px; border-radius: 8px; background: #10377f; border: 1px solid #3f6fbf; font-size: 22px; }
+.mnav button:disabled { opacity: .35; }
+.kpi { display: flex; gap: 8px; margin-bottom: 12px; } .kpi .card { flex: 1 1 0; margin: 0; text-align: center; } .kpi .sum { font-size: 20px; }
+tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { background: #071d47; font-size: 14px; }
+.paid { color: #7fd99a; } .open { color: #ffc56b; }
+@media print {
+  body { background: #fff; color: #000; } #top, .tabs, .mnav button, .noprint, #toast { display: none !important; }
+  .card { background: #fff; border: 1px solid #999; } td, th { border-color: #ccc; color: #000; } .note, th { color: #333; } .paid, .open { color: #000; }
+}
 </style>
 </head>
 <body>
@@ -45,6 +55,8 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
 (function () {
   'use strict';
   var D = null, names = [], version = 0, tab = 'liste', person = null, count = 1;
+  var now0 = new Date(), mon = { y: now0.getFullYear(), m: now0.getMonth() }, mOpen = null;
+  var MONATE = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function eur(x) { return (Math.round(x * 100) / 100).toFixed(2).replace('.', ',') + ' €'; }
@@ -65,9 +77,10 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
   function openOf(n) { var s = 0, c = 0; D.entries.forEach(function (e) { if (e.name === n && !e.settled) { s += e.price; c++; } }); return { sum: s, count: c }; }
   function render() {
     if (!D) return;
-    var h = '<div class="tabs"><button data-tab="liste"' + (tab === 'liste' ? ' class="on"' : '') + '>Strich machen</button><button data-tab="konto"' + (tab === 'konto' ? ' class="on"' : '') + '>Abrechnung</button><button data-tab="setup"' + (tab === 'setup' ? ' class="on"' : '') + '>Getränke &amp; Personen</button></div>';
+    var h = '<div class="tabs"><button data-tab="liste"' + (tab === 'liste' ? ' class="on"' : '') + '>Strich machen</button><button data-tab="konto"' + (tab === 'konto' ? ' class="on"' : '') + '>Abrechnung</button><button data-tab="monat"' + (tab === 'monat' ? ' class="on"' : '') + '>Monat</button><button data-tab="setup"' + (tab === 'setup' ? ' class="on"' : '') + '>Getränke &amp; Personen</button></div>';
     if (tab === 'liste') h += person ? productsHTML() : peopleHTML();
     else if (tab === 'konto') h += accountHTML();
+    else if (tab === 'monat') h += monthHTML();
     else h += setupHTML();
     $('main').innerHTML = h;
   }
@@ -111,6 +124,59 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
     var c = {}; D.entries.forEach(function (e) { if (e.name === n && !e.settled) c[e.product] = (c[e.product] || 0) + 1; });
     return Object.keys(c).map(function (k) { return c[k] + '× ' + esc(k); }).join(', ');
   }
+  /* ---------- Monatsübersicht pro Person ---------- */
+  function inMonth(e) { var d = new Date(e.date); return d.getFullYear() === mon.y && d.getMonth() === mon.m; }
+  function monthData() {
+    var per = {}, tot = { sum: 0, count: 0, paid: 0, open: 0, prod: {} };
+    D.entries.forEach(function (e) {
+      if (!inMonth(e)) return;
+      var p = per[e.name] || (per[e.name] = { name: e.name, sum: 0, count: 0, paid: 0, open: 0, prod: {}, days: {} });
+      var pp = p.prod[e.product] || (p.prod[e.product] = { n: 0, sum: 0 });
+      pp.n++; pp.sum += e.price; p.sum += e.price; p.count++;
+      if (e.settled) p.paid += e.price; else p.open += e.price;
+      var d = new Date(e.date), dk = d.getDate();
+      (p.days[dk] = p.days[dk] || []).push(e);
+      var tp = tot.prod[e.product] || (tot.prod[e.product] = { n: 0, sum: 0 }); tp.n++; tp.sum += e.price;
+      tot.sum += e.price; tot.count++; if (e.settled) tot.paid += e.price; else tot.open += e.price;
+    });
+    var rows = Object.keys(per).map(function (k) { return per[k]; }).sort(function (a, b) { return b.sum - a.sum || a.name.localeCompare(b.name); });
+    return { rows: rows, tot: tot };
+  }
+  function prodList(prod) {
+    return Object.keys(prod).sort(function (a, b) { return prod[b].n - prod[a].n; }).map(function (k) { return prod[k].n + '× ' + esc(k); }).join(', ');
+  }
+  function firstMonth() {
+    var t = Infinity; D.entries.forEach(function (e) { var d = new Date(e.date), v = d.getFullYear() * 12 + d.getMonth(); if (v < t) t = v; });
+    return t;
+  }
+  function monthHTML() {
+    var md = monthData(), cur = mon.y * 12 + mon.m, n0 = new Date(), max = n0.getFullYear() * 12 + n0.getMonth(), min = Math.min(firstMonth(), max);
+    var h = '<div class="mnav"><button data-mon="-1"' + (cur <= min ? ' disabled' : '') + '>‹</button><b>' + MONATE[mon.m] + ' ' + mon.y + '</b><button data-mon="1"' + (cur >= max ? ' disabled' : '') + '>›</button></div>';
+    h += '<div class="kpi"><div class="card"><span class="note">Umsatz</span><div class="sum">' + eur(md.tot.sum) + '</div></div>' +
+      '<div class="card"><span class="note">Striche</span><div class="sum">' + md.tot.count + '</div></div>' +
+      '<div class="card"><span class="note">davon offen</span><div class="sum open">' + eur(md.tot.open) + '</div></div></div>';
+    if (!md.rows.length) return h + '<div class="card note">In diesem Monat gibt es keine Striche.</div>';
+    h += '<h3>Pro Person</h3><div class="card"><table><tr><th>Name</th><th class="r">Striche</th><th class="r">Betrag</th><th class="r">offen</th></tr>';
+    md.rows.forEach(function (r) {
+      var op = mOpen === r.name;
+      h += '<tr class="pick' + (op ? ' open' : '') + '" data-mp="' + esc(r.name) + '"><td><b>' + esc(r.name) + '</b><br><span class="note">' + prodList(r.prod) + '</span></td><td class="r">' + r.count + '</td><td class="r"><b>' + eur(r.sum) + '</b></td><td class="r">' + (r.open ? '<span class="open">' + eur(r.open) + '</span>' : '<span class="paid">bezahlt ✓</span>') + '</td></tr>';
+      if (op) {
+        var ks = Object.keys(r.prod).sort(function (a, b) { return r.prod[b].n - r.prod[a].n; });
+        ks.forEach(function (k) { h += '<tr class="sub"><td>&nbsp;&nbsp;' + esc(k) + '</td><td class="r">' + r.prod[k].n + '×</td><td class="r">' + eur(r.prod[k].sum) + '</td><td></td></tr>'; });
+        Object.keys(r.days).map(Number).sort(function (a, b) { return a - b; }).forEach(function (d) {
+          var es = r.days[d], s = 0; es.forEach(function (e) { s += e.price; });
+          var c = {}; es.forEach(function (e) { c[e.product] = (c[e.product] || 0) + 1; });
+          h += '<tr class="sub"><td class="note">&nbsp;&nbsp;' + d + '.' + (mon.m + 1) + '.: ' + Object.keys(c).map(function (k) { return c[k] + '× ' + esc(k); }).join(', ') + '</td><td class="r note">' + es.length + '</td><td class="r note">' + eur(s) + '</td><td></td></tr>';
+        });
+      }
+    });
+    h += '<tr><td><b>Gesamt</b></td><td class="r"><b>' + md.tot.count + '</b></td><td class="r"><b>' + eur(md.tot.sum) + '</b></td><td class="r"><b>' + eur(md.tot.open) + '</b></td></tr></table></div>';
+    h += '<h3>Pro Getränk</h3><div class="card"><table><tr><th>Getränk</th><th class="r">Anzahl</th><th class="r">Betrag</th></tr>';
+    Object.keys(md.tot.prod).sort(function (a, b) { return md.tot.prod[b].n - md.tot.prod[a].n; }).forEach(function (k) { h += '<tr><td>' + esc(k) + '</td><td class="r">' + md.tot.prod[k].n + '</td><td class="r">' + eur(md.tot.prod[k].sum) + '</td></tr>'; });
+    h += '</table></div><p class="note noprint">Tippe auf einen Namen für die Einzelheiten nach Tagen. Gezählt wird alles, was im Monat gestrichen wurde, bezahlt oder noch offen.</p>';
+    h += '<button class="btn sec noprint" data-a="print">Monatsübersicht drucken</button>';
+    return h;
+  }
   function setupHTML() {
     var h = '<h3>Getränke &amp; Preise</h3><div class="card"><table>';
     D.products.forEach(function (p) { h += '<tr><td><input type="text" data-pn="' + p.id + '" value="' + esc(p.name) + '" style="width:100%"></td><td class="r"><input type="text" data-pp="' + p.id + '" value="' + String(p.price).replace('.', ',') + '" style="width:80px;text-align:right"> €</td><td class="r"><button class="btn sm" data-save="' + p.id + '">Speichern</button><button class="btn warn sm" data-rmprod="' + p.id + '">✕</button></td></tr>'; });
@@ -126,7 +192,10 @@ input[type=text] { padding: 9px 10px; border-radius: 6px; border: 2px solid #3f6
     if (!t || t === document.body) return;
     var g = function (k) { return t.getAttribute(k); };
     if (g('data-undo')) { if (lastIds) act({ action: 'undo', ids: lastIds }, function () { toast('Strich entfernt'); lastIds = null; }); return; }
-    if (g('data-tab')) { tab = g('data-tab'); person = null; return render(); }
+    if (g('data-tab')) { tab = g('data-tab'); person = null; mOpen = null; return render(); }
+    if (g('data-mon')) { var mv = mon.y * 12 + mon.m + (+g('data-mon')); mon = { y: Math.floor(mv / 12), m: mv % 12 }; mOpen = null; return render(); }
+    if (g('data-mp')) { mOpen = mOpen === g('data-mp') ? null : g('data-mp'); return render(); }
+    if (g('data-a') === 'print') { window.print(); return; }
     if (g('data-person')) { person = g('data-person'); count = 1; window.scrollTo(0, 0); return render(); }
     if (g('data-a') === 'back') { person = null; return render(); }
     if (g('data-cnt')) { count = Math.max(1, Math.min(20, count + (+g('data-cnt')))); return render(); }
