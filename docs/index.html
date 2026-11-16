@@ -145,7 +145,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     checkout: { name: 'Checkout-Training', desc: 'Ab Startwert auschecken – 3, 6 oder 9 Darts je Zahl', best: 'max' },
     countup:  { name: 'Count Up / Highscore', desc: 'So viele Punkte wie möglich in festen Aufnahmen (z. B. 50), Feld egal', best: 'max' },
     cricket:  { name: 'Cricket', desc: '15–20 und Bull schließen, Punkte machen', best: 'max' },
-    killer:   { name: 'Swedish Killer', desc: '5 Leben, Zahl mit der schwachen Hand', best: 'sum' },
+    killer:   { name: 'Swedish Killer', desc: 'Eigene Zahl genau 5× treffen = Killer, dann Gegnern Leben abschießen', best: 'sum' },
     shanghai: { name: 'Shanghai', desc: 'Runde 1 auf die 1, Runde 2 auf die 2 … – S+D+T in einer Aufnahme gewinnt sofort', best: 'max' },
     halveit:  { name: 'Halve It', desc: '7 feste Ziele – Ziel verfehlt: Punkte halbiert', best: 'max' },
     bermuda:  { name: 'Bermuda', desc: 'Wie Halve It mit 12 Zielen von 12 bis Bull', best: 'max' },
@@ -326,7 +326,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         case 'checkout': p = { target: cfg.start, attempt: 1, vis: 0, rem: cfg.start, checks: 0, best: 0, darts: 0, fails: 0, cdarts: 0 }; break;
         case 'countup': p = { round: 0, total: 0, vs: [] }; break;
         case 'cricket': p = { marks: { 15: 0, 16: 0, 17: 0, 18: 0, 19: 0, 20: 0, 25: 0 }, pts: 0, darts: 0, mk: 0, trip: 0, bulls: 0, closedAt: 0 }; break;
-        case 'killer': p = { num: cfg.nums[cfg.players[i]], lives: 5, out: false, place: 0, taken: 0 }; break;
+        case 'killer': p = { num: cfg.nums[cfg.players[i]], lives: 0, killer: false, out: false, place: 0, taken: 0, darts: 0, kc: 0, kd: 0 }; break;
         case 'shanghai': p = { num: 1, score: 0, sh: 0, hits: 0, darts: 0, trip: 0, rp: [] }; break;
         case 'halveit': case 'bermuda': p = { idx: 0, score: 0, halved: 0, lost: 0, tv: [] }; break;
         case 'ladder': p = { target: 121, attempt: 1, vis: 0, rem: 121, checks: 0, best: 0, darts: 0, fails: 0, cdarts: 0 }; break;
@@ -461,8 +461,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         small = parts.join(' ') + ' · MPR ' + (p.darts ? fmt(p.mk / (p.darts / 3), 2) : '–');
         break;
       case 'killer':
-        big = p.out ? '✗' : p.lives;
-        small = 'Zahl ' + p.num + (p.out ? ' · raus' : ' · ' + (p.lives === 1 ? '1 Leben' : p.lives + ' Leben'));
+        big = p.out ? '✗' : (p.killer ? 'K' : p.lives + '/5');
+        small = 'Zahl ' + p.num + (p.out ? ' · raus' : (p.killer ? ' · KILLER' : ' · ' + p.lives + ' Leben · noch ' + (5 - p.lives) + ' bis Killer'));
         break;
       case 'shanghai':
         big = p.score;
@@ -639,20 +639,29 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (G.visit.length === 3) endVisit();
   }
 
+  // Swedish Killer: eigene Zahl genau auf 5 Leben bringen (S=1, D=2, T=3) = Killer; darüber = raus.
+  // Killer nehmen Gegnern Leben ab; wer mit 0 Leben getroffen wird, ist raus. Killer unter 5 Leben verlieren den Status.
   function killerDart(target, m) {
-    var me = G.pd[G.cur];
+    var me = G.pd[G.cur], nm = G.players[G.cur].name;
+    me.darts = (me.darts || 0) + 1;
     if (target < 0) { G.visit.push({ l: '–' }); }
     else {
-      var v = G.pd[target];
+      var v = G.pd[target], vn = G.players[target].name;
+      G.visit.push({ l: ['', 'S', 'D', 'T'][m] + v.num });
       if (target === G.cur) {
-        if (G.opts.own === 'Leben zurück') me.lives = Math.min(5, me.lives + m);
-        else if (G.opts.own === 'kostet Leben') { me.lives -= m; if (me.lives <= 0) knockOut(G.cur); }
-      } else if (!v.out) {
-        me.taken += Math.min(m, v.lives);
-        v.lives -= m;
-        if (v.lives <= 0) { knockOut(target); toast(G.players[target].name + ' ist raus!'); }
+        if (me.lives + m > 5) { knockOut(G.cur); banner(nm + ' hat sich überschmissen – raus!'); }
+        else {
+          me.lives += m;
+          if (me.lives === 5 && !me.killer) { me.killer = true; me.kc = (me.kc || 0) + 1; if (!me.kd) me.kd = me.darts; banner(nm + ' ist KILLER!'); }
+        }
+      } else if (me.killer && !v.out) {
+        if (v.lives <= 0) { knockOut(target); banner(nm + ' schießt ' + vn + ' raus!'); }
+        else {
+          var before = v.lives;
+          v.lives = Math.max(0, v.lives - m); me.taken += before - v.lives;
+          if (v.killer && v.lives < 5) { v.killer = false; toast(vn + ' ist kein Killer mehr'); }
+        }
       }
-      G.visit.push({ l: ['', 'S', 'D', 'T'][m] + G.pd[target].num });
     }
     var alive = [];
     for (var i = 0; i < G.pd.length; i++) if (!G.pd[i].out) alive.push(i);
@@ -972,7 +981,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         add('Alles zu nach', p.closedAt ? p.closedAt + ' Darts' : '–');
         break;
       case 'killer':
-        add('Platz', p.place || '–'); add('Leben genommen', p.taken); add('Leben übrig', p.out ? 0 : p.lives);
+        add('Platz', p.place || '–'); add('Leben genommen', p.taken); add('Killer geworden', (p.kc || 0) + '×'); add('Darts bis Killer', p.kd || '–');
         break;
       case 'beat':
         add('Platz', p.place || '–'); add('Ø pro Aufnahme', avg(p.vs)); add('Höchste Aufnahme', maxOf(p.vs)); add('Leben verloren', (G.opts.lives || 3) - (p.out ? 0 : p.lives));
@@ -1050,7 +1059,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (setup.game === 'atc') h += optHTML('Modus', 'atc', ['Single', 'Double', 'Triple'], setup.atc);
     if (setup.game === 'checkout') h += optHTML('Startwert', 'start', [61, 81, 101, 121], setup.start) + '<p class="note">10 Versuche. Je Versuch so viele Darts wie unten gewählt (3 = eine Aufnahme). Geschafft: Ziel +1, nicht geschafft: Ziel −1 (nicht unter Startwert). Double Out.</p>';
     if (setup.game === 'countup') h += optHTML('Aufnahmen', 'rounds', [10, 20, 30, 50], setup.rounds);
-    if (setup.game === 'killer') h += optHTML('Eigene Zahl', 'own', ['nichts', 'Leben zurück', 'kostet Leben'], setup.own) + '<p class="note">Treffer auf die Zahl eines Gegners: Single −1, Double −2, Triple −3 Leben. Wer als Letzter übrig ist, gewinnt.</p>';
+    if (setup.game === 'killer') h += '<p class="note">Alle starten mit 0 Leben. Treffer auf die eigene Zahl geben Leben: Single +1, Double +2, Triple +3. Genau 5 = Killer. Wer über 5 kommt, hat sich überschmissen und ist raus (auch als Killer). Killer nehmen anderen Spielern Leben ab (S −1, D −2, T −3). Wer mit 0 Leben getroffen wird, ist raus. Ein Killer unter 5 Leben ist kein Killer mehr und muss wieder genau auf 5. Der Letzte gewinnt.</p>';
     if (setup.game === 'jdc') h += '<p class="note">Offizielle Wertung: Shanghai 10–15 und 15–20 (je Zahl 3 Darts, Shanghai +100), Doppel 1–20 je 1 Dart = 50, Bull = 100.</p>';
     if (setup.game === 'shanghai') h += '<p class="note">20 Runden, das ganze Board von 1 bis 20. Je Runde 3 Darts auf die Rundenzahl, Punkte = Zahl × Multiplikator. Single, Double und Triple in einer Aufnahme = Shanghai, gewinnt sofort.</p>';
     if (setup.game === 'halveit') h += '<p class="note">Ziele: 20 · 16 · beliebiges Doppel · 17 · beliebiges Triple · 18 · Bull. Eingegeben werden nur die Punkte, die aufs Ziel gehen. Kein Treffer: Punktestand wird halbiert.</p>';
@@ -1170,10 +1179,11 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         var v = G.pd[i];
         if (v.out) continue;
         var own = i === G.cur;
-        h += '<div class="cr"><span>' + v.num + '<br><small style="font-size:.75rem;font-weight:normal">' + esc(own ? 'eigene' : G.players[i].name) + ' · ' + v.lives + '♥</small></span>' +
+        if (!own && !G.pd[G.cur].killer) continue;
+        h += '<div class="cr"><span>' + v.num + '<br><small style="font-size:.75rem;font-weight:normal">' + (own ? (v.killer ? 'eigene · Treffer = raus!' : 'eigene · ' + v.lives + '/5') : esc(G.players[i].name) + ' · ' + (v.killer ? 'Killer' : v.lives + '♥')) + '</small></span>' +
           '<button data-kt="' + i + '" data-km="1">S</button><button data-kt="' + i + '" data-km="2">D</button><button data-kt="' + i + '" data-km="3">T</button></div>';
       }
-      h += '<div class="cr miss"><button data-kt="-1" data-km="0">Daneben / andere Zahl</button></div></div>';
+      h += '<div class="cr miss"><button data-kt="-1" data-km="0">' + (G.pd[G.cur].killer ? 'Daneben / andere Zahl' : 'Daneben / andere Zahl – erst Killer werden') + '</button></div></div>';
     }
     return h;
   }
