@@ -259,11 +259,12 @@ input { font-family: inherit; }
   }
 
   /* ---------- Spiellogik ---------- */
-  function newPlayer(name, start) { return { name: name, start: start, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0 }; }
+  function newPlayer(name, start) { return { name: name, start: start, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0, legv: [], f9s: 0, f9n: 0 }; }
 
   // Statistik einer Aufnahme mitschreiben
   function record(p, score, darts) {
     p.sum += score; p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + darts; p.ld = (p.ld || 0) + darts;
+    if (p.lv <= 3) { p.f9s = (p.f9s || 0) + score; p.f9n = (p.f9n || 0) + 1; }
     if (score === 180) p.c180 = (p.c180 || 0) + 1;
     else if (score >= 140) p.c140 = (p.c140 || 0) + 1;
     else if (score >= 100) p.c100 = (p.c100 || 0) + 1;
@@ -317,7 +318,7 @@ input { font-family: inherit; }
       checkout(score, 3); return;
     }
     pushUndo();
-    p.rem = rest; record(p, score, 3); addLast(p, score);
+    p.rem = rest; record(p, score, 3); addLast(p, score); (p.legv = p.legv || []).push([score, rest]);
     if (score === 180) flash('180! ' + p.name);
     board.turn = 1 - board.turn;
     typed = ''; msg = '';
@@ -329,6 +330,8 @@ input { font-family: inherit; }
     pushUndo();
     var p = board.players[board.turn];
     p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + 3; p.ld = (p.ld || 0) + 3; addLast(p, 'Bust');
+    if (p.lv <= 3) { p.f9n = (p.f9n || 0) + 1; }
+    (p.legv = p.legv || []).push([score, p.rem, 1]);
     board.turn = 1 - board.turn;
     typed = ''; msg = '';
     toast(p.name + ': überworfen (' + score + ')');
@@ -355,7 +358,7 @@ input { font-family: inherit; }
       board.leg++;
       board.legStarter = 1 - board.legStarter;
       board.turn = board.legStarter;
-      p.rem = p.start || board.start; o.rem = o.start || board.start; p.last = []; o.last = [];
+      p.rem = p.start || board.start; o.rem = o.start || board.start; p.last = []; o.last = []; p.legv = []; o.legv = [];
     }
     board.bannerId = new Date().getTime();
     save(); render();

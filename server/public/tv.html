@@ -46,6 +46,25 @@ table.duo .nm i { float: none; display: block; font-size: 0.8em; margin: 0.15em 
 table.duo .rm { font-size: 8.5em; }
 table.duo .st { font-size: 1.4em; }
 body.single .hd { height: 3.7em; }
+/* Monitor an der Scheibe: Aufnahmen-Liste wie in Scorer-Apps */
+table.duo2 td.top { vertical-align: top; padding: 0.15em 0.4em 0 0.4em; }
+table.duo2 .nm { font-size: 1.15em; line-height: 1.3; white-space: nowrap; overflow: hidden; }
+table.duo2 .nm i { display: inline; float: none; font-size: 0.85em; margin: 0 0 0 0.6em; opacity: 0.8; }
+table.duo2 .rm { font-size: 3.9em; line-height: 1.05; }
+table.duo2 td.sts { background: #0b2d6b; color: #fff; border-top: 0.1em solid #3f6fbf; padding: 0.15em 0.2em; }
+.pn.mon .hd { height: 1.7em; padding-top: 0.15em; }
+.pn.mon .hd b { display: inline; font-size: 1em; } .pn.mon .hd span { display: inline; font-size: 0.85em; margin-left: 0.8em; }
+table.cells { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.cells td { text-align: center; border: 0.06em solid #23498f; padding: 0.05em 0; background: #10377f; }
+table.cells td small { display: block; font-size: 0.5em; color: #b7d3ff; line-height: 1.25; white-space: nowrap; overflow: hidden; }
+table.cells td b { display: block; font-size: 0.8em; line-height: 1.2; }
+.vl { position: relative; overflow: hidden; border-top: 0.1em solid #3f6fbf; }
+.vli { position: absolute; left: 0; right: 0; bottom: 0; }
+table.vt { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.vt td { font-size: 0.95em; line-height: 1.3; text-align: center; padding: 0; }
+table.vt td.dc { background: #10377f; color: #b7d3ff; font-size: 0.8em; width: 12%; }
+table.vt td.sc { color: #b7d3ff; } table.vt td.bu { color: #ff9a9a; text-decoration: line-through; }
+table.vt tr.cur td { font-weight: bold; color: #fff; }
 body.single .hd b { font-size: 1.5em; }
 body.single .hd span { font-size: 1.1em; }
 .tr .nm { line-height: 1.6; }
@@ -155,6 +174,8 @@ body.single .intro .st { font-size: 1.6em; }
           (rw.on && vw.cur ? '<div class="st cur">' + esc(vw.cur) + '</div>' : '') +
           '</div></div>';
       }
+    } else if (b.status === 'play' && b.players && single && b.players[0].legv) {
+      h = h.replace('<div class="pn"', '<div class="pn mon"') + monitorHTML(n, b);
     } else if (b.status === 'play' && b.players && single) {
       h += '<table class="duo"><tr>';
       for (var d = 0; d < 2; d++) {
@@ -188,6 +209,41 @@ body.single .intro .st { font-size: 1.6em; }
     return h;
   }
 
+  /* Monitor an der Scheibe: Rest groß, Kennzahlen, alle Aufnahmen des Legs mit Rest */
+  function num1(v) { return v.toFixed(1).replace('.', ','); }
+  function legAvg(p) { var s = 0; for (var i = 0; i < p.legv.length; i++) if (!p.legv[i][2]) s += p.legv[i][0]; return p.ld ? num1(s / p.ld * 3) : '–'; }
+  function cell(t, v) { return '<td><small>' + t + '</small><b>' + v + '</b></td>'; }
+  function monitorHTML(n, b) {
+    var h = '<table class="duo duo2"><tr>', d, q;
+    for (d = 0; d < 2; d++) {
+      q = b.players[d];
+      h += '<td class="top ' + (d === 0 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
+        '<div class="nm">' + (b.turn === d ? '&#9654; ' : '') + esc(q.name) + '<i>Legs ' + q.legs + '</i></div>' +
+        '<div class="rm">' + q.rem + '</div></td>';
+    }
+    h += '</tr><tr>';
+    for (d = 0; d < 2; d++) {
+      q = b.players[d];
+      h += '<td class="sts ' + (d === 0 ? 'l' : 'r') + '"><table class="cells"><tr>' +
+        cell('100+', q.c100 || 0) + cell('140+', q.c140 || 0) + cell('180', q.c180 || 0) + cell('Darts im Leg', q.ld || 0) + '</tr><tr>' +
+        cell('&Oslash; Spiel', avg(q)) + cell('&Oslash; Leg', legAvg(q)) + cell('First 9', q.f9n ? num1(q.f9s / q.f9n) : '–') + cell('Bestes Leg', q.bl || '–') + '</tr></table></td>';
+    }
+    h += '</tr></table><div class="vl" id="vl' + n + '"><div class="vli"><table class="vt">';
+    var A = b.players[0], B = b.players[1], rows = Math.max(A.legv.length, B.legv.length);
+    function side(p, k, left) {
+      var v = p.legv[k];
+      if (k < 0) return left ? '<td class="sc"></td><td class="rs">' + (p.start || b.start) + '</td>' : '<td class="sc"></td><td class="rs">' + (p.start || b.start) + '</td>';
+      if (!v) return '<td></td><td></td>';
+      var sc = '<td class="sc' + (v[2] ? ' bu' : '') + '">' + v[0] + '</td>', rs = '<td class="rs">' + v[1] + '</td>';
+      return sc + rs;
+    }
+    for (var k = -1; k < rows; k++) {
+      h += '<tr' + (k === rows - 1 ? ' class="cur"' : '') + '>' + side(A, k, true) + '<td class="dc">' + ((k + 1) * 3) + '</td>' + side(B, k, false) + '</tr>';
+    }
+    h += '</table></div></div>';
+    return h;
+  }
+
   function render() {
     var s = sizes();
     var h = '<table class="grid"><tr>';
@@ -211,7 +267,12 @@ body.single .intro .st { font-size: 1.6em; }
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
         if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
-        else if (/^idle/.test(c) || c === 'win' || /duo/.test(c)) kids[k].style.height = rest + 'px';
+        else if (/^idle/.test(c) || c === 'win' || (/duo/.test(c) && !/duo2/.test(c))) kids[k].style.height = rest + 'px';
+      }
+      var vl = el('vl' + list[j]);
+      if (vl) {
+        var used = vl.previousSibling ? vl.previousSibling.offsetHeight : 0;
+        vl.style.height = Math.max(base * 2, rest - used - 2) + 'px';
       }
     }
   }
@@ -230,7 +291,7 @@ body.single .intro .st { font-size: 1.6em; }
     var now = new Date().getTime();
     for (var i = 0; i < list.length; i++) {
       var n = list[i], b = data.boards[n];
-      if (b && b.bannerId && seenBanner[n] !== b.bannerId) {
+      if (b && b.bannerId && (!seenBanner[n] || b.bannerId > seenBanner[n])) {
         if (!first) bannerUntil[n] = now + 6000;
         seenBanner[n] = b.bannerId;
       }
