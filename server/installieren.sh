@@ -104,7 +104,7 @@ if command -v nmcli >/dev/null && nmcli -t -f DEVICE,TYPE device 2>/dev/null | g
   elif [ -r /dev/tty ]; then
     say "WLAN „TVR Dart“ eintragen"
     printf 'Passwort für das WLAN „TVR Dart“ (leer lassen = überspringen): '
-    read -r PW < /dev/tty || PW=""
+    read -rs PW < /dev/tty || PW=""; echo
     if [ -n "$PW" ]; then
       DEV="$(nmcli -t -f DEVICE,TYPE device | awk -F: '$2=="wifi"{print $1; exit}')"
       sudo nmcli connection add type wifi ifname "$DEV" con-name "TVR Dart" ssid "TVR Dart" \
