@@ -5,6 +5,9 @@ Live-Eingabe an 5 Tablets und Anzeige auf den Fernsehern. Läuft ohne Internet i
 ## Raspberry Pi (empfohlen): einrichten und aktualisieren mit einem Befehl
     curl -fsSL https://raw.githubusercontent.com/johannesfanderl-cell/dartlive-app/main/server/installieren.sh | bash
 Dart Live startet danach bei jedem Einschalten von selbst. Ausschalten: Startseite → Verwaltung → „Server ausschalten“.
+Update ohne Internet im Keller: zuhause https://github.com/johannesfanderl-cell/dartlive-app/archive/refs/heads/main.tar.gz
+(oder „Code“ → „Download ZIP“) aufs Handy laden, im Verein Startseite → Verwaltung → „Update einspielen …“ und die Datei wählen.
+Die Daten bleiben erhalten, die bisherige Version liegt in data/vorige-version („Vorige Version wiederherstellen“). Geht genauso am Chromebook.
 Die Uhrzeit holt sich der Pi von den Tablets (im Keller gibt es kein Internet).
 
 ## Chromebook – einmalig: Startbefehl einrichten

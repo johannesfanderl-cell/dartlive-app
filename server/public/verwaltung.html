@@ -53,6 +53,22 @@ table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-
     <div class="msg" id="m3"></div>
   </div>
   </div>
+  <div id="upd" style="display:none">
+  <h3>Programm aktualisieren</h3>
+  <div class="card">
+    <p class="note">Installiert: <b id="ver">–</b></p>
+    <p class="note"><b>1. Zuhause (mit Internet)</b> die Update-Datei aufs Handy, Tablet oder Chromebook laden:</p>
+    <a class="btn sec" id="dlupd" href="https://github.com/johannesfanderl-cell/dartlive-app/archive/refs/heads/main.tar.gz" target="_blank" rel="noopener">Update-Datei herunterladen</a>
+    <p class="note">(Adresse zum Abtippen: <code>github.com/johannesfanderl-cell/dartlive-app</code> → „Code“ → „Download ZIP“ geht genauso.)</p>
+    <p class="note"><b>2. Im Vereins-WLAN</b> hier „Update einspielen …“ antippen und die Datei aus „Downloads“ wählen
+      (<code>dartlive-app-main.tar.gz</code> oder <code>dartlive-app-main.zip</code>). Die Daten bleiben erhalten, vorher wird automatisch gesichert.
+      Der Server startet danach neu – Tablets und Fernseher sind nach ca. 10 Sekunden wieder da.</p>
+    <input type="file" id="updfile" accept=".zip,.gz,.tgz,application/zip,application/gzip,application/x-gzip,application/octet-stream" style="display:none">
+    <button class="btn" id="updbtn">Update einspielen …</button>
+    <button class="btn sec" id="back" style="display:none">Vorige Version wiederherstellen</button>
+    <div class="msg" id="m4"></div>
+  </div>
+  </div>
   <h3>Spielabend</h3>
   <div class="card"><a class="btn sec" href="/checkliste">Checkliste für den Spielabend</a></div>
 </div>
@@ -82,6 +98,56 @@ table { width: 100%; border-collapse: collapse; } td { padding: 6px 4px; border-
     var h = Math.floor(d.uptime / 3600), m = Math.floor(d.uptime % 3600 / 60);
     $('piinfo').innerHTML = 'Läuft seit ' + h + ' Std. ' + m + ' Min. · Uhrzeit am Server: ' + new Date(d.time).toLocaleString('de-DE');
   });
+  // ---- Programm aktualisieren
+  function showVersion() {
+    req('GET', '/api/update/version', null, function (e, d) {
+      if (e || !d || window.DartLokal) return;
+      $('upd').style.display = 'block';
+      $('ver').innerHTML = d.version ? d.version : 'unbekannt (vor Einführung der Update-Funktion)';
+      $('back').style.display = d.previous ? '' : 'none';
+      $('back').title = d.previous ? 'Zurück zu: ' + d.previous : '';
+    });
+  }
+  function waitRestart(text) {
+    var t0 = new Date().getTime(), n = 0;
+    (function poll() {
+      n++;
+      msg('m4', text + ' Server startet neu' + new Array(n % 4 + 1).join(' .'), true);
+      setTimeout(function () {
+        req('GET', '/api/system', null, function (e) {
+          if (!e && new Date().getTime() - t0 > 2500) { msg('m4', text + ' Server läuft wieder. ✔', true); showVersion(); return; }
+          if (new Date().getTime() - t0 > 90000) return msg('m4', text + ' Der Server meldet sich nicht – bitte am Chromebook „dart“ neu starten bzw. den Pi aus- und wieder einstecken.');
+          poll();
+        });
+      }, 1500);
+    })();
+  }
+  function sendUpdate(url, body, label) {
+    var r = new XMLHttpRequest();
+    r.open('POST', url, true);
+    r.setRequestHeader('Content-Type', 'application/octet-stream');
+    if (r.upload) r.upload.onprogress = function (ev) { if (ev.lengthComputable) msg('m4', 'Wird übertragen … ' + Math.round(ev.loaded / ev.total * 100) + ' %', true); };
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) {}
+      if (r.status !== 200 || !d || !d.ok) return msg('m4', (d && d.error) || 'Keine Verbindung zum Server');
+      waitRestart(label + (d.version ? ' (Version ' + d.version + ').' : '.'));
+    };
+    msg('m4', 'Wird übertragen …', true);
+    r.send(body);
+  }
+  $('updbtn').onclick = function () { $('updfile').value = ''; $('updfile').click(); };
+  $('updfile').onchange = function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    if (!confirm('Update aus „' + f.name + '“ jetzt einspielen? Der Server startet danach neu (laufende Spiele bleiben erhalten).')) return;
+    sendUpdate('/api/update', f, 'Update eingespielt');
+  };
+  $('back').onclick = function () {
+    if (!confirm('Zur vorigen Version zurückkehren (' + ($('back').title.replace('Zurück zu: ', '') || '?') + ')?')) return;
+    sendUpdate('/api/update/zurueck', '', 'Vorige Version wiederhergestellt');
+  };
+  showVersion();
+
   $('aus').onclick = function () {
     if (!confirm('Server jetzt ausschalten? Danach funktionieren Tablets und Fernseher erst wieder, wenn der Pi neu eingesteckt wird.')) return;
     req('POST', '/api/system/aus', '{}', function (e) {

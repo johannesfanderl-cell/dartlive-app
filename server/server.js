@@ -14,6 +14,7 @@ const { execFile } = require('child_process');
 // Auf dem Raspberry Pi gesetzt (installieren.sh): Server darf die Uhr stellen und sich ausschalten
 const PI = process.env.DART_PI === '1';
 require('./extensions');
+const updater = require('./updater');
 
 // Daten liegen als JSON-Dateien im Ordner data/
 const FILES = { live: 'live.json', matches: 'matches.json', results: 'results.json', extra: 'extra.json' };
@@ -121,6 +122,26 @@ const server = http.createServer(function (req, res) {
     sendJSON(res, 200, { ok: true });
     try { dailyBackup(); } catch (e) {}
     setTimeout(function () { execFile('sudo', ['-n', '/usr/bin/systemctl', 'poweroff'], function (err) { if (err) console.error('Ausschalten fehlgeschlagen:', err.message); }); }, 1000);
+    return;
+  }
+
+  // Update einspielen (Verwaltung): Archiv kommt als Rohdaten, danach Neustart
+  if (p === '/api/update/version') return sendJSON(res, 200, Object.assign({ pi: PI }, updater.currentVersion(__dirname)));
+  if ((p === '/api/update' || p === '/api/update/zurueck') && req.method === 'POST') {
+    let size = 0, tooBig = false; const chunks = [];
+    req.on('data', function (c) { size += c.length; if (size > 60 * 1024 * 1024) { tooBig = true; return; } chunks.push(c); });
+    req.on('end', function () {
+      if (tooBig) return sendJSON(res, 400, { error: 'Die Datei ist zu groß.' });
+      let r;
+      try {
+        try { dailyBackup(); } catch (e) {}
+        r = p === '/api/update' ? updater.install(Buffer.concat(chunks), __dirname) : updater.rollback(__dirname);
+      } catch (e) { return sendJSON(res, 400, { error: e.message }); }
+      console.log((p === '/api/update' ? 'Update eingespielt' : 'Vorige Version wiederhergestellt') + (r.version ? ' (' + r.version + ')' : '') + ' – Neustart …');
+      sendJSON(res, 200, Object.assign({ ok: true }, r));
+      // Neustart: auf dem Pi startet systemd den Server neu, am Chromebook der Befehl „dart“
+      setTimeout(function () { process.exit(0); }, 800);
+    });
     return;
   }
 
