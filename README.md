@@ -1,5 +1,14 @@
 # Dart Live – App für die Tablets (TV Riedenburg)
 
+## Raspberry Pi einrichten / aktualisieren
+Im Terminal des Pi diesen Befehl einfügen (Rechtsklick → Einfügen) und Enter drücken:
+
+```
+curl -fsSL https://raw.githubusercontent.com/johannesfanderl-cell/dartlive-app/main/server/installieren.sh | bash
+```
+
+Danach startet Dart Live bei jedem Einschalten von selbst (Port 3000).
+
 Am Tablet läuft die Punkte-Eingabe, auf dem per HDMI angeschlossenen Monitor nur der Spielstand.
 Die App braucht den Dart-Live-Server (Chromebook) im WLAN „TVR Dart“.
 
