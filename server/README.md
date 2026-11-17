@@ -30,6 +30,7 @@ Das Terminal-Fenster offen lassen. Beenden mit Strg + C.
 ## Am Tablet
 Namen eingeben (zuletzt benutzte antippen), 301/501/701, Gewinn-Legs, Double Out, Beginner → Spiel starten.
 Pro Aufnahme die Summe der 3 Darts eintippen und OK (oder Schnelltaste). Überworfen wird automatisch erkannt.
+Oder den Rest eintippen und „Rest-Score“ (z. B. 121, 61 geworfen → 60 eintippen → „Rest-Score“; 0 = Checkout).
 Bei Double Out fragt das Tablet beim Checkout, ob mit einem Doppel beendet wurde. Keine Checkout-Hinweise.
 „Rückgängig“ nimmt die letzte Aufnahme zurück. Spielstände bleiben bei einem Server-Neustart erhalten.
 

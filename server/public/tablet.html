@@ -64,6 +64,8 @@ input { font-family: inherit; }
 .keys { flex: 1 1 auto; display: flex; flex-wrap: wrap; }
 .keys button { flex: 0 0 32.3%; margin: 0 1% 1% 0; font-size: 2rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .45rem; }
 .keys button.ok { background: #fff; color: #071d47; border-color: #fff; font-size: 1.6rem; }
+.acts button.rest { background: #c9a227; color: #071d47; border-color: #c9a227; font-weight: bold; }
+.val small.rhint { display: block; font-size: .8rem; font-weight: normal; color: #44608f; letter-spacing: 0; }
 .keys button:active, .quick button:active, .acts button:active { background: #3f6fbf; }
 .acts { display: flex; margin-top: .25rem; }
 .acts button { flex: 1 1 0; margin-right: .3rem; padding: .55rem 0; font-size: 1.05rem; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
@@ -326,6 +328,20 @@ input { font-family: inherit; }
     callVisit(score, false);
   }
 
+  // Rest-Score: eingetippt wird, was nach der Aufnahme übrig bleibt (z. B. 121, 61 geworfen -> 60 eingeben)
+  function submitRest() {
+    if (board.status !== 'play') return;
+    var p = board.players[board.turn];
+    if (typed === '') { msg = 'Erst den Rest eintippen, dann „Rest-Score“'; render(); return; }
+    var left = parseInt(typed, 10);
+    if (left > p.rem) { msg = 'Rest ' + left + ' ist mehr als ' + p.rem; typed = ''; render(); return; }
+    if (board.doubleOut && left === 1) { msg = 'Rest 1 geht bei Double Out nicht'; typed = ''; render(); return; }
+    var score = p.rem - left;
+    if (score > 180 || IMPOSSIBLE[score]) { msg = score + ' Punkte in einer Aufnahme sind nicht möglich'; typed = ''; render(); return; }
+    typed = '';
+    submit(score);
+  }
+
   function bust(score) {
     pushUndo();
     var p = board.players[board.turn];
@@ -462,7 +478,7 @@ input { font-family: inherit; }
     h += '<div class="info">' + (board.tlabel ? esc(board.tlabel) + ' · ' : '') + 'Leg ' + board.leg + ' · First to ' + board.legsToWin + ' · ' + board.start + (board.doubleOut ? ' Double Out' : ' Single Out') + '</div>';
     h += plHTML(0) + plHTML(1) + '</div><div class="pad">';
     h += '<div class="disp"><span class="who">' + esc(p.name) + '</span>' +
-      (typed ? '<span class="val">' + esc(typed) + '</span>' : '<span class="val ph' + (msg ? ' err' : '') + '">' + esc(msg || 'Punkte der Aufnahme') + '</span>') + '</div>';
+      (typed ? '<span class="val">' + esc(typed) + '<small class="rhint">OK = geworfen · Rest-Score = ' + (+typed <= p.rem ? (p.rem - typed) + ' geworfen' : 'zu hoch') + '</small></span>' : '<span class="val ph' + (msg ? ' err' : '') + '">' + esc(msg || 'Punkte der Aufnahme – oder Rest + „Rest-Score“') + '</span>') + '</div>';
     h += '<div class="quick">';
     for (var i = 0; i < QUICK.length; i++) h += '<button data-q="' + QUICK[i] + '">' + QUICK[i] + '</button>';
     h += '</div><div class="keys">';
@@ -472,7 +488,7 @@ input { font-family: inherit; }
       else if (k[j] === 'ok') h += '<button data-k="ok" class="ok">OK</button>';
       else h += '<button data-k="' + k[j] + '">' + k[j] + '</button>';
     }
-    h += '</div><div class="acts"><button data-a="undo">↶ Rückgängig</button><button data-a="menu">Menü</button></div>';
+    h += '</div><div class="acts"><button data-a="undo">↶ Rückgängig</button><button data-a="rest" class="rest">Rest-Score</button><button data-a="menu">Menü</button></div>';
     h += '</div></div>';
     return h;
   }
@@ -539,7 +555,8 @@ input { font-family: inherit; }
       if (!n1 || !n2) { msg = 'Bitte beide Namen eingeben'; render(); return; }
       if (n1.toLowerCase() === n2.toLowerCase()) { msg = 'Die Namen müssen verschieden sein'; render(); return; }
       startMatch(n1, n2, setup.start, setup.legs, setup.dout, setup.first, null, setup.hc ? [setup.s1, setup.s2] : null);
-    } else if (a === 'undo') doUndo();
+    } else if (a === 'rest') submitRest();
+    else if (a === 'undo') doUndo();
     else if (a === 'menu') {
       dialog('Menü', board.players[0].name + ' gegen ' + board.players[1].name, [
         { label: 'Spiel abbrechen', fn: function () {
@@ -579,6 +596,7 @@ input { font-family: inherit; }
     if (/^[0-9]$/.test(k) && typed.length < 3) { typed = (typed === '0' ? '' : typed) + k; msg = ''; render(); }
     else if (k === 'Backspace') { typed = typed.slice(0, -1); render(); }
     else if (k === 'Enter' && typed) submit(parseInt(typed, 10));
+    else if ((k === 'r' || k === 'R') && typed) submitRest();
   }, false);
   window.addEventListener('resize', scale, false);
   document.addEventListener('visibilitychange', function () { if (!document.hidden && dirty) save(); }, false);
