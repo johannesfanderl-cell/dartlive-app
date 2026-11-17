@@ -56,25 +56,50 @@ h3 { font-size: 1rem; color: #b7d3ff; text-transform: uppercase; letter-spacing:
 .pad { flex: 1 1 auto; display: flex; flex-direction: column; padding: .6rem .6rem .6rem 0; }
 .ginfo { font-size: .95rem; color: #b7d3ff; text-align: center; margin-bottom: .35rem; }
 .prow { display: flex; align-items: center; border: .12rem solid #3f6fbf; background: #10377f; border-radius: .5rem; padding: .3rem .6rem; margin-bottom: .35rem; flex: 1 1 0; min-height: 0; }
-.prow.on { background: #fff; color: #071d47; border-color: #fff; }
+.prow.on { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; }
 .prow.out { opacity: .45; }
 .prow .pn { flex: 1 1 auto; min-width: 0; }
 .prow .pn b { display: block; font-size: 1.15rem; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prow .pn small { display: block; font-size: .85rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .prow .pv { font-size: 2.4rem; font-weight: bold; margin-left: .5rem; }
-.tgt { display: flex; align-items: center; justify-content: space-between; background: #fff; color: #071d47; border-radius: .5rem; padding: .3rem .8rem; margin-bottom: .4rem; }
+.tgt { display: flex; align-items: center; justify-content: space-between; background: #dfe6f0; color: #071d47; border-radius: .5rem; padding: .3rem .8rem; margin-bottom: .4rem; }
 .tgt .who { font-size: 1.05rem; font-weight: bold; text-transform: uppercase; }
 .tgt .what { font-size: 2.3rem; font-weight: bold; }
+.tgt .what.ph { font-size: 1.35rem; color: #6a7fa3; font-style: italic; text-align: right; line-height: 1.15; }
+.tgt .what.ph small { display: block; font-size: .8rem; font-style: normal; }
+.tgt .what small.rh { display: block; font-size: .75rem; font-weight: normal; color: #44608f; }
 .slots { display: flex; margin-bottom: .4rem; }
 .slots span { flex: 1 1 0; margin-right: .3rem; text-align: center; padding: .35rem 0; border-radius: .35rem; background: #0b2d6b; border: .1rem solid #3f6fbf; font-size: 1.15rem; font-weight: bold; min-height: 2.2rem; }
 .slots span:last-child { margin-right: 0; }
 .inp { flex: 1 1 auto; display: flex; flex-wrap: wrap; align-content: stretch; }
 .inp button { margin: 0 1% 1% 0; font-size: 1.7rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .45rem; }
 .inp button.w2 { flex: 0 0 49%; } .inp button.w3 { flex: 0 0 32.3%; } .inp button.w4 { flex: 0 0 24%; } .inp button.w5 { flex: 0 0 19%; } .inp button.w1 { flex: 0 0 99%; }
-.inp button.hi { background: #fff; color: #071d47; border-color: #fff; }
+.inp button.hi, .inp button.sel { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; }
 .inp button.miss { background: #3a1f4f; border-color: #8a5fb0; }
 .inp button:active { background: #3f6fbf; }
 .inp button small { display: block; font-size: .8rem; font-weight: normal; }
+table.crb { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+table.crb th, table.crb td { text-align: center; vertical-align: middle; border-bottom: 0.06em solid #23498f; padding: 0; }
+table.crb th { font-weight: bold; padding: 0.15em 0.2em; background: #10377f; }
+table.crb th span { display: block; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9em; }
+table.crb th b { display: block; font-size: 1.9em; line-height: 1.05; }
+table.crb th small { display: block; font-weight: normal; font-size: 0.7em; opacity: 0.85; }
+table.crb th.on { background: #dfe6f0; color: #071d47; }
+table.crb th.nh { width: 22%; background: #0b2d6b; }
+table.crb td.num { font-weight: bold; font-size: 1.35em; background: #0b2d6b; color: #fff; }
+table.crb td.on { background: rgba(223,230,240,0.12); }
+table.crb tr.dead td.num { color: #6f86b3; text-decoration: line-through; }
+table.crb tr.dead .mk { opacity: 0.45; }
+table.crb .mk { font-style: normal; font-weight: bold; display: inline-block; width: 1.45em; height: 1.45em; line-height: 1.4em; font-size: 1.5em; }
+table.crb .mk.m0 { opacity: 0.3; }
+table.crb .mk.m1 { color: #b7d3ff; }
+table.crb .mk.m2 { color: #fff; }
+table.crb .mk.m3 { color: #ffd34d; border: 0.11em solid #ffd34d; border-radius: 50%; line-height: 1.25em; }
+.crside { flex: 1 1 auto; min-height: 0; font-size: 1rem; border: .12rem solid #3f6fbf; border-radius: .5rem; overflow: hidden; }
+.cgrid .cr span .mk { font-size: 1.2rem; width: 1.5rem; height: 1.5rem; line-height: 1.45rem; font-style: normal; display: inline-block; }
+.cgrid .cr span .mk.m3 { color: #ffd34d; border: .12rem solid #ffd34d; border-radius: 50%; line-height: 1.25rem; } .cgrid .cr span .mk.m0 { opacity: .3; } .cgrid .cr span .mk.m1 { color: #b7d3ff; }
+table.mprt { border-collapse: collapse; margin: .3rem 0 .5rem; font-size: .9rem; color: #b7d3ff; }
+table.mprt td { padding: .1rem .8rem .1rem 0; border-bottom: .06rem solid #23498f; } table.mprt td:first-child { color: #fff; font-weight: bold; white-space: nowrap; }
 .cgrid { flex: 1 1 auto; display: flex; flex-direction: column; }
 .cgrid .cr { flex: 1 1 0; display: flex; margin-bottom: 1%; }
 .cgrid .cr span { flex: 0 0 22%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: bold; text-align: center; line-height: 1.1; }
@@ -83,8 +108,9 @@ h3 { font-size: 1rem; color: #b7d3ff; text-transform: uppercase; letter-spacing:
 .cgrid .cr button:active { background: #3f6fbf; }
 .cgrid .cr.miss button { background: #3a1f4f; border-color: #8a5fb0; }
 .acts { display: flex; margin-top: .3rem; }
-.acts button { flex: 1 1 0; margin-right: .3rem; padding: .55rem 0; font-size: 1.05rem; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.acts button { flex: 1 1 0; margin-right: .3rem; padding: .9rem 0; font-size: 1.3rem; font-weight: bold; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
 .acts button:last-child { margin-right: 0; }
+.acts button.rest { background: #c9a227; color: #071d47; border-color: #c9a227; }
 
 /* Ergebnis / Bestenliste */
 table.res { width: 100%; border-collapse: collapse; margin-bottom: .5rem; }
@@ -381,7 +407,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       case 'bobs': return bobsLabel(p.target);
       case 'checkout': return String(p.rem);
       case 'countup': return 'Runde ' + (p.round + 1) + '/' + G.opts.rounds;
-      case 'cricket': return 'Cricket';
+      case 'cricket': return 'Dart ' + Math.min(k + 1, 3) + '/3';
       case 'killer': return 'Zahl ' + p.num;
       case 'shanghai': return String(p.num);
       case 'halveit': case 'bermuda': return hvLabel(HALVE[G.game][p.idx]);
@@ -501,11 +527,40 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     return { name: G.players[i].name, big: String(big), small: small, on: i === G.cur && !G.finished, out: !!(p.out || (p.done && G.game !== 'killer' && G.game !== 'beat')) };
   }
 
+  /* Cricket-Tafel: Treffer als / (1), X (2), eingekreistes X (3 = zu) */
+  function crMk(m) { return m >= 3 ? '<i class="mk m3">✕</i>' : (m === 2 ? '<i class="mk m2">✕</i>' : (m === 1 ? '<i class="mk m1">/</i>' : '<i class="mk m0">·</i>')); }
+  function crLevel(v) { return v < 1.5 ? 'Einsteiger' : (v < 2.3 ? 'Hobbyspieler' : (v < 3 ? 'Liga-/Vereinsspieler' : (v < 4 ? 'starker Turnierspieler' : 'Profi-Niveau'))); }
+  function crBoardHTML(d) {
+    var P = d.pl, np = P.length, two = np === 2, h = '<table class="crb n' + np + '"><tr>', i, r, t;
+    function th(p) { return '<th' + (p.on ? ' class="on"' : '') + '><span>' + (p.on ? '▶ ' : '') + esc(p.name) + '</span><b>' + p.pts + '</b><small>MPR ' + (p.mpr == null ? '–' : String(p.mpr.toFixed(2)).replace('.', ',')) + '</small></th>'; }
+    if (two) h += th(P[0]) + '<th class="nh"></th>' + th(P[1]);
+    else { h += '<th class="nh"></th>'; for (i = 0; i < np; i++) h += th(P[i]); }
+    h += '</tr>';
+    for (r = 0; r < d.nums.length; r++) {
+      t = d.nums[r];
+      var dead = true; for (i = 0; i < np; i++) if (P[i].m[t] < 3) dead = false;
+      var num = '<td class="num">' + (t === 25 ? 'Bull' : t) + '</td>';
+      h += '<tr' + (dead && np > 1 ? ' class="dead"' : '') + '>';
+      if (two) h += '<td>' + crMk(P[0].m[t]) + '</td>' + num + '<td>' + crMk(P[1].m[t]) + '</td>';
+      else { h += num; for (i = 0; i < np; i++) h += '<td' + (P[i].on ? ' class="on"' : '') + '>' + crMk(P[i].m[t]) + '</td>'; }
+      h += '</tr>';
+    }
+    return h + '</table>';
+  }
+
+  function mprOf(p) { return p.darts ? p.mk / (p.darts / 3) : null; }
+  function crData() {
+    return { nums: CR, pl: G.players.map(function (pl, i) { var p = G.pd[i]; return { name: pl.name, m: p.marks, pts: p.pts, mpr: mprOf(p), on: i === G.cur && !G.finished }; }) };
+  }
+  var MPR_INFO = '<p class="note">MPR = Marks per Round: Treffer (Marks) pro Aufnahme – beim Cricket das, was beim 501 der 3-Dart-Average ist. Single = 1, Double = 2, Triple = 3 Marks.</p>' +
+    '<table class="mprt"><tr><td>unter 1,5</td><td>Einsteiger / Gelegenheitsspieler</td></tr><tr><td>1,5 – 2,2</td><td>Solider Hobbyspieler</td></tr><tr><td>2,3 – 2,9</td><td>Erfahrener Liga- / Vereinsspieler</td></tr>' +
+    '<tr><td>3,0 – 3,9</td><td>Sehr starker Turnierspieler</td></tr><tr><td>ab 4,0</td><td>Absolutes Profi-Niveau (Weltspitze)</td></tr></table>';
+
   function view() {
     var rows = [];
     for (var i = 0; i < G.players.length; i++) rows.push(playerLine(i));
     var cur = G.finished ? '' : G.players[G.cur].name + ': ' + targetText() + (G.visit.length ? ' · ' + G.visit.map(dartLabel).join(', ') : '');
-    return { title: GAMES[G.game].name, sub: G.finished ? 'Beendet' : infoText(), cur: cur, rows: rows };
+    return { title: GAMES[G.game].name, sub: G.finished ? 'Beendet' : infoText(), cur: cur, rows: rows, cr: G.game === 'cricket' ? crData() : undefined };
   }
 
   function dartLabel(d) {
@@ -861,6 +916,26 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   function after() { typed = ''; save(); render(); }
 
+  /* Rest-Score: statt der geworfenen Punkte den Rest eintippen (bei Spielen mit Rest) */
+  function restOf() {
+    if (inputKind() !== 'score') return null;
+    var p = G.pd[G.cur];
+    if (G.game === 'checkout' || G.game === 'ladder' || isCatch(G.game)) return p.rem;
+    if (G.game === 'gotcha') return G.opts.gt - p.score;
+    return null;
+  }
+  function submitRest() {
+    var r = restOf();
+    if (r == null) return;
+    if (typed === '') { msg = 'Erst den Rest eintippen, dann „Rest-Score“'; render(); return; }
+    var left = parseInt(typed, 10);
+    if (left > r) { msg = 'Rest ' + left + ' ist mehr als ' + r; typed = ''; render(); return; }
+    var v = r - left;
+    if (v > 180 || IMPOSSIBLE[v]) { msg = v + ' Punkte in einer Aufnahme sind nicht möglich'; typed = ''; render(); return; }
+    typed = '';
+    submitScore(v);
+  }
+
   /* ---------- Ende & Ergebnisse ---------- */
   function resultOf(i) {
     var p = G.pd[i], r = { name: G.players[i].name, game: G.game, variant: '', score: 0, detail: '' };
@@ -970,7 +1045,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         add('Ø Darts pro Check', p.checks ? fmt((p.cdarts || 0) / p.checks, 1) : '–'); if (G.game === 'ladder') add('Endstand', p.target);
         break;
       case 'cricket':
-        add('MPR', p.darts ? fmt(p.mk / (p.darts / 3), 2) : '–'); add('Triples', p.trip || 0); add('Bull-Marks', p.bulls || 0);
+        add('MPR', p.darts ? fmt(p.mk / (p.darts / 3), 2) + ' · ' + crLevel(p.mk / (p.darts / 3)) : '–'); add('Triples', p.trip || 0); add('Bull-Marks', p.bulls || 0);
         add('Alles zu nach', p.closedAt ? p.closedAt + ' Darts' : '–');
         break;
       case 'killer':
@@ -1081,7 +1156,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     }
     if (setup.game === 'flow') h += optHTML('Runden', 'fr', [10, 12], setup.fr) + '<p class="note">Je Runde: je 3 Darts auf 20, 19 und 18 (S, D und T zählen), 3 Darts auf Bull (Single Bull und Bull zählen), dann je ein Dart auf D16, D8, D4 und auf D20, D10, D5. Jeder Treffer = 1 Punkt, höchstens 18 je Runde. Ab ' + FLOW_BONUS + ' Punkten gibt es einen Strich auf der Bonus-Liste.</p>';
     if (setup.game === 'gotcha') h += optHTML('Ziel', 'gt', [301, 501], setup.gt) + '<p class="note">Punkte zählen nach oben, genau auf das Ziel kommen gewinnt (kein Doppel nötig). Wer zu viel wirft, bleibt stehen. Triffst du genau den Stand eines Gegners, muss er zurück auf 0. Ab 2 Spielern.</p>';
-    if (setup.game === 'cricket') h += '<p class="note">Allein: so schnell wie möglich alles schließen. Mit mehreren: wer alles zu hat und vorne liegt, gewinnt. Wertung: Marks pro Runde (MPR).</p>';
+    if (setup.game === 'cricket') h += '<p class="note">Allein: so schnell wie möglich alles schließen. Mit mehreren: wer alles zu hat und vorne liegt, gewinnt. Wertung: Marks pro Runde (MPR).</p>' + MPR_INFO;
 
     h += '<h3>Spieler (' + setup.players.length + '/' + MAXP + ')</h3><div class="plist">';
     for (var i = 0; i < setup.players.length; i++) {
@@ -1110,13 +1185,18 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   function playHTML() {
     var h = '<div class="play"><div class="side"><div class="ginfo">' + esc(GAMES[G.game].name) + ' · ' + esc(infoText()) + '</div>';
-    for (var i = 0; i < G.players.length; i++) {
+    if (G.game === 'cricket') h += '<div class="crside">' + crBoardHTML(crData()) + '</div>';
+    else for (var i = 0; i < G.players.length; i++) {
       var l = playerLine(i);
       h += '<div class="prow' + (l.on ? ' on' : '') + (l.out ? ' out' : '') + '"><div class="pn"><b>' + (l.on ? '▶ ' : '') + esc(l.name) + '</b><small>' + esc(l.small) + '</small></div><div class="pv">' + esc(l.big) + '</div></div>';
     }
     h += '</div><div class="pad">';
     var kind = inputKind();
-    h += '<div class="tgt"><span class="who">' + esc(G.players[G.cur].name) + '</span><span class="what">' + esc(kind === 'score' && typed ? typed : targetText()) + '</span></div>';
+    var rr = restOf();
+    if (kind === 'score' && typed) h += '<div class="tgt"><span class="who">' + esc(G.players[G.cur].name) + '</span><span class="what">' + esc(typed) +
+      (rr != null ? '<small class="rh">OK = geworfen · Rest-Score = ' + (+typed <= rr ? (rr - typed) + ' geworfen' : 'zu hoch') + '</small>' : '') + '</span></div>';
+    else if (kind === 'score') h += '<div class="tgt"><span class="who">' + esc(G.players[G.cur].name) + '</span><span class="what ph">' + esc(rr != null && G.game !== 'gotcha' ? 'Rest ' + rr : targetText()) + '<small>Punkte eintippen</small></span></div>';
+    else h += '<div class="tgt"><span class="who">' + esc(G.players[G.cur].name) + '</span><span class="what">' + esc(targetText()) + '</span></div>';
     if (kind !== 'score' && kind !== 'count') {
       h += '<div class="slots">';
       for (var s = 0; s < 3; s++) h += '<span>' + (G.visit[s] ? esc(dartLabel(G.visit[s])) : '&nbsp;') + '</span>';
@@ -1124,7 +1204,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     }
     if (msg) h += '<div class="hint">' + esc(msg) + '</div>';
     h += inputHTML(kind);
-    h += '<div class="acts"><button data-a="undo">↶ Rückgängig</button><button data-a="menu">Menü</button></div></div></div>';
+    h += '<div class="acts"><button data-a="undo">↶ Rückgängig</button>' + (rr != null ? '<button data-a="rest" class="rest">Rest-Score</button>' : '') + '<button data-a="menu">Menü</button></div></div></div>';
     return h;
   }
 
@@ -1150,7 +1230,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
         else { Q = []; for (var qi = 0; qi <= 9; qi++) Q.push(qi * ht); }
       }
       h = '<div class="inp" style="flex:0 0 auto">';
-      for (var q = 0; q < Q.length; q++) h += '<button class="w5" style="font-size:1.1rem;padding:.4rem 0" data-q="' + Q[q] + '">' + Q[q] + '</button>';
+      for (var q = 0; q < Q.length; q++) h += '<button class="w5' + (typed === String(Q[q]) ? ' sel' : '') + '" style="font-size:1.4rem;padding:.75rem 0" data-q="' + Q[q] + '">' + Q[q] + '</button>';
       h += '</div><div class="inp">';
       var k = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'];
       for (var j = 0; j < k.length; j++) h += '<button class="w3' + (k[j] === 'ok' ? ' hi' : '') + '" data-k="' + k[j] + '">' + (k[j] === 'del' ? '⌫' : (k[j] === 'ok' ? 'OK' : k[j])) + '</button>';
@@ -1160,7 +1240,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       for (var r = 0; r < CR.length; r++) {
         var t = CR[r], closed = p.marks[t] >= 3, dead = closed;
         for (var o = 0; o < G.pd.length; o++) if (G.pd[o].marks[t] < 3) dead = false;
-        h += '<div class="cr"><span>' + tName(t) + '<br>' + markStr(p.marks[t]) + '</span>' +
+        h += '<div class="cr"><span>' + tName(t) + crMk(p.marks[t]) + '</span>' +
           '<button data-cn="' + t + '" data-cm="1"' + (dead ? ' class="x"' : '') + '>' + (t === 25 ? '25' : 'S') + '</button>' +
           '<button data-cn="' + t + '" data-cm="2"' + (dead ? ' class="x"' : '') + '>' + (t === 25 ? '50' : 'D') + '</button>' +
           (t === 25 ? '<button style="visibility:hidden"></button>' : '<button data-cn="' + t + '" data-cm="3"' + (dead ? ' class="x"' : '') + '>T</button>') + '</div>';
@@ -1297,10 +1377,10 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       if ((a = attr(t, 'data-c')) !== null) { pushUndo(); bobsCount(+a); return after(); }
       if ((a = attr(t, 'data-cn')) !== null) { pushUndo(); cricketDart(+a, +attr(t, 'data-cm')); return after(); }
       if ((a = attr(t, 'data-kt')) !== null) { pushUndo(); killerDart(+a, +attr(t, 'data-km')); return after(); }
-      if ((a = attr(t, 'data-q')) !== null) { typed = ''; submitScore(+a); return; }
+      if ((a = attr(t, 'data-q')) !== null) { typed = a; msg = ''; render(); return; }
       if ((a = attr(t, 'data-k')) !== null) {
         if (a === 'del') typed = typed.slice(0, -1);
-        else if (a === 'ok') { if (typed === '') { msg = 'Erst Punkte eingeben'; render(); return; } submitScore(parseInt(typed, 10)); return; }
+        else if (a === 'ok') { submitScore(typed === '' ? 0 : parseInt(typed, 10)); return; }
         else if (typed.length < 3) typed = (typed === '0' ? '' : typed) + a;
         msg = ''; render(); return;
       }
@@ -1328,6 +1408,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     else if (a === 'tomenu') { screen = 'menu'; G = null; undo = []; save(); render(); }
     else if (a === 'match') { G = null; xhr('PUT', '/api/board/' + N, { status: 'idle' }, function () { location.href = '/' + N; }); }
     else if (a === 'again') { var cfg = G.cfg ? clone(G.cfg) : { game: G.game, players: G.players.map(function (p) { return p.name; }), atc: G.opts.mode, start: G.opts.start, rounds: G.opts.rounds, own: G.opts.own, nums: {} }; for (var i = 0; i < G.players.length; i++) if (G.game === 'killer') cfg.nums[G.players[i].name] = G.pd[i].num; G = newGame(cfg); undo = []; screen = 'play'; banner('Game on!'); save(); render(); }
+    else if (a === 'rest') submitRest();
     else if (a === 'undo') {
       if (!undo.length) { toast('Nichts zum Rückgängigmachen'); return; }
       if (G && G.finished && savedIds.length) { for (var d = 0; d < savedIds.length; d++) xhr('DELETE', '/api/results/' + savedIds[d], null, function () {}); savedIds = []; }
@@ -1394,7 +1475,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     var k = e.key || '';
     if (/^[0-9]$/.test(k) && typed.length < 3) { typed = (typed === '0' ? '' : typed) + k; render(); }
     else if (k === 'Backspace') { typed = typed.slice(0, -1); render(); }
-    else if (k === 'Enter' && typed) submitScore(parseInt(typed, 10));
+    else if (k === 'Enter' && inputKind() === 'score') submitScore(typed === '' ? 0 : parseInt(typed, 10));
   }, false);
   window.addEventListener('resize', scale, false);
 

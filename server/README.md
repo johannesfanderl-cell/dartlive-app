@@ -28,8 +28,9 @@ Das Terminal-Fenster offen lassen. Beenden mit Strg + C.
 - Auswahlseite:  http://192.168.68.222:3000/
 
 ## Am Tablet
-Namen eingeben (zuletzt benutzte antippen), 301/501/701, Gewinn-Legs, Double Out, Beginner → Spiel starten.
-Pro Aufnahme die Summe der 3 Darts eintippen und OK (oder Schnelltaste). Überworfen wird automatisch erkannt.
+Namen eingeben (zuletzt benutzte antippen, „+ Spieler“ für bis zu 4 Spieler), 170/301/501, Gewinn-Legs, Double Out, Beginner → Spiel starten.
+Pro Aufnahme die Summe der 3 Darts eintippen (oder Schnelltaste antippen) und mit OK bestätigen. OK ohne Eingabe = 0 Punkte. Überworfen wird automatisch erkannt.
+Average = Punkte ÷ geworfene Darts × 3 (Bust zählt 3 Darts mit 0 Punkten, beim Checkout zählen nur die geworfenen Darts). Angezeigt: Ø Spiel und Ø Leg, letzte 6 Aufnahmen.
 Oder den Rest eintippen und „Rest-Score“ (z. B. 121, 61 geworfen → 60 eintippen → „Rest-Score“; 0 = Checkout).
 Bei Double Out fragt das Tablet beim Checkout, ob mit einem Doppel beendet wurde. Keine Checkout-Hinweise.
 „Rückgängig“ nimmt die letzte Aufnahme zurück. Spielstände bleiben bei einem Server-Neustart erhalten.

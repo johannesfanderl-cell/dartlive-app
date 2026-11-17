@@ -52,6 +52,29 @@ table.duo2 .nm { font-size: 1.15em; line-height: 1.3; white-space: nowrap; overf
 table.duo2 .nm i { display: inline; float: none; font-size: 0.85em; margin: 0 0 0 0.6em; opacity: 0.8; }
 table.duo2 .rm { font-size: 3.9em; line-height: 1.05; }
 table.duo2 td.sts { background: #0b2d6b; color: #fff; border-top: 0.1em solid #3f6fbf; padding: 0.15em 0.2em; }
+.pn.mp .pb .rm { font-size: 3em; } .pn.mp4 .pb .rm { font-size: 2.1em; } .pn.mp .pb .nm { font-size: 1em; } .pn.mp4 .pb .st { font-size: 0.8em; }
+table.duo2.n4 .nm { font-size: 0.95em; } table.duo2.n4 .nm i { font-size: 0.75em; }
+table.duo.n3 .rm { font-size: 6em; } table.duo.n4 .rm { font-size: 4.6em; } table.duo.n4 .nm { font-size: 1.5em; }
+table.duo2.n3 .rm, table.duo2.n4 .rm { font-size: 3.2em; }
+.win p { font-size: 1.2em; margin-top: 0.2em; }
+table.crb { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+table.crb th, table.crb td { text-align: center; vertical-align: middle; border-bottom: 0.06em solid #23498f; padding: 0; }
+table.crb th { font-weight: bold; padding: 0.15em 0.2em; background: #10377f; }
+table.crb th span { display: block; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9em; }
+table.crb th b { display: block; font-size: 1.9em; line-height: 1.05; }
+table.crb th small { display: block; font-weight: normal; font-size: 0.7em; opacity: 0.85; }
+table.crb th.on { background: #dfe6f0; color: #071d47; }
+table.crb th.nh { width: 22%; background: #0b2d6b; }
+table.crb td.num { font-weight: bold; font-size: 1.35em; background: #0b2d6b; color: #fff; }
+table.crb td.on { background: rgba(223,230,240,0.12); }
+table.crb tr.dead td.num { color: #6f86b3; text-decoration: line-through; }
+table.crb tr.dead .mk { opacity: 0.45; }
+table.crb .mk { font-style: normal; font-weight: bold; display: inline-block; width: 1.45em; height: 1.45em; line-height: 1.4em; font-size: 1.5em; }
+table.crb .mk.m0 { opacity: 0.3; }
+table.crb .mk.m1 { color: #b7d3ff; }
+table.crb .mk.m2 { color: #fff; }
+table.crb .mk.m3 { color: #ffd34d; border: 0.11em solid #ffd34d; border-radius: 50%; line-height: 1.25em; }
+.crw { overflow: hidden; display: flex; flex-direction: column; } .crw .crt { flex: 1 1 auto; } .crw .cur { flex: 0 0 auto; text-align: center; font-size: 1.1em; padding: 0.2em; color: #b7d3ff; }
 .pn.mon .hd { height: 1.7em; padding-top: 0.15em; }
 .pn.mon .hd b { display: inline; font-size: 1em; } .pn.mon .hd span { display: inline; font-size: 0.85em; margin-left: 0.8em; }
 table.cells { width: 100%; border-collapse: collapse; table-layout: fixed; }
@@ -139,7 +162,29 @@ body.single .intro .st { font-size: 1.6em; }
   var base = 20;
 
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function avg(p) { return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–'; }
+  // 3-Dart-Average: Punkte / geworfene Darts × 3 (wie am Tablet; beim Checkout zählen nur die geworfenen Darts)
+  function avg(p) { if (p.darts) return (p.sum / p.darts * 3).toFixed(1).replace('.', ','); return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–'; }
+  /* Cricket-Tafel (wie im Training): Treffer als / (1), X (2), eingekreistes X (3 = zu) */
+  function crMk(m) { return m >= 3 ? '<i class="mk m3">✕</i>' : (m === 2 ? '<i class="mk m2">✕</i>' : (m === 1 ? '<i class="mk m1">/</i>' : '<i class="mk m0">·</i>')); }
+  function crLevel(v) { return v < 1.5 ? 'Einsteiger' : (v < 2.3 ? 'Hobbyspieler' : (v < 3 ? 'Liga-/Vereinsspieler' : (v < 4 ? 'starker Turnierspieler' : 'Profi-Niveau'))); }
+  function crBoardHTML(d) {
+    var P = d.pl, np = P.length, two = np === 2, h = '<table class="crb n' + np + '"><tr>', i, r, t;
+    function th(p) { return '<th' + (p.on ? ' class="on"' : '') + '><span>' + (p.on ? '▶ ' : '') + esc(p.name) + '</span><b>' + p.pts + '</b><small>MPR ' + (p.mpr == null ? '–' : String(p.mpr.toFixed(2)).replace('.', ',')) + '</small></th>'; }
+    if (two) h += th(P[0]) + '<th class="nh"></th>' + th(P[1]);
+    else { h += '<th class="nh"></th>'; for (i = 0; i < np; i++) h += th(P[i]); }
+    h += '</tr>';
+    for (r = 0; r < d.nums.length; r++) {
+      t = d.nums[r];
+      var dead = true; for (i = 0; i < np; i++) if (P[i].m[t] < 3) dead = false;
+      var num = '<td class="num">' + (t === 25 ? 'Bull' : t) + '</td>';
+      h += '<tr' + (dead && np > 1 ? ' class="dead"' : '') + '>';
+      if (two) h += '<td>' + crMk(P[0].m[t]) + '</td>' + num + '<td>' + crMk(P[1].m[t]) + '</td>';
+      else { h += num; for (i = 0; i < np; i++) h += '<td' + (P[i].on ? ' class="on"' : '') + '>' + crMk(P[i].m[t]) + '</td>'; }
+      h += '</tr>';
+    }
+    return h + '</table>';
+  }
+  function lastOf(p, k) { return p.last && p.last.length ? ' &nbsp;·&nbsp; ' + esc(p.last.slice(-k).join('  ')) : ''; }
   function el(id) { return document.getElementById(id); }
 
   function sizes() {
@@ -166,6 +211,10 @@ body.single .intro .st { font-size: 1.6em; }
       h = '<div class="pn' + (rows.length > 2 ? ' many' : '') + (rows.length > 4 ? ' lots' : '') + '" id="pn' + n + '">';
       h += single ? '<div class="hd"><b>' + esc(vw.title) + '</b><span>' + esc(vw.sub || '') + '</span></div>'
                   : '<div class="hd"><b>Scheibe ' + n + '</b><span>' + esc(vw.title) + ' · ' + esc(vw.sub || '') + '</span></div>';
+      if (vw.cr) {
+        h += '<div class="crw" id="crw' + n + '"><div class="crt">' + crBoardHTML(vw.cr) + '</div>' + (vw.cur ? '<div class="cur">' + esc(vw.cur) + '</div>' : '') + '</div>';
+        rows = [];
+      }
       for (var t = 0; t < rows.length; t++) {
         var rw = rows[t];
         h += '<div class="pb tr' + (rw.on ? ' on' : '') + '"><div class="pbi">' +
@@ -177,28 +226,36 @@ body.single .intro .st { font-size: 1.6em; }
     } else if (b.status === 'play' && b.players && single && b.players[0].legv) {
       h = h.replace('<div class="pn"', '<div class="pn mon"') + monitorHTML(n, b);
     } else if (b.status === 'play' && b.players && single) {
-      h += '<table class="duo"><tr>';
-      for (var d = 0; d < 2; d++) {
+      var nd = b.players.length;
+      h += '<table class="duo n' + nd + '"><tr>';
+      for (var d = 0; d < nd; d++) {
         var q = b.players[d];
-        h += '<td class="' + (d === 0 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
+        h += '<td class="' + (d < nd - 1 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
           '<div class="nm">' + (b.turn === d ? '&#9654; ' : '') + esc(q.name) + '<i>Legs ' + q.legs + '</i></div>' +
           '<div class="rm">' + q.rem + '</div>' +
-          '<div class="st">&Oslash; ' + avg(q) + (q.last && q.last.length ? ' &nbsp;·&nbsp; ' + esc(q.last.join('  ')) : '') + '</div></td>';
+          '<div class="st">&Oslash; ' + avg(q) + lastOf(q, nd > 2 ? 3 : 6) + '</div></td>';
       }
       h += '</tr></table>';
     } else if (b.status === 'play' && b.players) {
-      for (var i = 0; i < 2; i++) {
+      var npl = b.players.length;
+      if (npl > 2) h = h.replace('<div class="pn"', '<div class="pn mp' + (npl > 3 ? ' mp4' : '') + '"');
+      for (var i = 0; i < npl; i++) {
         var p = b.players[i];
         h += '<div class="pb' + (b.turn === i ? ' on' : '') + '"><div class="pbi">' +
           '<div class="nm"><i>' + p.legs + '</i>' + (b.turn === i ? '&#9654; ' : '') + esc(p.name) + '</div>' +
           '<div class="rm">' + p.rem + '</div>' +
-          '<div class="st">&Oslash; ' + avg(p) + (p.last && p.last.length ? ' &nbsp;·&nbsp; ' + esc(p.last.join('  ')) : '') + '</div>' +
+          '<div class="st">&Oslash; ' + avg(p) + lastOf(p, 3) + '</div>' +
           '</div></div>';
       }
     } else if (b.status === 'done' && b.players) {
       var w = b.players[b.winner], l = b.players[1 - b.winner];
-      h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
+      if (b.players.length === 2) h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
         '<small>gegen ' + esc(l.name) + '</small></div></div>';
+      else {
+        var rk = b.players.slice().sort(function (x, y) { return y.legs - x.legs; }), rs = '';
+        for (var ri = 1; ri < rk.length; ri++) rs += '<p>' + (ri + 1) + '. ' + esc(rk[ri].name) + ' &middot; ' + rk[ri].legs + ' Legs</p>';
+        h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' Legs</em>' + rs + '</div></div>';
+      }
     } else {
       var spIt = window.Sponsor && Sponsor.data && Sponsor.data.idle ? Sponsor.current(n) : null;
       if (spIt) h += '<div class="idle spon">' + Sponsor.slide(spIt, 'Scheibe frei') + '</div>';
@@ -214,31 +271,37 @@ body.single .intro .st { font-size: 1.6em; }
   function legAvg(p) { var s = 0; for (var i = 0; i < p.legv.length; i++) if (!p.legv[i][2]) s += p.legv[i][0]; return p.ld ? num1(s / p.ld * 3) : '–'; }
   function cell(t, v) { return '<td><small>' + t + '</small><b>' + v + '</b></td>'; }
   function monitorHTML(n, b) {
-    var h = '<table class="duo duo2"><tr>', d, q;
-    for (d = 0; d < 2; d++) {
-      q = b.players[d];
-      h += '<td class="top ' + (d === 0 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
+    var P = b.players, np = P.length;
+    var h = '<table class="duo duo2 n' + np + '"><tr>', d, q;
+    for (d = 0; d < np; d++) {
+      q = P[d];
+      h += '<td class="top ' + (d < np - 1 ? 'l' : 'r') + (b.turn === d ? ' on' : '') + '">' +
         '<div class="nm">' + (b.turn === d ? '&#9654; ' : '') + esc(q.name) + '<i>Legs ' + q.legs + '</i></div>' +
         '<div class="rm">' + q.rem + '</div></td>';
     }
     h += '</tr><tr>';
-    for (d = 0; d < 2; d++) {
-      q = b.players[d];
-      h += '<td class="sts ' + (d === 0 ? 'l' : 'r') + '"><table class="cells"><tr>' +
+    for (d = 0; d < np; d++) {
+      q = P[d];
+      h += '<td class="sts ' + (d < np - 1 ? 'l' : 'r') + '"><table class="cells"><tr>' + (np === 2 ?
         cell('100+', q.c100 || 0) + cell('140+', q.c140 || 0) + cell('180', q.c180 || 0) + cell('Darts im Leg', q.ld || 0) + '</tr><tr>' +
-        cell('&Oslash; Spiel', avg(q)) + cell('&Oslash; Leg', legAvg(q)) + cell('First 9', q.f9n ? num1(q.f9s / q.f9n) : '–') + cell('Bestes Leg', q.bl || '–') + '</tr></table></td>';
+        cell('&Oslash; Spiel', avg(q)) + cell('&Oslash; Leg', legAvg(q)) + cell('First 9', q.f9n ? num1(q.f9s / q.f9n) : '–') + cell('Bestes Leg', q.bl || '–') :
+        cell('&Oslash; Spiel', avg(q)) + cell('&Oslash; Leg', legAvg(q)) + cell('First 9', q.f9n ? num1(q.f9s / q.f9n) : '–') + '</tr><tr>' +
+        cell('100+', q.c100 || 0) + cell('180', q.c180 || 0) + cell('Darts', q.ld || 0)) + '</tr></table></td>';
     }
     h += '</tr></table><div class="vl" id="vl' + n + '"><div class="vli"><table class="vt">';
-    var A = b.players[0], B = b.players[1], rows = Math.max(A.legv.length, B.legv.length);
+    var rows = 0; for (d = 0; d < np; d++) rows = Math.max(rows, (P[d].legv || []).length);
     function side(p, k, left) {
-      var v = p.legv[k];
+      var v = (p.legv || [])[k];
       if (k < 0) return left ? '<td class="sc"></td><td class="rs">' + (p.start || b.start) + '</td>' : '<td class="sc"></td><td class="rs">' + (p.start || b.start) + '</td>';
       if (!v) return '<td></td><td></td>';
       var sc = '<td class="sc' + (v[2] ? ' bu' : '') + '">' + v[0] + '</td>', rs = '<td class="rs">' + v[1] + '</td>';
       return sc + rs;
     }
     for (var k = -1; k < rows; k++) {
-      h += '<tr' + (k === rows - 1 ? ' class="cur"' : '') + '>' + side(A, k, true) + '<td class="dc">' + ((k + 1) * 3) + '</td>' + side(B, k, false) + '</tr>';
+      var row = '';
+      if (np === 2) row = side(P[0], k, true) + '<td class="dc">' + ((k + 1) * 3) + '</td>' + side(P[1], k, false);
+      else { row = '<td class="dc">' + ((k + 1) * 3) + '</td>'; for (d = 0; d < np; d++) row += side(P[d], k, d === 0); }
+      h += '<tr' + (k === rows - 1 ? ' class="cur"' : '') + '>' + row + '</tr>';
     }
     h += '</table></div></div>';
     return h;
@@ -267,7 +330,14 @@ body.single .intro .st { font-size: 1.6em; }
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
         if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
-        else if (/^idle/.test(c) || c === 'win' || (/duo/.test(c) && !/duo2/.test(c))) kids[k].style.height = rest + 'px';
+        else if (/^idle/.test(c) || c === 'win' || c === 'crw' || (/duo/.test(c) && !/duo2/.test(c))) kids[k].style.height = rest + 'px';
+      }
+      var cw = el('crw' + list[j]);
+      if (cw) {
+        var cu = cw.childNodes[1], cav = cw.offsetHeight - (cu ? cu.offsetHeight : 0), ctb = cw.firstChild.firstChild, cf = 1;
+        cw.firstChild.style.height = cav + 'px';
+        // Tafel so weit verkleinern, dass alle Zahlen sichtbar sind
+        while (ctb && ctb.offsetHeight > cav + 1 && cf > 0.35) { cf -= 0.05; ctb.style.fontSize = cf + 'em'; }
       }
       var vl = el('vl' + list[j]);
       if (vl) {
