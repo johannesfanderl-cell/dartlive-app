@@ -121,6 +121,7 @@ input { font-family: inherit; }
   if (!(N >= 1 && N <= 5)) { N = parseInt((location.search.match(/s=(\d)/) || [])[1], 10) || 1; }
   document.getElementById('bn').innerHTML = N;
   document.title = 'Dart Live – Scheibe ' + N;
+  if (window.DART_PWA) { document.getElementById('top').getElementsByTagName('b')[0].innerHTML = 'Dart Spiel'; document.title = 'Dart Spiel'; }
 
   var IMPOSSIBLE = { 163: 1, 166: 1, 169: 1, 172: 1, 173: 1, 175: 1, 176: 1, 178: 1, 179: 1 };
   var QUICK = [0, 26, 41, 45, 60, 81, 85, 100, 140, 180];
@@ -235,7 +236,7 @@ input { font-family: inherit; }
       if (!loaded) {
         loaded = true;
         var b = data.boards && data.boards[N];
-        if (b && b.status === 'training' && b.g && !b.g.finished) { location.replace('/t' + N); return; }
+        if (b && b.status === 'training' && b.g && !b.g.finished) { location.replace(window.DART_PWA ? 'index.html' : '/t' + N); return; }
         if (b && (b.status === 'play' || b.status === 'done')) board = b;
         if (b && (b.status === 'play' || b.status === 'done') && b.players && b.players.length >= 2 && !b.tmatch && !b.vliga) {
           setup.np = Math.min(4, b.players.length);
@@ -609,7 +610,7 @@ input { font-family: inherit; }
       rn = rn.slice(1).concat(rn.slice(0, 1)); // Reihenfolge rotieren: der bisherige Zweite beginnt
       startMatch(rn[0], rn[1], board.start, board.legsToWin, board.doubleOut, 0, null, null, null, rn.slice(2));
     } else if (a === 'new') { board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
-    else if (a === 'training') { location.href = '/t' + N; }
+    else if (a === 'training') { location.href = window.DART_PWA ? 'index.html' : '/t' + N; }
     else if (a === 'hcsuggest') { readNames(); suggestHandicap(); }
     else if (a === 'vliga') { readNames(); chooseVliga(); }
     else if (a === 'free') { setup.n1 = ''; setup.n2 = ''; board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }

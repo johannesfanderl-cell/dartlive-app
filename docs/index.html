@@ -1181,7 +1181,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (setup.game === 'killer') h += '<p class="note">Jeder wirft seine Zahl mit der schwachen Hand und trägt sie neben dem Namen ein (1–20, jede Zahl nur einmal).</p>';
     h += '<div class="hint">' + esc(msg) + '</div>';
     h += '<button class="big" data-a="start">Training starten</button>';
-    h += '<div class="row2"><button class="big sec" data-a="best">Bestenliste</button>' + (window.DART_PWA ? '' : '<button class="big sec" data-a="match">Zum Spielmodus</button>') + '</div></div>';
+    h += '<div class="row2"><button class="big sec" data-a="best">Bestenliste</button>' + '<button class="big sec" data-a="match">' + (window.DART_PWA ? 'X01-Spiel' : 'Zum Spielmodus') + '</button>' + '</div></div>';
     return h;
   }
   function optHTML(label, key, vals, cur) {
@@ -1413,7 +1413,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     else if (a === 'start') startTraining();
     else if (a === 'best') { screen = 'best'; render(); loadResults(render); }
     else if (a === 'tomenu') { screen = 'menu'; G = null; undo = []; save(); render(); }
-    else if (a === 'match') { G = null; xhr('PUT', '/api/board/' + N, { status: 'idle' }, function () { location.href = '/' + N; }); }
+    else if (a === 'match') { G = null; xhr('PUT', '/api/board/' + N, { status: 'idle' }, function () { location.href = window.DART_PWA ? 'spiel.html' : '/' + N; }); }
     else if (a === 'again') { var cfg = G.cfg ? clone(G.cfg) : { game: G.game, players: G.players.map(function (p) { return p.name; }), atc: G.opts.mode, start: G.opts.start, rounds: G.opts.rounds, own: G.opts.own, nums: {} }; for (var i = 0; i < G.players.length; i++) if (G.game === 'killer') cfg.nums[G.players[i].name] = G.pd[i].num; G = newGame(cfg); undo = []; screen = 'play'; banner('Game on!'); save(); render(); }
     else if (a === 'rest') submitRest();
     else if (a === 'undo') {

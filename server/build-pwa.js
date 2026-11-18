@@ -7,7 +7,8 @@ const pub = path.join(__dirname, 'public');
 fs.mkdirSync(out, { recursive: true });
 const ver = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12);
 
-let html = fs.readFileSync(path.join(pub, 'training.html'), 'utf8');
+function page(file, title) {
+let html = fs.readFileSync(path.join(pub, file), 'utf8');
 const head = [
   '<script>window.DART_PWA = true;</script>',
   '<script src="local-core.js"></script>',
@@ -16,12 +17,16 @@ const head = [
   '<meta name="apple-mobile-web-app-capable" content="yes">',
   '<meta name="mobile-web-app-capable" content="yes">',
   '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
-  '<meta name="apple-mobile-web-app-title" content="Dart Training">'
+  '<meta name="apple-mobile-web-app-title" content="' + title + '">'
 ].join('\n');
 if (html.indexOf('<script src="/local.js"></script>') < 0) throw new Error('local.js-Einbindung nicht gefunden');
 html = html.replace('<script src="/local.js"></script>', head).replace(/href="\/icon\.svg"/g, 'href="icon.svg"');
 html = html.replace('</body>', '<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>\n</body>');
-fs.writeFileSync(path.join(out, 'index.html'), html);
+return html;
+}
+// Training = Startseite der Web-App, dazu das X01-Spiel (Tablet-Eingabe) als spiel.html
+fs.writeFileSync(path.join(out, 'index.html'), page('training.html', 'Dart Training'));
+fs.writeFileSync(path.join(out, 'spiel.html'), page('tablet.html', 'Dart Training'));
 for (const f of ['local-core.js', 'icon.svg']) fs.copyFileSync(path.join(pub, f), path.join(out, f));
 for (const f of ['icon-180.png', 'icon-512.png']) if (fs.existsSync(path.join(__dirname, 'pwa-icons', f))) fs.copyFileSync(path.join(__dirname, 'pwa-icons', f), path.join(out, f));
 
@@ -33,7 +38,7 @@ fs.writeFileSync(path.join(out, 'manifest.webmanifest'), JSON.stringify({
 
 // Service Worker: alles zwischenspeichern, damit die App ohne Internet startet. Neue Version = neuer Cache-Name.
 fs.writeFileSync(path.join(out, 'sw.js'), `var C = 'dart-training-${ver}';
-var FILES = ['./', 'index.html', 'local-core.js', 'icon.svg', 'icon-180.png', 'icon-512.png', 'manifest.webmanifest'];
+var FILES = ['./', 'index.html', 'spiel.html', 'local-core.js', 'icon.svg', 'icon-180.png', 'icon-512.png', 'manifest.webmanifest'];
 self.addEventListener('install', function (e) { self.skipWaiting(); e.waitUntil(caches.open(C).then(function (c) { return c.addAll(FILES); })); });
 self.addEventListener('activate', function (e) { e.waitUntil(caches.keys().then(function (k) { return Promise.all(k.filter(function (n) { return n !== C; }).map(function (n) { return caches.delete(n); })); }).then(function () { return self.clients.claim(); })); });
 self.addEventListener('fetch', function (e) {

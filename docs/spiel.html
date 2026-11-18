@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script>window.DART_PWA = true;</script>
+<script src="local-core.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dart Training">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#071d47">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Dart Live – Scheibe</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 1rem; overflow: hidden;
+  -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+button { font-family: inherit; color: inherit; border: 0; background: none; cursor: pointer; touch-action: manipulation; }
+input { font-family: inherit; }
+
+#app { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; }
+#top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; padding: .35rem .9rem; background: #0b2d6b; border-bottom: .15rem solid #fff; }
+#top b { font-size: 1.25rem; letter-spacing: .08em; text-transform: uppercase; }
+#top b span { color: #8cc4ff; }
+#net { font-size: .85rem; color: #b7d3ff; }
+#net.bad { color: #ffb3b3; font-weight: bold; }
+#main { flex: 1 1 auto; position: relative; overflow: hidden; }
+
+/* ---------- Einrichten ---------- */
+.setup { height: 100%; overflow-y: auto; padding: .8rem 1rem 1rem; }
+.setup h2 { font-size: 1.3rem; margin-bottom: .6rem; text-transform: uppercase; letter-spacing: .06em; }
+.row { display: flex; align-items: center; margin-bottom: .55rem; }
+.row label { flex: 0 0 9rem; font-size: 1rem; color: #b7d3ff; }
+.row input { flex: 1 1 auto; font-size: 1.25rem; padding: .45rem .6rem; border-radius: .4rem; border: .15rem solid #3f6fbf; background: #fff; color: #071d47; -webkit-user-select: text; user-select: text; }
+.row input.on { border-color: #8cc4ff; box-shadow: 0 0 0 .2rem rgba(140,196,255,.5); }
+.chips { margin: 0 0 .7rem 9rem; }
+.chips button { display: inline-block; margin: 0 .35rem .35rem 0; padding: .35rem .7rem; border-radius: 1rem; background: #10377f; border: .1rem solid #3f6fbf; font-size: .95rem; }
+.seg { display: flex; flex: 1 1 auto; }
+.seg button { flex: 1 1 0; padding: .55rem .3rem; font-size: 1.1rem; background: #10377f; border: .1rem solid #3f6fbf; margin-right: .3rem; border-radius: .4rem; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; border-color: #fff; }
+.step { display: flex; align-items: center; }
+.step button { width: 3rem; height: 2.6rem; font-size: 1.5rem; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.step span { min-width: 3rem; text-align: center; font-size: 1.5rem; font-weight: bold; }
+.big { display: block; width: 100%; padding: .8rem; margin-top: .6rem; font-size: 1.5rem; font-weight: bold; letter-spacing: .08em; text-transform: uppercase; background: #fff; color: #071d47; border-radius: .5rem; }
+.big.sec { background: #10377f; color: #fff; border: .12rem solid #3f6fbf; }
+.hint { color: #ffb3b3; min-height: 1.3rem; font-size: 1rem; margin-top: .3rem; }
+
+/* ---------- Spiel ---------- */
+.play { height: 100%; display: flex; }
+.side { flex: 1 1 50%; display: flex; flex-direction: column; padding: .6rem; }
+.pad { flex: 1 1 50%; display: flex; flex-direction: column; padding: .6rem .6rem .6rem 0; }
+.info { font-size: .95rem; color: #b7d3ff; text-align: center; margin-bottom: .4rem; }
+.pl { flex: 1 1 0; display: flex; flex-direction: column; justify-content: center; border: .15rem solid #3f6fbf; border-radius: .6rem; padding: .4rem .8rem; margin-bottom: .5rem; background: #10377f; position: relative; }
+.pl:last-child { margin-bottom: 0; }
+.pl.on { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; }
+.side.multi .pl .rm { font-size: 3.2rem; }
+.side.multi .pl .nm { font-size: 1.1rem; }
+.side.multi .pl .st { font-size: .8rem; }
+.pl .nm { font-size: 1.35rem; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 4.5rem; }
+.pl .lg { position: absolute; top: .4rem; right: .8rem; font-size: 1.1rem; font-weight: bold; }
+.pl .rm { font-size: 4.6rem; font-weight: bold; line-height: 1; }
+.pl .st { font-size: .9rem; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pl .tw { font-size: .85rem; font-weight: bold; color: #0b2d6b; }
+.disp { display: flex; align-items: center; justify-content: space-between; background: #dfe6f0; color: #071d47; border-radius: .5rem; padding: .2rem .8rem; margin-bottom: .45rem; min-height: 3.6rem; }
+.disp .who { font-size: 1rem; font-weight: bold; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+.disp .val { font-size: 2.6rem; font-weight: bold; }
+.disp .val.ph { font-size: 1.1rem; color: #6a7fa3; font-weight: normal; font-style: italic; }
+.quick { display: flex; flex-wrap: wrap; margin-bottom: .2rem; }
+.quick button { flex: 1 1 18%; margin: 0 .25rem .25rem 0; padding: .85rem 0; font-size: 1.5rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .35rem; }
+.keys { flex: 1 1 auto; display: flex; flex-wrap: wrap; }
+.keys button { flex: 0 0 32.3%; margin: 0 1% 1% 0; font-size: 2rem; font-weight: bold; background: #10377f; border: .1rem solid #3f6fbf; border-radius: .45rem; }
+.keys button.ok { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; font-size: 1.8rem; }
+.quick button.sel { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; }
+.acts button.rest { background: #c9a227; color: #071d47; border-color: #c9a227; font-weight: bold; }
+.val small.rhint { display: block; font-size: .8rem; font-weight: normal; color: #44608f; letter-spacing: 0; }
+.keys button:active, .quick button:active, .acts button:active { background: #3f6fbf; }
+.acts { display: flex; margin-top: .25rem; }
+.acts button { flex: 1 1 0; margin-right: .3rem; padding: 1rem 0; font-size: 1.4rem; font-weight: bold; background: #0b2d6b; border: .1rem solid #3f6fbf; border-radius: .4rem; }
+.acts button:last-child { margin-right: 0; }
+.err { color: #ffb3b3; font-weight: bold; }
+
+/* ---------- Ende ---------- */
+.done { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; }
+.done h1 { font-size: 2.6rem; text-transform: uppercase; letter-spacing: .04em; }
+.done .res { font-size: 4.4rem; font-weight: bold; margin: .3rem 0; }
+.done p { color: #b7d3ff; font-size: 1.1rem; margin-bottom: .3rem; }
+.done .btns { width: 70%; max-width: 30rem; }
+
+/* ---------- Dialog / Meldung ---------- */
+#dlg { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.65); z-index: 10; }
+#dlg .box { position: absolute; top: 50%; left: 50%; width: 26rem; max-width: 92%; transform: translate(-50%,-50%); -webkit-transform: translate(-50%,-50%); background: #fff; color: #071d47; border-radius: .7rem; padding: 1.1rem; text-align: center; }
+#dlg h3 { font-size: 1.5rem; margin-bottom: .4rem; }
+#dlg p { font-size: 1.05rem; margin-bottom: .7rem; }
+#dlg button { display: block; width: 100%; padding: .7rem; margin-top: .4rem; font-size: 1.2rem; font-weight: bold; border-radius: .45rem; background: #0b2d6b; color: #fff; }
+#dlg button.sec { background: #e3ebf7; color: #071d47; }
+#toast { display: none; position: absolute; left: 50%; bottom: 1rem; transform: translateX(-50%); -webkit-transform: translateX(-50%); background: #fff; color: #071d47; font-weight: bold; font-size: 1.2rem; padding: .6rem 1.2rem; border-radius: .5rem; z-index: 11; box-shadow: 0 .2rem 1rem rgba(0,0,0,.5); }
+
+@media (orientation: portrait) {
+  .play { flex-direction: column; }
+  .side { flex: 0 0 auto; padding-bottom: 0; }
+  .pl { flex: 0 0 auto; }
+  .pad { padding: .6rem; }
+  .row label { flex-basis: 7rem; }
+  .chips { margin-left: 7rem; }
+  .side.multi { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+  .side.multi .info { flex: 0 0 100%; }
+  .side.multi .pl { flex: 0 0 49.3%; margin-bottom: .3rem; }
+  .side.multi .pl:last-child { margin-bottom: .3rem; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top"><b>Scheibe <span id="bn">?</span></b><span><button id="caller" style="color:#fff;font-size:1.1rem;margin-right:.8rem" title="Caller ein/aus">🔊</button><span id="net">verbinde …</span></span></div>
+  <div id="main"></div>
+</div>
+<div id="dlg"><div class="box" id="dlgbox"></div></div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+  var N = parseInt(location.pathname.replace(/[^0-9]/g, ''), 10);
+  if (!(N >= 1 && N <= 5)) { N = parseInt((location.search.match(/s=(\d)/) || [])[1], 10) || 1; }
+  document.getElementById('bn').innerHTML = N;
+  document.title = 'Dart Live – Scheibe ' + N;
+  if (window.DART_PWA) { document.getElementById('top').getElementsByTagName('b')[0].innerHTML = 'Dart Spiel'; document.title = 'Dart Spiel'; }
+
+  var IMPOSSIBLE = { 163: 1, 166: 1, 169: 1, 172: 1, 173: 1, 175: 1, 176: 1, 178: 1, 179: 1 };
+  var QUICK = [0, 26, 41, 45, 60, 81, 85, 100, 140, 180];
+
+  var board = { status: 'idle' };
+  var names = [];
+  var undo = [];
+  var typed = '';
+  var msg = '';
+  var setup = { n1: '', n2: '', n3: '', n4: '', np: 2, start: 501, legs: 2, dout: true, first: 0, active: 0, hc: false, s1: 501, s2: 501 };
+
+  /* ---------- Caller (Sprachausgabe) ---------- */
+  var callerOn = true;
+  try { callerOn = localStorage.getItem('caller') !== 'aus'; } catch (e) {}
+  function say(text) {
+    if (!callerOn || !text) return;
+    try {
+      if (window.DartApp && window.DartApp.say) { window.DartApp.say(text); return; }
+      if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
+        window.speechSynthesis.cancel();
+        var u = new SpeechSynthesisUtterance(text); u.lang = 'de-DE'; u.rate = 1.05;
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) { /* keine Sprachausgabe verfügbar */ }
+  }
+  function showCaller() { var b = document.getElementById('caller'); if (b) b.innerHTML = callerOn ? '🔊' : '🔇'; }
+  // Ansage nach einer Aufnahme: Punkte und Rest des nächsten Spielers (nur der Rest – keine Checkout-Wege)
+  function callVisit(score, bust) {
+    var nx = board.players[board.turn];
+    var t = bust ? 'Überworfen' : (score === 0 ? 'Kein Score' : String(score) + (score === 180 ? '!' : ''));
+    if (board.status === 'play' && nx && nx.rem <= 170) t += '. ' + firstName(nx) + ', du brauchst ' + nx.rem;
+    say(t);
+  }
+  function firstName(p) { return board.doubles && board.members ? board.members[board.turn][(p.lv || 0) % 2] : p.name; }
+  var dirty = false, saving = false, loaded = false;
+  var tour = null, ver = 0, lastAssign = '';
+
+  /* ---------- Hilfen ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function avg(p) {
+    if (p.darts) return (p.sum / p.darts * 3).toFixed(1).replace('.', ',');
+    return p.visits ? (p.sum / p.visits).toFixed(1).replace('.', ',') : '–';
+  }
+  function legAvg(p) {
+    var s = 0, v = p.legv || [];
+    for (var i = 0; i < v.length; i++) if (!v[i][2]) s += v[i][0];
+    return p.ld ? (s / p.ld * 3).toFixed(1).replace('.', ',') : '–';
+  }
+  function $(id) { return document.getElementById(id); }
+  function nextTurn() { board.turn = (board.turn + 1) % board.players.length; }
+
+  function xhr(method, url, body, cb) {
+    var r = new XMLHttpRequest();
+    r.open(method, url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    r.timeout = 8000;
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4) return;
+      var data = null;
+      try { data = JSON.parse(r.responseText); } catch (e) { data = null; }
+      cb(r.status >= 200 && r.status < 300 ? null : (r.status || 'Netz'), data);
+    };
+    if (body != null) { r.setRequestHeader('Content-Type', 'application/json'); r.send(JSON.stringify(body)); }
+    else r.send();
+  }
+
+  function setNet(ok, text) { var n = $('net'); n.className = ok ? '' : 'bad'; n.innerHTML = esc(text); }
+
+  function scale() {
+    var w = window.innerWidth, h = window.innerHeight;
+    var f = w > h ? Math.min(w / 62, h / 36) : Math.min(w / 36, h / 62);
+    document.documentElement.style.fontSize = Math.max(9, Math.round(f * 10) / 10) + 'px';
+  }
+
+  var toastT = null;
+  function toast(t) {
+    var el = $('toast'); el.innerHTML = esc(t); el.style.display = 'block';
+    clearTimeout(toastT); toastT = setTimeout(function () { el.style.display = 'none'; }, 2200);
+  }
+
+  var dlgBtns = [];
+  function dialog(title, text, btns) {
+    dlgBtns = btns;
+    var h = '<h3>' + esc(title) + '</h3>' + (text ? '<p>' + esc(text) + '</p>' : '');
+    for (var i = 0; i < btns.length; i++) h += '<button data-dlg="' + i + '"' + (btns[i].sec ? ' class="sec"' : '') + '>' + esc(btns[i].label) + '</button>';
+    $('dlgbox').innerHTML = h;
+    $('dlg').style.display = 'block';
+  }
+  function closeDlg() { $('dlg').style.display = 'none'; dlgBtns = []; }
+
+  /* ---------- Speichern ---------- */
+  function save() {
+    dirty = true;
+    if (saving) return;
+    saving = true; dirty = false;
+    var copy = clone(board);
+    xhr('PUT', '/api/board/' + N, copy, function (err) {
+      saving = false;
+      if (err) { dirty = true; setNet(false, '⚠ nicht gespeichert – keine Verbindung'); return; }
+      setNet(true, '● verbunden');
+      if (dirty) save();
+    });
+  }
+  setInterval(function () { if (dirty && !saving) save(); }, 3000);
+
+  function load() {
+    xhr('GET', '/api/state', null, function (err, data) {
+      if (err || !data) { setNet(false, '⚠ Server nicht erreichbar'); if (!loaded) render(); setTimeout(load, 3000); return; }
+      setNet(true, '● verbunden');
+      names = data.names || [];
+      tour = data.tournament || null; ver = data.v || 0; lastAssign = assignKey();
+      if (!loaded) {
+        loaded = true;
+        var b = data.boards && data.boards[N];
+        if (b && b.status === 'training' && b.g && !b.g.finished) { location.replace(window.DART_PWA ? 'index.html' : '/t' + N); return; }
+        if (b && (b.status === 'play' || b.status === 'done')) board = b;
+        if (b && (b.status === 'play' || b.status === 'done') && b.players && b.players.length >= 2 && !b.tmatch && !b.vliga) {
+          setup.np = Math.min(4, b.players.length);
+          for (var bi = 0; bi < 4; bi++) setup['n' + (bi + 1)] = b.players[bi] ? b.players[bi].name : '';
+          setup.start = b.start || 501; setup.legs = b.legsToWin || 2; setup.dout = b.doubleOut !== false;
+        }
+      }
+      render();
+      if (!watching) { watching = true; setTimeout(watch, 500); loadVliga(function () { if (board.status !== 'play' && !(document.activeElement && document.activeElement.tagName === 'INPUT')) render(); }); }
+    });
+  }
+
+  /* ---------- Turnier ---------- */
+  var watching = false;
+  function myMatch() {
+    if (!tour || !tour.matches) return null;
+    for (var i = 0; i < tour.matches.length; i++) { var m = tour.matches[i]; if (m.status === 'assigned' && m.board === N && m.p1 && m.p2) return m; }
+    return null;
+  }
+  function assignKey() { var m = myMatch(); return m ? m.id : ''; }
+  function tLabel(m) { return m.phase === 'group' ? (m.label || 'Gruppe ' + m.group + ' · Runde ' + m.round) : m.label; }
+  // Hält die Turnierdaten aktuell, damit neue Spielzuteilungen sofort erscheinen
+  function watch() {
+    var r = new XMLHttpRequest(), done = false;
+    var guard = setTimeout(function () { if (!done) { done = true; try { r.abort(); } catch (e) {} setTimeout(watch, 2000); } }, 40000);
+    r.onreadystatechange = function () {
+      if (r.readyState !== 4 || done) return;
+      done = true; clearTimeout(guard);
+      var d = null; try { d = JSON.parse(r.responseText); } catch (e) { d = null; }
+      if (!d) { setTimeout(watch, 3000); return; }
+      ver = d.v; tour = d.tournament || null; names = d.names || names;
+      var k = assignKey();
+      if (k !== lastAssign) {
+        lastAssign = k;
+        var ae = document.activeElement;
+        if (board.status !== 'play' && !(ae && ae.tagName === 'INPUT') && $('dlg').style.display !== 'block') render();
+      }
+      setTimeout(watch, 100);
+    };
+    r.open('GET', '/api/wait?v=' + ver + '&_=' + new Date().getTime(), true); r.send();
+  }
+
+  /* ---------- Spiellogik ---------- */
+  function newPlayer(name, start) { return { name: name, start: start, legs: 0, rem: start, sum: 0, visits: 0, last: [], darts: 0, ld: 0, c100: 0, c140: 0, c180: 0, hf: 0, bl: 0, legv: [], f9s: 0, f9n: 0 }; }
+
+  // Statistik einer Aufnahme mitschreiben
+  function record(p, score, darts) {
+    p.sum += score; p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + darts; p.ld = (p.ld || 0) + darts;
+    if (p.lv <= 3) { p.f9s = (p.f9s || 0) + score; p.f9n = (p.f9n || 0) + 1; }
+    if (score === 180) p.c180 = (p.c180 || 0) + 1;
+    else if (score >= 140) p.c140 = (p.c140 || 0) + 1;
+    else if (score >= 100) p.c100 = (p.c100 || 0) + 1;
+  }
+  function flash(t) { board.banner = t; board.bannerId = new Date().getTime(); }
+  // Mit wie vielen Darts ist ein Checkout überhaupt möglich?
+  function minDarts(score) {
+    if (score <= 40 && score % 2 === 0) return 1;
+    if (score === 50) return 1;
+    if (score <= 110 && [99, 102, 103, 105, 106, 108, 109].indexOf(score) < 0) return 2;
+    return 3;
+  }
+
+  function startMatch(n1, n2, start, legs, dout, first, tm, starts, vl, more) {
+    board = {
+      vliga: vl ? vl.id : undefined,
+      tmatch: tm ? tm.id : undefined, tlabel: tm ? tLabel(tm) : (vl ? 'Vereinsliga' : undefined),
+      league: tm && tour && tour.type === 'league' ? tour.homeTeam + ' – ' + tour.guestTeam : undefined,
+      doubles: tm && tm.doubles ? true : undefined, members: tm && tm.doubles ? [tm.hp, tm.gp] : undefined,
+      status: 'play', start: start, legsToWin: legs, doubleOut: dout,
+      mid: new Date().getTime().toString(36) + Math.random().toString(36).slice(2, 6), started: new Date().toISOString(),
+      players: [newPlayer(n1, starts ? starts[0] : start), newPlayer(n2, starts ? starts[1] : start)].concat((more || []).map(function (n) { return newPlayer(n, start); })),
+      handicap: starts && starts[0] !== starts[1] ? true : undefined,
+      turn: first, legStarter: first, leg: 1, winner: null,
+      banner: 'Game on!', bannerId: new Date().getTime()
+    };
+    undo = []; typed = ''; msg = '';
+    save(); render();
+    say(board.players[first].name + ' beginnt. Game on!');
+  }
+
+  function pushUndo() { undo.push(JSON.stringify(board)); if (undo.length > 60) undo.shift(); }
+
+  function addLast(p, v) { p.last.push(v); if (p.last.length > 6) p.last.shift(); }
+
+  function submit(score) {
+    if (board.status !== 'play') return;
+    if (isNaN(score) || score < 0 || score > 180 || IMPOSSIBLE[score]) { msg = score + ' ist nicht möglich'; typed = ''; render(); return; }
+    var p = board.players[board.turn];
+    var rest = p.rem - score;
+    if (rest < 0 || (board.doubleOut && rest === 1)) { bust(score); return; }
+    if (rest === 0) {
+      if (board.doubleOut) {
+        var btns = [], md = minDarts(score);
+        for (var dd = md; dd <= 3; dd++) (function (n) { btns.push({ label: 'Ja – mit dem ' + n + '. Dart', fn: function () { checkout(score, n); } }); })(dd);
+        btns.push({ label: 'Nein – überworfen', sec: true, fn: function () { bust(score); } });
+        btns.push({ label: 'Abbrechen', sec: true, fn: function () { typed = ''; render(); } });
+        dialog('Checkout ' + score + '?', p.name + ' – mit einem Doppel beendet? Mit welchem Dart?', btns);
+        return;
+      }
+      checkout(score, 3); return;
+    }
+    pushUndo();
+    p.rem = rest; record(p, score, 3); addLast(p, score); (p.legv = p.legv || []).push([score, rest]);
+    if (score === 180) flash('180! ' + p.name);
+    nextTurn();
+    typed = ''; msg = '';
+    save(); render();
+    callVisit(score, false);
+  }
+
+  // Rest-Score: eingetippt wird, was nach der Aufnahme übrig bleibt (z. B. 121, 61 geworfen -> 60 eingeben)
+  function submitRest() {
+    if (board.status !== 'play') return;
+    var p = board.players[board.turn];
+    if (typed === '') { msg = 'Erst den Rest eintippen, dann „Rest-Score“'; render(); return; }
+    var left = parseInt(typed, 10);
+    if (left > p.rem) { msg = 'Rest ' + left + ' ist mehr als ' + p.rem; typed = ''; render(); return; }
+    if (board.doubleOut && left === 1) { msg = 'Rest 1 geht bei Double Out nicht'; typed = ''; render(); return; }
+    var score = p.rem - left;
+    if (score > 180 || IMPOSSIBLE[score]) { msg = score + ' Punkte in einer Aufnahme sind nicht möglich'; typed = ''; render(); return; }
+    typed = '';
+    submit(score);
+  }
+
+  function bust(score) {
+    pushUndo();
+    var p = board.players[board.turn];
+    p.visits++; p.lv = (p.lv || 0) + 1; p.darts = (p.darts || 0) + 3; p.ld = (p.ld || 0) + 3; addLast(p, 'Bust');
+    if (p.lv <= 3) { p.f9n = (p.f9n || 0) + 1; }
+    (p.legv = p.legv || []).push([score, p.rem, 1]);
+    nextTurn();
+    typed = ''; msg = '';
+    toast(p.name + ': überworfen (' + score + ')');
+    save(); render();
+    callVisit(score, true);
+  }
+
+  function checkout(score, darts) {
+    pushUndo();
+    var p = board.players[board.turn], all = board.players, np = all.length;
+    var o = np === 2 ? all[1 - board.turn] : null;
+    record(p, score, darts || 3); addLast(p, score); p.rem = 0;
+    if (score > (p.hf || 0)) p.hf = score;
+    if (!p.bl || p.ld < p.bl) p.bl = p.ld;
+    var legDarts = p.ld, i;
+    for (i = 0; i < np; i++) { all[i].ld = 0; all[i].lv = 0; }
+    p.legs++;
+    typed = ''; msg = '';
+    var res = o ? p.legs + ':' + o.legs : 'mit ' + p.legs + ' Legs';
+    if (p.legs >= board.legsToWin) {
+      board.status = 'done'; board.winner = board.turn;
+      board.banner = (score >= 100 ? 'High Finish ' + score + '! ' : '') + p.name + ' gewinnt ' + res;
+    } else {
+      board.banner = score >= 100 ? 'High Finish ' + score + '! ' + p.name : 'Leg an ' + p.name + ' (' + score + ' Check, ' + legDarts + ' Darts)';
+      board.leg++;
+      board.legStarter = (board.legStarter + 1) % np;
+      board.turn = board.legStarter;
+      for (i = 0; i < np; i++) { all[i].rem = all[i].start || board.start; all[i].last = []; all[i].legv = []; }
+    }
+    board.bannerId = new Date().getTime();
+    save(); render();
+    if (board.status === 'done') say('Game shot and the match! ' + p.name + ' gewinnt ' + (o ? p.legs + ' zu ' + o.legs : ''));
+    else say('Game shot! Leg an ' + p.name + '. ' + board.players[board.turn].name + ' beginnt.');
+  }
+
+  function doUndo() {
+    if (!undo.length) { toast('Nichts zum Rückgängigmachen'); return; }
+    board = JSON.parse(undo.pop());
+    typed = ''; msg = '';
+    save(); render();
+  }
+
+  /* ---------- Darstellung ---------- */
+  function render() {
+    var m = $('main');
+    if (!loaded) { m.innerHTML = '<div class="done"><p>Lade …</p></div>'; return; }
+    if (board.status === 'play') m.innerHTML = playHTML();
+    else if (board.status === 'done') m.innerHTML = doneHTML();
+    else m.innerHTML = setupHTML();
+  }
+
+  // Liga: fester Beginner je Scheibe; sonst nach dem Ausbullen wählen
+  function startButtons(tm) {
+    var by = tour && tour.type === 'league' && tour.cfg && tour.cfg.startBy ? tour.cfg.startBy[N] : null;
+    var st = 'background:#0b2d6b;color:#fff;font-weight:bold';
+    if (by) {
+      var f = by === 'home' ? 0 : 1, who = f === 0 ? tm.p1 : tm.p2, team = f === 0 ? tour.homeTeam : tour.guestTeam;
+      return '<div class="seg"><button data-tstart="' + f + '" style="' + st + '">Spiel starten – ' + esc(who) + ' beginnt (' + esc(team) + ')</button></div>';
+    }
+    return '<div class="seg"><button data-tstart="0" style="' + st + '">' + esc(tm.p1) + ' beginnt</button>' +
+      '<button data-tstart="1" style="' + st + '">' + esc(tm.p2) + ' beginnt</button></div>';
+  }
+
+  function setupHTML() {
+    var h = '<div class="setup">';
+    var tm = myMatch();
+    if (tm) {
+      h += '<div style="background:#fff;color:#071d47;border-radius:.6rem;padding:.8rem 1rem;margin-bottom:1rem">' +
+        '<div style="font-size:.95rem;text-transform:uppercase;letter-spacing:.06em;color:#3f5f99">' + esc(tour.name) + ' · ' + esc(tLabel(tm)) + '</div>' +
+        '<div style="font-size:2rem;font-weight:bold;margin:.2rem 0">' + esc(tm.p1) + ' – ' + esc(tm.p2) + '</div>' +
+        '<div style="font-size:1rem;margin-bottom:.4rem">' + tour.cfg.start + (tour.cfg.doubleOut ? ' Double Out' : '') + ' · First to ' + tm.legsToWin + ' Legs' + (tour.type === 'league' && tour.cfg.startBy && tour.cfg.startBy[N] ? '' : ' · Ausbullen: Wer beginnt?') + '</div>' +
+        startButtons(tm) + '</div>';
+    } else if (tour && tour.type === 'league' && tour.status === 'league') {
+      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': ' + (tour.cfg.boards.indexOf(N) >= 0 ? 'Das nächste Spiel für diese Scheibe erscheint hier automatisch.' : 'Im Ligabetrieb wird auf Scheibe ' + tour.cfg.boards.join(' und ') + ' gespielt.') + '</p>';
+    }
+    else if (tour && (tour.status === 'groups' || tour.status === 'ko' || tour.status === 'blind')) {
+      h += '<p style="color:#b7d3ff;margin-bottom:.6rem">' + esc(tour.name) + ': Für diese Scheibe ist gerade kein Turnierspiel eingeteilt. Es erscheint hier automatisch.</p>';
+    }
+    h += '<h2>' + (tm ? 'Oder freies Spiel' : 'Neues Spiel') + '</h2>';
+    for (var si = 0; si < setup.np; si++) {
+      h += '<div class="row"><label>Spieler ' + (si + 1) + '</label><input id="n' + (si + 1) + '" maxlength="24" autocomplete="off" placeholder="Name" value="' + esc(setup['n' + (si + 1)]) + '"' + (setup.active === si ? ' class="on"' : '') + '>' +
+        (si >= 2 && si === setup.np - 1 ? '<button data-a="rmpl" style="margin-left:.4rem;font-size:1.3rem;padding:.3rem .7rem;background:#10377f;border:.1rem solid #3f6fbf;border-radius:.4rem">✕</button>' : '') + '</div>';
+    }
+    if (setup.np < 4) h += '<div class="row"><label></label><button data-a="addpl" style="font-size:1rem;padding:.4rem .9rem;background:#10377f;border:.1rem solid #3f6fbf;border-radius:.4rem">+ Spieler hinzufügen (bis 4)</button></div>';
+    if (names.length) {
+      h += '<div class="chips">';
+      for (var i = 0; i < names.length && i < 24; i++) h += '<button data-name="' + esc(names[i]) + '">' + esc(names[i]) + '</button>';
+      h += '</div>';
+    }
+    h += '<div class="row"><label>Punkte</label><div class="seg">' +
+      '<button data-start="170"' + (setup.start === 170 ? ' class="on"' : '') + '>170</button>' +
+      '<button data-start="301"' + (setup.start === 301 ? ' class="on"' : '') + '>301</button>' +
+      '<button data-start="501"' + (setup.start === 501 ? ' class="on"' : '') + '>501</button></div></div>';
+    h += '<div class="row"><label>Gewinn-Legs</label><div class="step"><button data-legs="-1">−</button><span>' + setup.legs + '</span><button data-legs="1">+</button></div>' +
+      '<span style="margin-left:.8rem;color:#b7d3ff">(First to ' + setup.legs + ')</span></div>';
+    h += '<div class="row"><label>Double Out</label><div class="seg">' +
+      '<button data-dout="1"' + (setup.dout ? ' class="on"' : '') + '>Ja</button>' +
+      '<button data-dout="0"' + (!setup.dout ? ' class="on"' : '') + '>Nein</button></div></div>';
+    if (setup.np > 2) setup.hc = false;
+    else h += '<div class="row"><label>Handicap</label><div class="seg">' +
+      '<button data-hc="0"' + (!setup.hc ? ' class="on"' : '') + '>Aus</button>' +
+      '<button data-hc="1"' + (setup.hc ? ' class="on"' : '') + '>Unterschiedliche Startpunkte</button></div></div>';
+    if (setup.hc) {
+      h += '<div class="row"><label>' + esc(setup.n1 || 'Spieler 1') + '</label><div class="step"><button data-hs="1" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s1 + '</span><button data-hs="1" data-d="25">+</button></div>' +
+        '<span style="margin-left:1.2rem;color:#b7d3ff">' + esc(setup.n2 || 'Spieler 2') + '</span><div class="step" style="margin-left:.6rem"><button data-hs="2" data-d="-25">−</button><span style="min-width:4.5rem">' + setup.s2 + '</span><button data-hs="2" data-d="25">+</button></div></div>' +
+        '<div class="row"><label></label><button class="big sec" style="margin:0;padding:.5rem;font-size:1rem;width:auto" data-a="hcsuggest">Vorschlag aus dem Average</button><span id="hcinfo" style="margin-left:.8rem;color:#b7d3ff">' + esc(hcInfo) + '</span></div>';
+    }
+    if (setup.first >= setup.np) setup.first = 0;
+    h += '<div class="row"><label>Beginnt</label><div class="seg">';
+    for (var fi = 0; fi < setup.np; fi++) h += '<button data-first="' + fi + '"' + (setup.first === fi ? ' class="on"' : '') + '>' + esc(setup['n' + (fi + 1)] || 'Spieler ' + (fi + 1)) + '</button>';
+    h += '</div></div>';
+    h += '<div class="hint">' + esc(msg) + '</div>';
+    h += '<button class="big" data-a="start">Spiel starten</button>';
+    if (vliga && vliga.season) h += '<button class="big sec" data-a="vliga">Vereinsliga-Spiel (' + esc(vliga.season.name) + ')</button>';
+    h += '<button class="big sec" data-a="training">Training &amp; Bestenliste</button></div>';
+    return h;
+  }
+
+  function plHTML(i) {
+    var p = board.players[i], on = board.turn === i;
+    return '<div class="pl' + (on ? ' on' : '') + '">' +
+      '<div class="nm">' + esc(p.name) + '</div>' +
+      (board.doubles && board.members ? '<div class="st" style="opacity:1;font-weight:bold">wirft: ' + esc(board.members[i][(p.lv || 0) % 2]) + '</div>' : '') +
+      '<div class="lg">Legs ' + p.legs + '</div>' +
+      '<div class="rm">' + p.rem + '</div>' +
+      '<div class="st">Ø Spiel ' + avg(p) + ' · Ø Leg ' + legAvg(p) + '</div>' +
+      '<div class="st">Letzte: ' + (p.last.length ? esc(p.last.join(' · ')) : '–') + '</div>' +
+      (on ? '<div class="tw">▶ ist dran</div>' : '') +
+      '</div>';
+  }
+
+  function playHTML() {
+    var p = board.players[board.turn];
+    var h = '<div class="play"><div class="side' + (board.players.length > 2 ? ' multi' : '') + '">';
+    h += '<div class="info">' + (board.tlabel ? esc(board.tlabel) + ' · ' : '') + 'Leg ' + board.leg + ' · First to ' + board.legsToWin + ' · ' + board.start + (board.doubleOut ? ' Double Out' : ' Single Out') + '</div>';
+    for (var pi = 0; pi < board.players.length; pi++) h += plHTML(pi);
+    h += '</div><div class="pad">';
+    h += '<div class="disp"><span class="who">' + esc(p.name) + '</span>' +
+      (typed ? '<span class="val">' + esc(typed) + '<small class="rhint">OK = geworfen · Rest-Score = ' + (+typed <= p.rem ? (p.rem - typed) + ' geworfen' : 'zu hoch') + '</small></span>' : '<span class="val ph' + (msg ? ' err' : '') + '">' + esc(msg || 'Punkte eintippen') + '</span>') + '</div>';
+    h += '<div class="quick">';
+    for (var i = 0; i < QUICK.length; i++) h += '<button data-q="' + QUICK[i] + '"' + (typed === String(QUICK[i]) ? ' class="sel"' : '') + '>' + QUICK[i] + '</button>';
+    h += '</div><div class="keys">';
+    var k = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'del', '0', 'ok'];
+    for (var j = 0; j < k.length; j++) {
+      if (k[j] === 'del') h += '<button data-k="del">⌫</button>';
+      else if (k[j] === 'ok') h += '<button data-k="ok" class="ok">OK</button>';
+      else h += '<button data-k="' + k[j] + '">' + k[j] + '</button>';
+    }
+    h += '</div><div class="acts"><button data-a="undo">↶ Rückgängig</button><button data-a="rest" class="rest">Rest-Score</button><button data-a="menu">Menü</button></div>';
+    h += '</div></div>';
+    return h;
+  }
+
+  function doneHTML() {
+    var w = board.players[board.winner], l = board.players[1 - board.winner];
+    var h = '<div class="done"><p>Spiel beendet</p><h1>' + esc(w.name) + ' gewinnt</h1>';
+    if (board.players.length === 2) {
+      h += '<div class="res">' + w.legs + ' : ' + l.legs + '</div>';
+      h += '<p>Ø ' + esc(w.name) + ' ' + avg(w) + ' · Ø ' + esc(l.name) + ' ' + avg(l) + '</p>';
+    } else {
+      var rk = board.players.slice().sort(function (a, b) { return b.legs - a.legs; });
+      for (var ri = 0; ri < rk.length; ri++) h += '<p style="font-size:1.4rem' + (ri ? '' : ';color:#fff;font-weight:bold') + '">' + (ri + 1) + '. ' + esc(rk[ri].name) + ' – ' + rk[ri].legs + ' Legs · Ø ' + avg(rk[ri]) + '</p>';
+    }
+    if (board.tmatch) {
+      var nx = myMatch();
+      h += '<p style="color:#fff;font-weight:bold">✓ Ergebnis an die Turnierleitung gemeldet</p>';
+      h += '<div class="btns">' + (nx ? '<button class="big" data-a="new">Nächstes Spiel: ' + esc(nx.p1) + ' – ' + esc(nx.p2) + '</button>' : '<button class="big" data-a="new">Fertig – Scheibe frei</button>') +
+        '<button class="big sec" data-a="undo">↶ Letzten Wurf zurücknehmen</button></div></div>';
+      return h;
+    }
+    h += '<div class="btns"><button class="big" data-a="rematch">Rückspiel</button>' +
+      '<button class="big sec" data-a="new">Neues Spiel</button>' +
+      '<button class="big sec" data-a="undo">↶ Letzten Wurf zurücknehmen</button>' +
+      '<button class="big sec" data-a="free">Scheibe freigeben</button></div></div>';
+    return h;
+  }
+
+  /* ---------- Bedienung ---------- */
+  function onTap(e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.getAttribute && (t.getAttribute('data-k') || t.getAttribute('data-q') || t.getAttribute('data-a') || t.getAttribute('data-dlg') ||
+      t.getAttribute('data-name') || t.getAttribute('data-tstart') || t.getAttribute('data-hc') || t.getAttribute('data-hs') || t.getAttribute('data-start') || t.getAttribute('data-legs') || t.getAttribute('data-dout') || t.getAttribute('data-first')))) t = t.parentNode;
+    if (!t || t === document.body || !t.getAttribute) return;
+    var a;
+
+    if ((a = t.getAttribute('data-tstart')) !== null) {
+      var tm = myMatch();
+      if (tm) startMatch(tm.p1, tm.p2, tour.cfg.start, tm.legsToWin, tour.cfg.doubleOut !== false, +a, tm);
+      return;
+    }
+    if ((a = t.getAttribute('data-dlg')) !== null) { var b = dlgBtns[+a]; closeDlg(); if (b && b.fn) b.fn(); return; }
+
+    if ((a = t.getAttribute('data-k')) !== null) {
+      if (a === 'del') typed = typed.slice(0, -1);
+      else if (a === 'ok') { submit(typed === '' ? 0 : parseInt(typed, 10)); return; }
+      else if (typed.length < 3) typed = (typed === '0' ? '' : typed) + a;
+      msg = ''; render(); return;
+    }
+    if ((a = t.getAttribute('data-q')) !== null) { typed = a; msg = ''; render(); return; }
+
+    if ((a = t.getAttribute('data-name')) !== null) {
+      readNames();
+      setup['n' + (setup.active + 1)] = a;
+      for (var ai = 1; ai <= setup.np; ai++) { var ix = (setup.active + ai) % setup.np; if (!setup['n' + (ix + 1)]) { setup.active = ix; break; } }
+      msg = ''; render(); return;
+    }
+    if ((a = t.getAttribute('data-start')) !== null) { readNames(); setup.start = +a; setup.s1 = setup.s2 = +a; hcInfo = ''; render(); return; }
+    if ((a = t.getAttribute('data-legs')) !== null) { readNames(); setup.legs = Math.max(1, Math.min(9, setup.legs + (+a))); render(); return; }
+    if ((a = t.getAttribute('data-dout')) !== null) { readNames(); setup.dout = a === '1'; render(); return; }
+    if ((a = t.getAttribute('data-first')) !== null) { readNames(); setup.first = +a; render(); return; }
+    if ((a = t.getAttribute('data-hc')) !== null) { readNames(); setup.hc = a === '1'; setup.s1 = setup.s2 = setup.start; hcInfo = ''; render(); return; }
+    if ((a = t.getAttribute('data-hs')) !== null) { readNames(); var k = a === '1' ? 's1' : 's2'; setup[k] = Math.max(101, Math.min(1001, setup[k] + (+t.getAttribute('data-d')))); render(); return; }
+
+    a = t.getAttribute('data-a');
+    if (a === 'start') {
+      readNames();
+      var nl = [], seen = {};
+      for (var ni = 1; ni <= setup.np; ni++) {
+        var nm = (setup['n' + ni] || '').replace(/^\s+|\s+$/g, '');
+        if (!nm) { msg = setup.np === 2 ? 'Bitte beide Namen eingeben' : 'Bitte alle ' + setup.np + ' Namen eingeben'; render(); return; }
+        if (seen[nm.toLowerCase()]) { msg = 'Die Namen müssen verschieden sein'; render(); return; }
+        seen[nm.toLowerCase()] = 1; nl.push(nm);
+      }
+      startMatch(nl[0], nl[1], setup.start, setup.legs, setup.dout, setup.first, null, setup.hc ? [setup.s1, setup.s2] : null, null, nl.slice(2));
+    } else if (a === 'addpl') { readNames(); if (setup.np < 4) { setup.np++; setup.active = setup.np - 1; } render();
+    } else if (a === 'rmpl') { readNames(); if (setup.np > 2) { setup['n' + setup.np] = ''; setup.np--; } render();
+    } else if (a === 'rest') submitRest();
+    else if (a === 'undo') doUndo();
+    else if (a === 'menu') {
+      dialog('Menü', board.players.map(function (x) { return x.name; }).join(' gegen '), [
+        { label: 'Spiel abbrechen', fn: function () {
+          dialog('Wirklich abbrechen?', 'Das laufende Spiel wird beendet und nicht gewertet.', [
+            { label: 'Ja, abbrechen', fn: function () { board = { status: 'idle', tmatch: board.tmatch, vliga: board.vliga }; undo = []; save(); render(); } },
+            { label: 'Nein, weiterspielen', sec: true }
+          ]);
+        } },
+        { label: 'Weiterspielen', sec: true }
+      ]);
+    } else if (a === 'rematch') {
+      var rn = board.players.map(function (x) { return x.name; });
+      rn = rn.slice(1).concat(rn.slice(0, 1)); // Reihenfolge rotieren: der bisherige Zweite beginnt
+      startMatch(rn[0], rn[1], board.start, board.legsToWin, board.doubleOut, 0, null, null, null, rn.slice(2));
+    } else if (a === 'new') { board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
+    else if (a === 'training') { location.href = window.DART_PWA ? 'index.html' : '/t' + N; }
+    else if (a === 'hcsuggest') { readNames(); suggestHandicap(); }
+    else if (a === 'vliga') { readNames(); chooseVliga(); }
+    else if (a === 'free') { setup.n1 = ''; setup.n2 = ''; board = { status: 'idle' }; undo = []; msg = ''; save(); render(); }
+  }
+
+  function readNames() {
+    for (var i = 1; i <= 4; i++) { var x = $('n' + i); if (x) setup['n' + i] = x.value; }
+  }
+
+  document.addEventListener('click', onTap, false);
+  document.addEventListener('focusin', function (e) {
+    if (/^n[1-4]$/.test(e.target.id)) {
+      setup.active = +e.target.id.charAt(1) - 1;
+      for (var i = 1; i <= setup.np; i++) { var x = $('n' + i); if (x) x.className = setup.active === i - 1 ? 'on' : ''; }
+    }
+  }, false);
+  document.addEventListener('input', function (e) { if (/^n[1-4]$/.test(e.target.id)) setup[e.target.id] = e.target.value; }, false);
+  document.addEventListener('keydown', function (e) {
+    if (board.status !== 'play' || $('dlg').style.display === 'block') return;
+    var k = e.key || '';
+    if (/^[0-9]$/.test(k) && typed.length < 3) { typed = (typed === '0' ? '' : typed) + k; msg = ''; render(); }
+    else if (k === 'Backspace') { typed = typed.slice(0, -1); render(); }
+    else if (k === 'Enter') submit(typed === '' ? 0 : parseInt(typed, 10));
+    else if ((k === 'r' || k === 'R') && typed) submitRest();
+  }, false);
+  window.addEventListener('resize', scale, false);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && dirty) save(); }, false);
+
+  /* ---------- Vereinsliga ---------- */
+  var vliga = null;
+  function loadVliga(cb) { xhr('GET', '/api/x/vliga', null, function (err, d) { if (!err && d) vliga = d; if (cb) cb(); }); }
+  function chooseVliga() {
+    loadVliga(function () {
+      if (!vliga || !vliga.season) { toast('Keine Vereinsliga angelegt'); return; }
+      var open = vliga.games.filter(function (g) { return g.status === 'open'; });
+      // Wenn oben Namen eingetragen sind: deren Paarungen zuerst
+      var n1 = setup.n1.toLowerCase(), n2 = setup.n2.toLowerCase();
+      function score(g) { var a = g.p1.toLowerCase(), b = g.p2.toLowerCase(); return (n1 && (a === n1 || b === n1) ? 2 : 0) + (n2 && (a === n2 || b === n2) ? 2 : 0); }
+      open.sort(function (x, y) { return score(y) - score(x); });
+      if (!open.length) { toast('Alle Vereinsliga-Spiele sind gespielt'); return; }
+      var btns = open.slice(0, 8).map(function (g) { return { label: g.p1 + ' – ' + g.p2, fn: function () { pickBegin(g); } }; });
+      btns.push({ label: 'Abbrechen', sec: true });
+      dialog('Vereinsliga: offene Paarungen', open.length + ' Spiele offen' + (open.length > 8 ? ' (Namen oben eintragen, um zu filtern)' : ''), btns);
+    });
+  }
+  function pickBegin(g) {
+    dialog('Wer beginnt?', g.p1 + ' – ' + g.p2 + ' · First to ' + vliga.season.legs, [
+      { label: g.p1 + ' beginnt', fn: function () { startMatch(g.p1, g.p2, vliga.season.start, vliga.season.legs, true, 0, null, null, g); } },
+      { label: g.p2 + ' beginnt', fn: function () { startMatch(g.p1, g.p2, vliga.season.start, vliga.season.legs, true, 1, null, null, g); } },
+      { label: 'Abbrechen', sec: true }
+    ]);
+  }
+
+  /* Handicap-Vorschlag: der Stärkere startet mit den normalen Punkten, der Schwächere mit
+     so viel weniger, dass beide im Schnitt gleich viele Darts brauchen (gerundet auf 25). */
+  var hcInfo = '';
+  function suggestHandicap() {
+    var n1 = setup.n1.replace(/^\s+|\s+$/g, ''), n2 = setup.n2.replace(/^\s+|\s+$/g, '');
+    if (!n1 || !n2) { hcInfo = 'Erst beide Namen eingeben'; render(); return; }
+    xhr('GET', '/api/matches', null, function (err, d) {
+      if (err || !d) { hcInfo = 'Keine Daten'; render(); return; }
+      function avgOf(n) {
+        var sum = 0, darts = 0, k = n.toLowerCase();
+        (d.matches || []).forEach(function (m) { if (m.doubles) return; m.players.forEach(function (p) { if (p.name.toLowerCase() === k) { sum += p.sum; darts += p.darts || p.visits * 3; } }); });
+        return darts >= 30 ? sum / darts * 3 : 0;
+      }
+      var a1 = avgOf(n1), a2 = avgOf(n2);
+      if (!a1 || !a2) { hcInfo = 'Zu wenige Spiele für ' + (!a1 ? n1 : n2) + ' (mind. 10 Aufnahmen)'; render(); return; }
+      var base = setup.start, strongIs1 = a1 >= a2, ratio = Math.min(a1, a2) / Math.max(a1, a2);
+      var weak = Math.max(101, Math.round(base * ratio / 25) * 25);
+      setup.s1 = strongIs1 ? base : weak; setup.s2 = strongIs1 ? weak : base;
+      hcInfo = 'Ø ' + a1.toFixed(1).replace('.', ',') + ' / ' + a2.toFixed(1).replace('.', ',');
+      render();
+    });
+  }
+
+  document.getElementById('caller').onclick = function () {
+    callerOn = !callerOn; try { localStorage.setItem('caller', callerOn ? 'an' : 'aus'); } catch (e) {}
+    showCaller(); if (callerOn) say('Caller an');
+  };
+  showCaller();
+
+  scale();
+  render();
+  load();
+})();
+</script>
+<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(function () {});</script>
+</body>
+</html>
