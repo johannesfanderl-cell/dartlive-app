@@ -79,7 +79,7 @@ const PAGES = {
   '/vereinsliga': 'vereinsliga.html', '/blind': 'blind.html',
   '/diag': 'diag.html',
 };
-const TYPES = { '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml', '.js': 'application/javascript; charset=utf-8' };
+const TYPES = { '.png': 'image/png', '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml', '.js': 'application/javascript; charset=utf-8' };
 
 function readBody(req, cb) {
   let size = 0; const chunks = [];
@@ -152,7 +152,7 @@ const server = http.createServer(function (req, res) {
     });
   }
 
-  const isFile = /^\/(icon\.svg|local\.js|local-core\.js|sponsor\.js)$/.test(p);
+  const isFile = /^\/(icon\.svg|logo\.png|local\.js|local-core\.js|sponsor\.js)$/.test(p);
   if (req.method === 'GET' && (PAGES[p] || isFile)) {
     const file = PAGES[p] || p.slice(1);
     return fs.readFile(path.join(PUB, file), function (err, data) {

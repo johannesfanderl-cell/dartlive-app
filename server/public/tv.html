@@ -30,6 +30,7 @@ table.grid td { vertical-align: top; }
 .idle { display: table; width: 100%; text-align: center; }
 .idle.spon { display: block; overflow: hidden; }
 .idle div { display: table-cell; vertical-align: middle; }
+.idle img.ilogo { display: block; height: 4.5em; margin: 0 auto 0.3em; }
 .idle b { display: block; font-size: 2em; letter-spacing: 0.06em; text-transform: uppercase; }
 .idle span { display: block; font-size: 1.2em; color: #b7d3ff; margin-top: 0.3em; }
 .win { display: table; width: 100%; text-align: center; background: #ffffff; color: #071d47; }
@@ -259,7 +260,7 @@ body.single .intro .st { font-size: 1.6em; }
     } else {
       var spIt = window.Sponsor && Sponsor.data && Sponsor.data.idle ? Sponsor.current(n) : null;
       if (spIt) h += '<div class="idle spon">' + Sponsor.slide(spIt, 'Scheibe frei') + '</div>';
-      else h += '<div class="idle"><div><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
+      else h += '<div class="idle"><div><img class="ilogo" src="/logo.png" alt="" onerror="this.style.display=\'none\'"><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
     }
     if (!showIntro && b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
     h += '</div>';
