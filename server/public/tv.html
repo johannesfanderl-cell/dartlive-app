@@ -105,11 +105,15 @@ body.single .tr .st { font-size: 1.2em; }
 .intro .st { font-size: 1.05em; opacity: 1; line-height: 1.5; }
 body.single .intro .nm { font-size: 3em; }
 body.single .intro .st { font-size: 1.6em; }
+.ban.go { top: 8%; bottom: 8%; padding: 0.4em; background: #071d47; color: #fff; border: 0.15em solid #c9a227; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.6em; }
+.ban.go img { height: 55%; max-height: 9em; margin-bottom: 0.25em; }
+.ban.go b { font-size: 1.9em; letter-spacing: 0.08em; color: #ffd34d; }
+.ban.go small { font-size: 0.7em; color: #b7d3ff; margin-top: 0.2em; text-transform: none; }
 .ban { position: absolute; left: 0; right: 0; top: 40%; padding: 0.6em 0.4em; background: #ffffff; color: #071d47; text-align: center; font-size: 1.5em; font-weight: bold; text-transform: uppercase; border-top: 0.15em solid #3f6fbf; border-bottom: 0.15em solid #3f6fbf; }
 </style>
 </head>
 <body>
-<div id="bar"><span class="r"><span class="net" id="net"></span><span id="clock"></span></span>TV Riedenburg · Dart Live</div>
+<div id="bar"><span class="r"><span class="net" id="net"></span><span id="clock"></span></span><img src="/logo.png" alt="" onerror="this.style.display='none'" style="height:1.45em;vertical-align:middle;margin:-.25em .45em -.2em 0">TV Riedenburg · Dart Live</div>
 <div id="wrap"></div>
 <div id="spbar" style="position:absolute;left:0;right:0;bottom:0;display:none;overflow:hidden;border-top:0.12em solid #3f6fbf"></div>
 <script src="/sponsor.js"></script>
@@ -262,7 +266,10 @@ body.single .intro .st { font-size: 1.6em; }
       if (spIt) h += '<div class="idle spon">' + Sponsor.slide(spIt, 'Scheibe frei') + '</div>';
       else h += '<div class="idle"><div><img class="ilogo" src="/logo.png" alt="" onerror="this.style.display=\'none\'"><b>Scheibe ' + n + '</b><span>frei</span></div></div>';
     }
-    if (!showIntro && b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) h += '<div class="ban">' + esc(b.banner) + '</div>';
+    if (!showIntro && b.banner && bannerUntil[n] && bannerUntil[n] > new Date().getTime()) {
+      if (b.banner === 'Game on!') h += '<div class="ban go"><img src="/logo.png" alt="" onerror="this.style.display=\'none\'"><b>Game on!</b>' + (b.players && b.players[b.turn] ? '<small>' + esc(b.players[b.turn].name) + ' beginnt</small>' : '') + '</div>';
+      else h += '<div class="ban">' + esc(b.banner) + '</div>';
+    }
     h += '</div>';
     return h;
   }

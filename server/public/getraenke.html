@@ -52,6 +52,7 @@ input[type=date] { padding: 8px; border-radius: 6px; border: 2px solid #3f6fbf; 
 tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { background: #071d47; font-size: 14px; }
 .paid { color: #7fd99a; } .open { color: #ffc56b; }
 @media print {
+  .printhead { display: flex !important; }
   body { background: #fff; color: #000; } #top, .tabs, .mnav button, .noprint, #toast { display: none !important; }
   .card { background: #fff; border: 1px solid #999; } td, th { border-color: #ccc; color: #000; } .note, th { color: #333; } .paid, .open { color: #000; }
 }
@@ -92,7 +93,7 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
     var h = '<div class="tabs"><button data-tab="liste"' + (tab === 'liste' ? ' class="on"' : '') + '>Strich machen</button><button data-tab="konto"' + (tab === 'konto' ? ' class="on"' : '') + '>Abrechnung</button><button data-tab="monat"' + (tab === 'monat' ? ' class="on"' : '') + '>Monat</button><button data-tab="setup"' + (tab === 'setup' ? ' class="on"' : '') + '>Getränke &amp; Personen</button></div>';
     if (tab === 'liste') h += person ? productsHTML() : peopleHTML();
     else if (tab === 'konto') h += accountHTML();
-    else if (tab === 'monat') h += monthHTML();
+    else if (tab === 'monat') h += printHead(mView === 'jahr' ? 'Strichliste · Jahresübersicht ' + mon.y : 'Strichliste · Monatsübersicht ' + MONATE[mon.m] + ' ' + mon.y) + monthHTML();
     else h += setupHTML();
     $('main').innerHTML = h;
   }
@@ -166,6 +167,9 @@ tr.pick { cursor: pointer; } tr.pick.open td { background: #10377f; } .sub td { 
   function pad(n) { return ('0' + n).slice(-2); }
   function money(v) { return eur(v); }
   function viewSwitch() { return '<div class="seg2 noprint"><button data-mview="monat"' + (mView === 'monat' ? ' class="on"' : '') + '>Monat</button><button data-mview="jahr"' + (mView === 'jahr' ? ' class="on"' : '') + '>Jahr</button></div>'; }
+  function printHead(t) {
+    return '<div class="printhead" style="display:none;align-items:center;margin-bottom:6mm;border-bottom:1.5px solid #0b2d6b;padding-bottom:3mm"><img src="/logo.png" alt="" onerror="this.style.display=\'none\'" style="height:20mm;margin-right:5mm"><div><div style="font-size:18pt;font-weight:bold">TV Riedenburg · Dartabteilung</div><div style="font-size:12pt">' + esc(t) + '</div></div></div>';
+  }
   function monthHTML() {
     if (mView === 'jahr') return yearHTML();
     var md = monthData(), cur = mon.y * 12 + mon.m, n0 = new Date(), max = n0.getFullYear() * 12 + n0.getMonth(), min = Math.min(firstMonth(), max);

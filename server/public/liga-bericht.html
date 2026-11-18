@@ -61,7 +61,7 @@ td.win { font-weight: bold; }
     var T = S && S.tournament;
     if (!T || T.type !== 'league') { document.getElementById('page').innerHTML = '<p>Kein Liga-Spieltag angelegt.</p>'; return; }
     var sc = S.leagueScore, d = T.date ? T.date.split('-').reverse().join('.') : '';
-    var h = '<h1>Spielbericht</h1><table class="hdr"><tr><td class="l">Heim-Team</td><td><b>' + esc(T.homeTeam) + '</b></td><td class="l" style="padding-left:4mm">Gast-Team</td><td><b>' + esc(T.guestTeam) + '</b></td></tr>' +
+    var h = '<img src="/logo.png" alt="" onerror="this.style.display=\'none\'" style="float:right;height:24mm;margin:-2mm 0 0 4mm"><h1>Spielbericht</h1><table class="hdr"><tr><td class="l">Heim-Team</td><td><b>' + esc(T.homeTeam) + '</b></td><td class="l" style="padding-left:4mm">Gast-Team</td><td><b>' + esc(T.guestTeam) + '</b></td></tr>' +
       '<tr><td class="l">Ort</td><td>' + esc(T.place) + '</td><td class="l" style="padding-left:4mm">Datum</td><td>' + esc(d) + '</td></tr></table>';
     function singles(from, to, title) {
       var o = '<div class="sec">' + title + '</div><table><tr><th></th><th>AVG3</th><th>Name</th><th>Nr.</th><th></th><th>AVG3</th><th>Name</th><th>Nr.</th><th></th><th>Sätze</th><th>Stand</th></tr>';
