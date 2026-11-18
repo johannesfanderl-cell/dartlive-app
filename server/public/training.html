@@ -1121,7 +1121,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
   }
 
   function menuHTML() {
-    var h = '<div class="scroll"><h2>Trainingsspiel wählen</h2><div class="games">';
+    var h = '<div class="scroll">' + (window.DART_PWA ? '<button class="big" data-a="match" style="margin:0 0 .8rem;background:#c9a227;border-color:#c9a227">🎯 X01-Spiel · 501 / 301 / 170</button>' : '') + '<h2>Trainingsspiel wählen</h2><div class="games">';
     for (var k in GAMES) h += '<button data-game="' + k + '"' + (setup.game === k ? ' class="on"' : '') + '><b>' + esc(GAMES[k].name) + '</b><small>' + esc(GAMES[k].desc) + '</small></button>';
     h += '</div>';
     if (setup.game === 'atc') h += optHTML('Modus', 'atc', ['Single', 'Double', 'Triple'], setup.atc);
