@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="/local.js"></script>
+<script src="/dartmeta.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ehrentafel – Dart Live</title>
 <style>
@@ -27,7 +28,7 @@ table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; font-s
 <div id="wrap"><div class="empty">Lade …</div></div>
 <script>
 (function () {
-  var all = [], page = 0, version = 0, year = new Date().getFullYear();
+  var all = [], res = [], page = 0, version = 0, year = new Date().getFullYear();
   function el(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function f1(x) { return (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
@@ -52,7 +53,9 @@ table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; font-s
     var wins = arr.filter(function (a) { return a.wins; }).map(function (a) { return { name: a.name, v: a.wins, t: a.wins }; }).sort(function (a, b) { return b.v - a.v; });
     fins.sort(function (a, b) { return b.v - a.v; }); fins.forEach(function (f) { f.t = f.v; });
     legs.sort(function (a, b) { return a.v - b.v; }); legs.forEach(function (f) { f.t = f.v + ' Darts'; });
+    var fleiss = window.DartMeta ? DartMeta.attendance(all, res, year).map(function (a) { return { name: a.name, v: a.n, t: a.n + (a.n === 1 ? ' Tag' : ' Tage') }; }) : [];
     return [
+      { title: 'Trainingsfleißigster', sub: 'Trainingstage ' + year, list: fleiss },
       { title: 'Bester Average', sub: 'Ø pro 3 Darts · ab 3 Spielen', list: avg },
       { title: 'Meiste 180er', sub: '', list: c180 },
       { title: 'Höchste Finishes', sub: 'ab 60', list: fins },
@@ -80,7 +83,7 @@ table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; font-s
     el('wrap').innerHTML = out + '</tr></table>';
   }
   function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true); r.send(); }
-  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); }
+  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); get('/api/results', function (d) { if (d) { res = d.results || []; render(); } }); }
   function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
   setInterval(function () { page++; render(); }, 12000);
   window.onresize = render;

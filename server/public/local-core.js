@@ -960,7 +960,7 @@ function createCore(storage) {
         mid: b.mid, date: new Date().toISOString(), started: b.started || null, board: n, start: b.start, legsToWin: b.legsToWin, doubleOut: b.doubleOut,
         winner: b.winner, tmatch: b.tmatch || null, tlabel: b.tlabel || null, league: b.league || null, doubles: !!b.doubles,
         handicap: !!b.handicap,
-        players: b.players.map(function (p) { return { name: p.name, start: p.start || b.start, legs: p.legs, sum: p.sum || 0, darts: p.darts || 0, visits: p.visits || 0, c100: p.c100 || 0, c140: p.c140 || 0, c180: p.c180 || 0, hf: p.hf || 0, bl: p.bl || 0 }; })
+        players: b.players.map(function (p) { return { name: p.name, start: p.start || b.start, legs: p.legs, sum: p.sum || 0, darts: p.darts || 0, visits: p.visits || 0, c100: p.c100 || 0, c140: p.c140 || 0, c180: p.c180 || 0, hf: p.hf || 0, bl: p.bl || 0, f9s: p.f9s || 0, f9n: p.f9n || 0 }; })
       };
       if (i >= 0) archive[i] = rec; else archive.push(rec);
       saveArchive();
@@ -1053,7 +1053,10 @@ function createCore(storage) {
         if (!name || !game || !isFinite(score)) return;
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         ids.push(id);
-        results.push({ id: id, name: name, game: game, variant: String(r.variant || '').slice(0, 40), score: score, detail: String(r.detail || '').slice(0, 120), date: now });
+        const rec = { id: id, name: name, game: game, variant: String(r.variant || '').slice(0, 40), score: score, detail: String(r.detail || '').slice(0, 120), date: now };
+        if (/^\d{4}-W\d{2}$/.test(String(r.ch || ''))) rec.ch = String(r.ch); // Wochen-Challenge
+        if (r.plan) rec.plan = String(r.plan).slice(0, 20); // Training des Tages
+        results.push(rec);
       });
       if (results.length > 5000) results = results.slice(-5000);
       saveResults(); changed(); save();

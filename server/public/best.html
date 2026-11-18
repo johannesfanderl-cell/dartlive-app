@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="/local.js"></script>
+<script src="/dartmeta.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bestenliste – Dart Training</title>
 <style>
@@ -19,6 +20,7 @@ table.l td { padding: 0.2em 0.5em; border-top: 0.05em solid #3f6fbf; white-space
 table.l td.r { text-align: right; font-weight: bold; }
 table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; }
 .empty { padding: 2em; text-align: center; font-size: 1.5em; color: #b7d3ff; }
+.chc { border-color: #c9a227 !important; } .chc .h { background: #3b2f0a; color: #ffd34d; } .sub { font-size: 0.6em; color: #f3e3b0; text-transform: none; letter-spacing: 0; white-space: normal; }
 </style>
 </head>
 <body>
@@ -26,10 +28,20 @@ table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; }
 <div id="wrap"><div class="empty">Lade …</div></div>
 <script>
 (function () {
-  var GAMES = [['jdc', 'JDC Challenge', 'max'], ['atc', 'Around the Clock', 'min'], ['bobs', "Bob's 27", 'max'], ['checkout', 'Checkout', 'max'], ['countup', 'Count Up', 'max'], ['cricket', 'Cricket (MPR)', 'max'], ['killer', 'Swedish Killer (Siege)', 'sum']];
+  var M = window.DartMeta, GAMES = [];
+  for (var gk in M.GAMES) GAMES.push([gk, M.GAMES[gk][0] + (M.GAMES[gk][1] === 'sum' ? ' (Siege)' : (gk === 'cricket' ? ' (MPR)' : '')), M.GAMES[gk][1]]);
+  var ONLY_CH = /challenge/.test(location.pathname);
+  if (ONLY_CH) { var bb = document.getElementById('bar'); bb.lastChild.nodeValue = 'TV Riedenburg · Wochen-Challenge'; document.title = 'Wochen-Challenge – Dart Live'; }
   var results = [], page = 0, version = 0;
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function fmtScore(game, s) { if (game === 'cricket') return (Math.round(s * 100) / 100).toFixed(2).replace('.', ','); return String(s); }
+  function fmtScore(game, s) { return M.fmt(game, s); }
+  // Wochen-Challenge: aktuelle Woche + Monatswertung als eigene Spalten
+  function chBoards() {
+    var c = M.challenge(), t = M.challengeTable(results, c.week.key).list, now = new Date(), mo = M.challengeMonth(results, now.getFullYear(), now.getMonth());
+    var wk = { ch: 1, title: '🏆 Challenge KW ' + c.week.w, sub: c.label, rows: t.map(function (e) { return [e.name, M.fmt(c.game, e.best)]; }), empty: 'Noch keine Teilnehmer – „Challenge spielen“ im Training' };
+    var mb = { ch: 1, title: '🏆 Challenge ' + M.MONATE[now.getMonth()], sub: 'Punkte: 10 · 8 · 6 · 5 · 4 · 3 · 2 · Teilnahme 1', rows: mo.map(function (e) { return [e.name + (e.wins ? ' ' + new Array(e.wins + 1).join('★') : ''), e.pts + ' P.']; }), empty: 'Noch keine Wertung in diesem Monat' };
+    return [wk, mb];
+  }
   function boards() {
     var g = {}, order = [], i, j;
     for (i = 0; i < results.length; i++) {
@@ -58,15 +70,21 @@ table.l tr.f td { background: #ffffff; color: #071d47; font-weight: bold; }
   }
   function render() {
     var w = window.innerWidth || document.documentElement.clientWidth, h = window.innerHeight || document.documentElement.clientHeight;
-    var bs = boards(), per = w > h ? 3 : 1;
+    var bs = (ONLY_CH ? [] : []).concat(chBoards(), ONLY_CH ? [] : boards()), per = w > h ? (ONLY_CH ? 2 : 3) : 1;
     var pages = Math.max(1, Math.ceil(bs.length / per));
     if (page >= pages) page = 0;
     document.body.style.fontSize = Math.floor(Math.min(w / per / 16, h / 16)) + 'px';
     document.getElementById('pg').innerHTML = pages > 1 ? (page + 1) + ' / ' + pages : '';
-    if (!bs.length) { document.getElementById('wrap').innerHTML = '<div class="empty">Noch keine Trainingsergebnisse</div>'; return; }
+
     var html = '<table class="cols"><tr>';
     for (var i = page * per; i < page * per + per; i++) {
       if (!bs[i]) { html += '<td style="background:none;border:0"></td>'; continue; }
+      if (bs[i].ch) {
+        html += '<td class="chc"><div class="h">' + esc(bs[i].title) + '<div class="sub">' + esc(bs[i].sub) + '</div></div><table class="l">';
+        if (!bs[i].rows.length) html += '<tr><td style="white-space:normal;color:#b7d3ff">' + esc(bs[i].empty) + '</td></tr>';
+        for (var q = 0; q < bs[i].rows.length && q < 10; q++) html += '<tr' + (q === 0 ? ' class="f"' : '') + '><td>' + (q + 1) + '. ' + esc(bs[i].rows[q][0]) + '</td><td class="r">' + esc(bs[i].rows[q][1]) + '</td></tr>';
+        html += '</table></td>'; continue;
+      }
       var t = top(bs[i]);
       html += '<td><div class="h">' + esc(bs[i].title) + '</div><table class="l">';
       for (var j = 0; j < t.length; j++) html += '<tr' + (j === 0 ? ' class="f"' : '') + '><td>' + (j + 1) + '. ' + esc(t[j].name) + '</td><td class="r">' + esc(bs[i].mode === 'sum' ? t[j].sum : fmtScore(bs[i].game, t[j].best)) + '</td></tr>';

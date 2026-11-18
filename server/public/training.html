@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="/local.js"></script>
+<script src="/dartmeta.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta name="theme-color" content="#071d47">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
@@ -56,6 +57,19 @@ h3 { font-size: 1rem; color: #b7d3ff; text-transform: uppercase; letter-spacing:
 .pad { flex: 1 1 auto; display: flex; flex-direction: column; padding: .6rem .6rem .6rem 0; }
 .ginfo { font-size: .95rem; color: #b7d3ff; text-align: center; margin-bottom: .35rem; }
 .prow { display: flex; align-items: center; border: .12rem solid #3f6fbf; background: #10377f; border-radius: .5rem; padding: .3rem .6rem; margin-bottom: .35rem; flex: 1 1 0; min-height: 0; }
+.chal { display: flex; align-items: center; gap: .6rem; background: #3b2f0a; border: .15rem solid #c9a227; border-radius: .6rem; padding: .6rem .8rem; margin-bottom: .7rem; }
+.chal > div { flex: 1 1 auto; min-width: 0; }
+.chal small { display: block; color: #ffd34d; font-size: .85rem; font-weight: bold; }
+.chal b { display: block; font-size: 1.35rem; margin: .1rem 0; }
+.chal span { display: block; font-size: .9rem; color: #f3e3b0; }
+.chal button { flex: 0 0 auto; padding: .8rem 1rem; border-radius: .5rem; background: #c9a227; color: #071d47; font-weight: bold; font-size: 1.05rem; border: 0; }
+.plans { background: #0b2d6b; border: .12rem solid #3f6fbf; border-radius: .6rem; padding: .6rem .8rem; margin-bottom: .8rem; }
+.plans > small { display: block; color: #b7d3ff; font-size: .85rem; margin-bottom: .4rem; }
+.plans > div { display: flex; gap: .5rem; flex-wrap: wrap; }
+.plans > div button { flex: 1 1 10rem; text-align: left; padding: .6rem .7rem; border-radius: .5rem; background: #10377f; border: .12rem solid #3f6fbf; color: #fff; }
+.plans > div button b { display: block; font-size: 1.15rem; } .plans > div button span { display: block; font-size: .85rem; color: #ffd34d; }
+.plans > div button em { display: block; font-size: .75rem; color: #b7d3ff; font-style: normal; margin-top: .2rem; }
+.plans.done { margin-top: .8rem; } .plans b.pt { display: block; font-size: 1.3rem; margin-bottom: .4rem; }
 .prow.on { background: #dfe6f0; color: #071d47; border-color: #dfe6f0; }
 .prow.out { opacity: .45; }
 .prow .pn { flex: 1 1 auto; min-width: 0; }
@@ -335,6 +349,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (isCatch(g.game)) g.seq = catchSeq(cfg);
     if (g.game === 'ladder') g.opts.start = 121;
     g.cfg = clone(cfg); g.bar = 0;
+    if (cfg.ch) g.ch = cfg.ch;
     g.pd = [];
     for (i = 0; i < g.players.length; i++) {
       var p;
@@ -1103,7 +1118,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     if (!G.saved) {
       G.saved = true;
       var list = [];
-      for (var i = 0; i < G.players.length; i++) { var rr = resultOf(i); if (!rr.noSave) list.push(rr); }
+      for (var i = 0; i < G.players.length; i++) { var rr = resultOf(i); if (G.ch) rr.ch = G.ch; if (G.plan) rr.plan = G.plan.id; if (!rr.noSave) list.push(rr); }
+      if (G.plan) planRecord();
       savedIds = [];
       xhr('POST', '/api/results', list, function (err, d) { if (err) toast('Ergebnis konnte nicht gespeichert werden'); else { savedIds = (d && d.ids) || []; loadResults(); } });
     }
@@ -1121,7 +1137,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
   }
 
   function menuHTML() {
-    var h = '<div class="scroll">' + (window.DART_PWA ? '<button class="big" data-a="match" style="margin:0 0 .8rem;background:#c9a227;border-color:#c9a227">🎯 X01-Spiel · 501 / 301 / 170</button>' : '') + '<h2>Trainingsspiel wählen</h2><div class="games">';
+    var h = '<div class="scroll">' + (window.DART_PWA ? '<button class="big" data-a="match" style="margin:0 0 .8rem;background:#c9a227;border-color:#c9a227">🎯 X01-Spiel · 501 / 301 / 170</button>' : '') + challengeHTML() + plansHTML() + '<h2>Trainingsspiel wählen</h2><div class="games">';
     for (var k in GAMES) h += '<button data-game="' + k + '"' + (setup.game === k ? ' class="on"' : '') + '><b>' + esc(GAMES[k].name) + '</b><small>' + esc(GAMES[k].desc) + '</small></button>';
     h += '</div>';
     if (setup.game === 'atc') h += optHTML('Modus', 'atc', ['Single', 'Double', 'Triple'], setup.atc);
@@ -1295,7 +1311,9 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       var r = arr[i];
       h += '<tr' + (i === 0 ? ' class="first"' : '') + '><td>' + (i + 1) + '.</td><td>' + esc(r.name) + '</td><td>' + esc(r.detail) + '</td><td class="n">' + esc(r.disp || scoreText(r.game, r.score)) + '</td></tr>';
     }
-    h += '</table>' + statsHTML() + '<p class="note">Das Ergebnis ist in der Bestenliste gespeichert.</p>';
+    h += '</table>' + statsHTML() + '<p class="note">Das Ergebnis ist in der Bestenliste gespeichert.' + (G.ch ? ' Es zählt für die Wochen-Challenge ' + esc(G.ch.replace('-W', ' · KW ')) + '.' : '') + '</p>';
+    if (G.plan) return h + planDoneHTML() + '</div>';
+    if (!window.DART_PWA) { h += '<div class="row2">'; for (var pp = 0; pp < G.players.length && pp < 2; pp++) h += '<button class="big sec" data-prof="' + esc(G.players[pp].name) + '">Profil ' + esc(G.players[pp].name) + '</button>'; h += '</div>'; }
     h += '<button class="big" data-a="again">Nochmal spielen</button><div class="row2"><button class="big sec" data-a="best">Bestenliste</button><button class="big sec" data-a="tomenu">Anderes Spiel</button></div>';
     h += '<button class="big sec" data-a="undo">↶ Letzte Eingabe zurücknehmen</button></div>';
     return h;
@@ -1357,7 +1375,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
 
   /* ---------- Bedienung ---------- */
   function attr(t, n) { return t.getAttribute ? t.getAttribute(n) : null; }
-  var KEYS = ['data-dlg', 'data-a', 'data-game', 'data-opt', 'data-rm', 'data-pick', 'data-m', 'data-h', 'data-c', 'data-k', 'data-q', 'data-cn', 'data-kt', 'data-tab', 'data-del', 'data-tsel'];
+  var KEYS = ['data-dlg', 'data-a', 'data-plan', 'data-prof', 'data-game', 'data-opt', 'data-rm', 'data-pick', 'data-m', 'data-h', 'data-c', 'data-k', 'data-q', 'data-cn', 'data-kt', 'data-tab', 'data-del', 'data-tsel'];
   function findT(t) {
     while (t && t !== document.body) {
       for (var i = 0; i < KEYS.length; i++) if (attr(t, KEYS[i]) !== null) return t;
@@ -1386,6 +1404,8 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
       }
     }
 
+    if ((a = attr(t, 'data-plan')) !== null) { startPlan(a); return; }
+    if ((a = attr(t, 'data-prof')) !== null) { location.href = '/profil?name=' + encodeURIComponent(a); return; }
     if ((a = attr(t, 'data-game')) !== null) { readInputs(); setup.game = a; msg = ''; render(); return; }
     if ((a = attr(t, 'data-opt')) !== null) { readInputs(); var v = attr(t, 'data-val'); v = /^\d+$/.test(v) ? +v : v; if (a === 'cd') setup.cdm[setup.game] = v; else setup[a] = v; render(); return; }
     if ((a = attr(t, 'data-tsel')) !== null) { readInputs(); var tn = +a, ti = setup.tset.indexOf(tn); if (ti >= 0) setup.tset.splice(ti, 1); else setup.tset.push(tn); render(); return; }
@@ -1404,10 +1424,13 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     a = attr(t, 'data-a');
     if (a === 'add') { readInputs(); var el = $('newp'); if (el && el.value.replace(/\s/g, '')) { addPlayer(el.value.replace(/^\s+|\s+$/g, '')); } render(); }
     else if (a === 'start') startTraining();
+    else if (a === 'chal') startChallenge();
+    else if (a === 'plannext') planNext();
+    else if (a === 'planend') { screen = 'menu'; G = null; undo = []; save(); render(); }
     else if (a === 'best') { screen = 'best'; render(); loadResults(render); }
     else if (a === 'tomenu') { screen = 'menu'; G = null; undo = []; save(); render(); }
     else if (a === 'match') { G = null; xhr('PUT', '/api/board/' + N, { status: 'idle' }, function () { location.href = window.DART_PWA ? 'spiel.html' : '/' + N; }); }
-    else if (a === 'again') { var cfg = G.cfg ? clone(G.cfg) : { game: G.game, players: G.players.map(function (p) { return p.name; }), atc: G.opts.mode, start: G.opts.start, rounds: G.opts.rounds, own: G.opts.own, nums: {} }; for (var i = 0; i < G.players.length; i++) if (G.game === 'killer') cfg.nums[G.players[i].name] = G.pd[i].num; G = newGame(cfg); undo = []; screen = 'play'; banner('Game on!'); save(); render(); }
+    else if (a === 'again') { var cfg = G.cfg ? clone(G.cfg) : { game: G.game, players: G.players.map(function (p) { return p.name; }), atc: G.opts.mode, start: G.opts.start, rounds: G.opts.rounds, own: G.opts.own, nums: {} }; if (cfg.ch && window.DartMeta) cfg.ch = DartMeta.challenge().week.key; for (var i = 0; i < G.players.length; i++) if (G.game === 'killer') cfg.nums[G.players[i].name] = G.pd[i].num; G = newGame(cfg); undo = []; screen = 'play'; banner('Game on!'); save(); render(); }
     else if (a === 'rest') submitRest();
     else if (a === 'undo') {
       if (!undo.length) { toast('Nichts zum Rückgängigmachen'); return; }
@@ -1439,6 +1462,135 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
     var dn = $('dnum'); if (dn) setup.dn = parseInt(dn.value.replace(/\D/g, ''), 10) || 0;
     var ins = document.querySelectorAll('input[data-num]');
     for (var i = 0; i < ins.length; i++) setup.nums[ins[i].getAttribute('data-num')] = ins[i].value.replace(/\D/g, '');
+  }
+
+  /* ---------- Wochen-Challenge ---------- */
+  function curChallenge() { return window.DartMeta ? DartMeta.challenge() : null; }
+  function challengeHTML() {
+    var c = curChallenge(); if (!c) return '';
+    var t = DartMeta.challengeTable(results, c.week.key), lead = t.list[0];
+    var d1 = c.week.mon, d2 = c.week.sun;
+    return '<div class="chal"><div><small>🏆 Wochen-Challenge · KW ' + c.week.w + ' (' + d1.getDate() + '.' + (d1.getMonth() + 1) + '.–' + d2.getDate() + '.' + (d2.getMonth() + 1) + '.)</small><b>' + esc(c.label) + '</b>' +
+      '<span>' + (lead ? 'Führt: ' + esc(lead.name) + ' · ' + esc(DartMeta.fmt(c.game, lead.best)) + ' (' + t.list.length + ' Teilnehmer)' : 'Noch kein Ergebnis – sei der Erste!') + '</span></div>' +
+      '<button data-a="chal">Challenge spielen</button></div>';
+  }
+  function startChallenge() {
+    var c = curChallenge(); if (!c) return;
+    readInputs();
+    var el = $('newp'); if (el && el.value.replace(/\s/g, '')) addPlayer(el.value.replace(/^\s+|\s+$/g, ''));
+    if (!setup.players.length) { msg = 'Bitte unten erst die Spieler eintragen, dann „Challenge spielen“'; render(); var s = document.querySelector('.scroll'); if (s) s.scrollTop = 99999; return; }
+    var cfg = stepCfg(c.game, c.cfg); cfg.ch = c.week.key;
+    G = newGame(cfg); undo = []; screen = 'play'; msg = ''; banner('Wochen-Challenge: Game on!');
+    save(); render();
+  }
+  function stepCfg(game, extra) {
+    var cfg = clone(setup); cfg.game = game;
+    for (var k in extra) { if (k === 'cdm') { for (var g in extra.cdm) cfg.cdm[g] = extra.cdm[g]; } else cfg[k] = extra[k]; }
+    return cfg;
+  }
+
+  /* ---------- Training des Tages ---------- */
+  var PLANS = [
+    { id: 'kurz', name: 'Kurz', time: 'ca. 20 Min', steps: [
+      { game: 'randcheck', label: 'Warm-up: 10 Zufalls-Checkouts', cfg: { cn: 10, cdm: { randcheck: 6 } } },
+      { game: 'countup', label: 'Scoring: 10 Aufnahmen', cfg: { rounds: 10 } },
+      { game: 'doubles', label: 'Doppel D20/D10/D5', cfg: { dbl: 'D20/D10/D5' } },
+      { game: 'checkout', label: 'Checkout ab 61', cfg: { start: 61, cdm: { checkout: 3 } } }] },
+    { id: 'standard', name: 'Standard', time: 'ca. 45 Min', steps: [
+      { game: 'atc', label: 'Warm-up: Around the Clock', cfg: { atc: 'Single' } },
+      { game: 'countup', label: 'Scoring: 20 Aufnahmen', cfg: { rounds: 20 } },
+      { game: 'doubles', label: 'Alle Doppel', cfg: { dbl: 'Alle Doppel' } },
+      { game: 'ladder', label: '121-Leiter · 10 Versuche', cfg: { att: 10, lm: '−1 zurück', cdm: { ladder: 9 } } },
+      { game: 'bobs', label: "Bob's 27", cfg: {} }] },
+    { id: 'finish', name: 'Finish-Fokus', time: 'ca. 40 Min', steps: [
+      { game: 'twodart', label: '2-Dart-Finishes ab 81', cfg: { cs: 81, cdm: { twodart: 6 } } },
+      { game: 'catch40', label: 'Catch 40 · 61–80', cfg: { c40: 20, cdm: { catch40: 6 } } },
+      { game: 'checkout', label: 'Checkout ab 81', cfg: { start: 81, cdm: { checkout: 3 } } },
+      { game: 'bobs', label: "Bob's 27", cfg: {} }] }
+  ];
+  function planById(id) { for (var i = 0; i < PLANS.length; i++) if (PLANS[i].id === id) return PLANS[i]; return null; }
+  function plansHTML() {
+    var h = '<div class="plans"><small>📋 Training des Tages – mehrere Übungen nacheinander, am Ende der Vergleich mit deinem Schnitt</small><div>';
+    for (var i = 0; i < PLANS.length; i++) {
+      var p = PLANS[i];
+      h += '<button data-plan="' + p.id + '"><b>' + esc(p.name) + '</b><span>' + esc(p.time) + ' · ' + p.steps.length + ' Übungen</span><em>' + esc(p.steps.map(function (s) { return s.label.replace(/^Warm-up: /, ''); }).join(' · ')) + '</em></button>';
+    }
+    return h + '</div></div>';
+  }
+  function planGame(plan, step) {
+    var st = plan.steps[step], g = newGame(stepCfg(st.game, st.cfg));
+    return g;
+  }
+  function startPlan(id) {
+    var plan = planById(id); if (!plan) return;
+    readInputs();
+    var el = $('newp'); if (el && el.value.replace(/\s/g, '')) addPlayer(el.value.replace(/^\s+|\s+$/g, ''));
+    if (!setup.players.length) { msg = 'Bitte unten erst die Spieler eintragen, dann den Plan wählen'; render(); var s = document.querySelector('.scroll'); if (s) s.scrollTop = 99999; return; }
+    loadResults();
+    G = planGame(plan, 0); G.plan = { id: id, step: 0, res: [] };
+    undo = []; screen = 'play'; msg = ''; banner(plan.name + ' · Übung 1/' + plan.steps.length + ': ' + plan.steps[0].label);
+    save(); render();
+  }
+  // Schnitt eines Spielers im selben Spiel/Variante aus früheren Ergebnissen (ohne heute)
+  function prevAvg(name, game, variant) {
+    var s = 0, n = 0, today = window.DartMeta ? DartMeta.dayKey(new Date()) : '';
+    for (var i = 0; i < results.length; i++) {
+      var r = results[i];
+      if (r.game !== game || (r.variant || '') !== (variant || '') || r.name.toLowerCase() !== name.toLowerCase()) continue;
+      if (window.DartMeta && DartMeta.dayKey(r.date) === today) continue;
+      s += r.score; n++;
+    }
+    return n ? s / n : null;
+  }
+  function planRecord() {
+    var rows = [];
+    for (var i = 0; i < G.players.length; i++) {
+      var r = resultOf(i);
+      rows.push({ name: r.name, score: r.score, disp: r.disp || scoreText(r.game, r.score), avg: prevAvg(r.name, r.game, r.variant) });
+    }
+    G.plan.res[G.plan.step] = { game: G.game, rows: rows };
+  }
+  function planNext() {
+    var plan = planById(G.plan.id), st = G.plan.step + 1;
+    if (!plan || st >= plan.steps.length) return;
+    var p = G.plan; G = planGame(plan, st); p.step = st; G.plan = p;
+    undo = []; screen = 'play'; banner('Übung ' + (st + 1) + '/' + plan.steps.length + ': ' + plan.steps[st].label);
+    save(); render();
+  }
+  function planDoneHTML() {
+    var plan = planById(G.plan.id); if (!plan) return '';
+    var st = G.plan.step, last = st >= plan.steps.length - 1, h = '<div class="plans done"><small>📋 Training des Tages · ' + esc(plan.name) + '</small>';
+    h += '<b class="pt">' + (last ? 'Alle ' + plan.steps.length + ' Übungen geschafft! 💪' : 'Übung ' + (st + 1) + ' von ' + plan.steps.length + ' geschafft') + '</b>';
+    h += '<table class="res"><tr><th>Übung</th>';
+    for (var i = 0; i < G.players.length; i++) h += '<th style="text-align:right">' + esc(G.players[i].name) + '</th>';
+    h += '</tr>';
+    var good = [], cnt = [];
+    for (var s = 0; s < plan.steps.length; s++) {
+      var rec = G.plan.res[s];
+      h += '<tr' + (s === st ? ' class="first"' : '') + '><td>' + (s + 1) + '. ' + esc(plan.steps[s].label) + '</td>';
+      for (var j = 0; j < G.players.length; j++) {
+        var row = rec && rec.rows[j];
+        if (!row) { h += '<td class="n" style="opacity:.5">' + (s > st ? 'kommt' : '–') + '</td>'; continue; }
+        var arrow = '';
+        if (row.avg != null) {
+          var better = DartMeta.mode(rec.game) === 'min' ? row.score <= row.avg : row.score >= row.avg;
+          arrow = ' <span style="color:' + (better ? '#8cff9e' : '#ffb3b3') + '">' + (better ? '▲' : '▼') + '</span><br><small style="font-weight:normal;opacity:.8">Ø bisher ' + esc(DartMeta.fmt(rec.game, Math.round(row.avg * 10) / 10)) + '</small>';
+          cnt[j] = (cnt[j] || 0) + 1; if (better) good[j] = (good[j] || 0) + 1;
+        } else arrow = '<br><small style="font-weight:normal;opacity:.8">erstes Mal</small>';
+        h += '<td class="n">' + esc(row.disp) + arrow + '</td>';
+      }
+      h += '</tr>';
+    }
+    h += '</table>';
+    if (last) {
+      h += '<p class="note">';
+      for (var q = 0; q < G.players.length; q++) {
+        var gq = good[q] || 0, cq = cnt[q] || 0;
+        h += '<b>' + esc(G.players[q].name) + ':</b> ' + (cq ? gq + ' von ' + cq + ' Übungen über deinem Schnitt – ' + (gq === cq ? 'Top-Training! 🔥' : (gq * 2 >= cq ? 'Gutes Training 👍' : 'Dranbleiben, das wird! 💪')) : 'Erstes Training mit diesem Plan – ab jetzt wird verglichen.') + '<br>';
+      }
+      h += '</p><button class="big" data-a="planend">Training beenden</button>';
+    } else h += '<button class="big" data-a="plannext">Weiter: Übung ' + (st + 2) + ' – ' + esc(plan.steps[st + 1].label) + '</button><button class="big sec" data-a="planend">Plan abbrechen</button>';
+    return h + '<button class="big sec" data-a="undo">↶ Letzte Eingabe zurücknehmen</button></div>';
   }
 
   function startTraining() {
@@ -1479,7 +1631,7 @@ table.res td.del button { padding: .2rem .55rem; border-radius: .3rem; backgroun
   }, false);
   window.addEventListener('resize', scale, false);
 
-  scale(); render(); load(); loadResults();
+  scale(); render(); load(); loadResults(function () { if (screen === 'menu' || screen === 'done') render(); });
   window.__T = { get: function () { return G; } };
 })();
 </script>

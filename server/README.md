@@ -43,6 +43,11 @@ JDC Challenge (offizielle Wertung), Around the Clock (Single/Double/Triple), Bob
 Checkout-Training (ab 61/81/101/121, 10 Versuche), Count Up (10/20 Aufnahmen), Cricket, Swedish Killer.
 1–6 Spieler. Ergebnisse landen in der Bestenliste (data/results.json).
 Bestenliste für den Fernseher: http://192.168.68.222:3000/bestenliste
+Wochen-Challenge: jede Woche ein festes Spiel (oben im Trainingsmenü „Challenge spielen“), bestes Ergebnis zählt, Monatswertung mit Punkten.
+Fernseher: http://192.168.68.222:3000/challenge-tv (läuft auch in der Bestenliste mit).
+Training des Tages: Pläne Kurz / Standard / Finish-Fokus – mehrere Übungen nacheinander, am Ende Vergleich mit dem eigenen Schnitt.
+Spielerprofil: http://192.168.68.222:3000/profil – X01-Verlauf, alle Trainingsspiele mit Trend, Trainingsbeteiligung, Challenge.
+Trainingsbeteiligung: Statistik (unten) und Ehrentafel „Trainingsfleißigster“ – ein Tag zählt, wenn jemand ein Spiel oder Training gespielt hat.
 
 ## Turnier (z. B. Vereinsmeisterschaft)
 - Turnierleitung: http://192.168.68.222:3000/turnier  (Spieler eintragen, Gesetzte antippen, auslosen, starten)

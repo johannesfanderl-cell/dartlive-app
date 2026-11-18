@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="/local.js"></script>
+<script src="/dartmeta.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <title>Statistik – Dart Live</title>
@@ -46,12 +47,12 @@ svg text { fill: #b7d3ff; font-size: 11px; }
 <script>
 (function () {
   'use strict';
-  var all = [], season = String(new Date().getFullYear()), kind = 'alle', sortKey = 'avg', sortDir = -1, player = null, version = 0;
+  var all = [], res = [], season = String(new Date().getFullYear()), kind = 'alle', sortKey = 'avg', sortDir = -1, player = null, version = 0;
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
   function f1(x) { return x == null || isNaN(x) ? '–' : x.toFixed(1).replace('.', ','); }
   function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + Date.now(), true); r.send(); }
-  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); }
+  function load() { get('/api/matches', function (d) { if (d) { all = d.matches || []; render(); } }); get('/api/results', function (d) { if (d) { res = d.results || []; render(); } }); }
   function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
 
   function kindOf(m) { return m.league ? 'liga' : (m.tmatch ? 'turnier' : 'frei'); }
@@ -132,14 +133,23 @@ svg text { fill: #b7d3ff; font-size: 11px; }
       h += '<tr class="pl" data-player="' + esc(s.name) + '"><td class="b">' + esc(s.name) + '</td><td>' + s.games + '</td><td>' + s.wins + '</td><td>' + Math.round(s.quote) + ' %</td><td>' + s.lw + ':' + s.ll + '</td><td class="b">' + f1(s.avg) + '</td><td>' + s.c100 + '</td><td>' + s.c140 + '</td><td class="b">' + s.c180 + '</td><td>' + (s.hf || '–') + '</td><td>' + (s.bl ? s.bl + ' D.' : '–') + '</td></tr>';
     }
     h += '</table></div><p class="note">Ø = Punkte pro 3 Darts. 100+ = 100–139, 140+ = 140–179. Spieler antippen für Details. Ältere Spiele ohne Dart-Zählung werden mit 3 Darts pro Aufnahme gerechnet.</p>';
-    return h;
+    return h + attendanceHTML();
+  }
+  function attendanceHTML() {
+    if (!window.DartMeta) return '';
+    var att = DartMeta.attendance(all, res, season === 'alle' ? 0 : +season);
+    var h = '<h3>Trainingsbeteiligung' + (season === 'alle' ? '' : ' ' + season) + '</h3>';
+    if (!att.length) return h + '<div class="card"><p class="note">Noch keine Trainingstage.</p></div>';
+    h += '<div class="card"><table><tr><th class="l">Platz</th><th class="l">Spieler</th><th>Trainingstage</th><th>zuletzt</th><th></th></tr>';
+    for (var i = 0; i < att.length; i++) { var a = att[i], d = a.last; h += '<tr><td class="l">' + (i + 1) + '.</td><td class="l b">' + esc(a.name) + '</td><td class="b">' + a.n + '</td><td>' + d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear() + '</td><td><a href="/profil?name=' + encodeURIComponent(a.name) + '" style="color:#8cc4ff">Profil →</a></td></tr>'; }
+    return h + '</table></div><p class="note">Ein Trainingstag zählt, wenn jemand an dem Tag ein Spiel am Tablet beendet oder ein Trainingsspiel gespielt hat.</p>';
   }
   function tile(a, b, c) { return '<div class="tile"><small>' + esc(a) + '</small><b>' + esc(b) + '</b><span>' + esc(c) + '</span></div>'; }
 
   function playerHTML() {
     var ms = filtered(), arr = aggregate(ms), s = null;
     for (var i = 0; i < arr.length; i++) if (arr[i].name.toLowerCase() === player.toLowerCase()) s = arr[i];
-    var h = '<button class="back" data-back="1">← Alle Spieler</button><h2>' + esc(player) + '</h2>' + filterBar();
+    var h = '<button class="back" data-back="1">← Alle Spieler</button><h2>' + esc(player) + ' <a href="/profil?name=' + encodeURIComponent(player) + '" style="font-size:15px;color:#8cc4ff;font-weight:normal">Komplettes Profil mit Training →</a></h2>' + filterBar();
     if (!s) return h + '<p class="note">Keine Spiele in dieser Auswahl.</p>';
     h += '<div class="tiles">' + tile('Spiele', s.games, s.wins + ' Siege · ' + Math.round(s.quote) + ' %') + tile('Ø 3 Darts', f1(s.avg), 'Legs ' + s.lw + ':' + s.ll) +
       tile('180er', s.c180, '140+: ' + s.c140 + ' · 100+: ' + s.c100) + tile('High Finish', s.hf || '–', '') + tile('Bestes Leg', s.bl ? s.bl + ' Darts' : '–', '') + '</div>';

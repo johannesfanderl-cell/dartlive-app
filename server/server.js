@@ -68,6 +68,8 @@ const PAGES = {
   '/bestenliste': 'best.html',
   '/turnier': 'turnier.html',
   '/statistik': 'statistik.html',
+  '/profil': 'profil.html',
+  '/challenge-tv': 'best.html',
   '/liga': 'liga.html',
   '/liga-tv': 'liga-tv.html',
   '/liga-bericht': 'liga-bericht.html',
@@ -152,7 +154,7 @@ const server = http.createServer(function (req, res) {
     });
   }
 
-  const isFile = /^\/(icon\.svg|logo\.png|local\.js|local-core\.js|sponsor\.js)$/.test(p);
+  const isFile = /^\/(icon\.svg|logo\.png|dartmeta\.js|local\.js|local-core\.js|sponsor\.js)$/.test(p);
   if (req.method === 'GET' && (PAGES[p] || isFile)) {
     const file = PAGES[p] || p.slice(1);
     return fs.readFile(path.join(PUB, file), function (err, data) {

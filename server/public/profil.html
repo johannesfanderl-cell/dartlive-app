@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<script src="/local.js"></script>
+<script src="/dartmeta.js"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<title>Spielerprofil – Dart Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #071d47; color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 16px; }
+button, select { font-family: inherit; font-size: inherit; }
+button { cursor: pointer; border: 0; color: inherit; background: none; }
+#top { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b2d6b; border-bottom: 2px solid #fff; }
+#top b { font-size: 19px; letter-spacing: 1px; text-transform: uppercase; }
+#top a { color: #b7d3ff; font-size: 14px; }
+#main { max-width: 1150px; margin: 0 auto; padding: 14px 16px 60px; }
+h2 { font-size: 20px; margin: 4px 0 10px; }
+h3 { font-size: 14px; color: #b7d3ff; text-transform: uppercase; letter-spacing: 1px; margin: 18px 0 8px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.seg button { padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; margin: 0 6px 6px 0; }
+.seg button.on { background: #fff; color: #071d47; font-weight: bold; }
+.card { background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 8px 6px; border-bottom: 1px solid #23498f; text-align: right; white-space: nowrap; }
+td:first-child, th:first-child, td.l, th.l { text-align: left; }
+th { color: #b7d3ff; font-weight: normal; font-size: 12px; text-transform: uppercase; cursor: pointer; user-select: none; }
+th.s { color: #fff; font-weight: bold; }
+tr.pl { cursor: pointer; } tr.pl:hover td { background: #10377f; }
+td.b { font-weight: bold; }
+.tiles { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+.tile { flex: 1 1 150px; background: #0b2d6b; border: 1px solid #3f6fbf; border-radius: 10px; padding: 10px 12px; }
+.tile small { display: block; color: #b7d3ff; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.tile b { display: block; font-size: 26px; margin-top: 4px; }
+.tile span { display: block; font-size: 13px; color: #b7d3ff; margin-top: 2px; }
+.note { color: #b7d3ff; font-size: 14px; margin: 6px 0; }
+.back { display: inline-block; margin-bottom: 10px; padding: 8px 12px; border-radius: 6px; background: #10377f; border: 1px solid #3f6fbf; }
+.del { padding: 3px 8px; border-radius: 5px; background: #3a1f4f; font-size: 13px; }
+.win { color: #8cff9e; font-weight: bold; } .loss { color: #ffb3b3; }
+svg text { fill: #b7d3ff; font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chips button { padding: 8px 12px; border-radius: 18px; background: #10377f; border: 1px solid #3f6fbf; }
+.chips button.on { background: #fff; color: #071d47; font-weight: bold; }
+input.q { width: 100%; max-width: 360px; padding: 10px 12px; border-radius: 8px; border: 2px solid #3f6fbf; background: #0b2d6b; color: #fff; font-size: 16px; margin-bottom: 10px; }
+.up { color: #8cff9e; } .down { color: #ffb3b3; }
+.gold { color: #ffd34d; }
+</style>
+</head>
+<body>
+<div id="top"><b><img src="/logo.png" alt="" onerror="this.style.display='none'" style="height:1.7em;vertical-align:middle;margin:-.35em .5em -.3em 0">Spielerprofil</b><a href="/">Start</a></div>
+<div id="main">Lade …</div>
+<script>
+(function () {
+  'use strict';
+  var M = window.DartMeta, matches = [], results = [], player = null, year = new Date().getFullYear(), filter = '', version = 0, got = 0;
+  try { var q = /[?&]name=([^&]+)/.exec(location.search); if (q) player = decodeURIComponent(q[1].replace(/\+/g, ' ')); } catch (e) {}
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function f1(x) { return x == null || isNaN(x) ? '–' : (Math.round(x * 10) / 10).toFixed(1).replace('.', ','); }
+  function dstr(d) { d = new Date(d); return d.getDate() + '.' + (d.getMonth() + 1) + '.' + d.getFullYear(); }
+  function get(url, cb) { var r = new XMLHttpRequest(); r.onreadystatechange = function () { if (r.readyState === 4) { var d = null; try { d = JSON.parse(r.responseText); } catch (e) {} cb(d); } }; r.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true); r.send(); }
+  function load() {
+    got = 0;
+    get('/api/matches', function (d) { if (d) matches = d.matches || []; if (++got === 2) render(); });
+    get('/api/results', function (d) { if (d) results = d.results || []; if (++got === 2) render(); });
+  }
+  function wait() { get('/api/wait?v=' + version, function (d) { if (d) { if (d.v !== version) { version = d.v; load(); } setTimeout(wait, 100); } else setTimeout(wait, 3000); }); }
+  function tile(a, b, c) { return '<div class="tile"><small>' + esc(a) + '</small><b>' + b + '</b><span>' + (c || '&nbsp;') + '</span></div>'; }
+  function same(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }
+  function inTeam(m, p, name) { return m.doubles ? String(p.name).split(/\s*[\/&+]\s*/).some(function (x) { return same(x, name); }) : same(p.name, name); }
+
+  function allNames() {
+    var att = M.attendance(matches, results, 0), out = [];
+    for (var i = 0; i < att.length; i++) out.push(att[i].name);
+    return out;
+  }
+
+  function render() { $('main').innerHTML = player ? profileHTML() : pickHTML(); }
+
+  function pickHTML() {
+    var ns = allNames(), h = '<h2>Spieler wählen</h2><input class="q" id="q" placeholder="Name suchen …" value="' + esc(filter) + '"><div class="chips">';
+    var shown = 0;
+    for (var i = 0; i < ns.length; i++) if (!filter || ns[i].toLowerCase().indexOf(filter.toLowerCase()) >= 0) { h += '<button data-p="' + esc(ns[i]) + '">' + esc(ns[i]) + '</button>'; shown++; }
+    if (!shown) h += '<p class="note">Noch keine Spieler – Profile entstehen automatisch aus Spielen und Trainings.</p>';
+    return h + '</div><p class="note">Sortiert nach Trainingstagen. Das Profil zeigt X01-Spiele, alle Trainingsspiele mit Verlauf, die Trainingsbeteiligung und die Wochen-Challenge.</p>';
+  }
+
+  /* --- Diagramme (SVG) --- */
+  function lineChart(vals, labels, opt) {
+    opt = opt || {};
+    if (vals.length < 2) return '<p class="note">Ab 2 Werten erscheint hier der Verlauf.</p>';
+    var W = 1000, H = opt.h || 190, pl = 46, pr = 14, pt = 14, pb = 26, mx = Math.max.apply(null, vals), mn = Math.min.apply(null, vals);
+    if (mx === mn) { mx += 1; mn -= 1; }
+    var span = mx - mn; mx += span * 0.08; mn -= span * 0.08;
+    function X(k) { return pl + k * (W - pl - pr) / (vals.length - 1); }
+    function Y(v) { return pt + (mx - v) / (mx - mn) * (H - pt - pb); }
+    var h = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
+    for (var g = 0; g <= 2; g++) { var gv = mn + (mx - mn) * g / 2, gy = Y(gv); h += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + gy.toFixed(1) + '" y2="' + gy.toFixed(1) + '" stroke="#23498f"/><text x="4" y="' + (gy + 4).toFixed(1) + '">' + esc(opt.fmt ? opt.fmt(gv) : f1(gv)) + '</text>'; }
+    // gleitender Schnitt (Trend)
+    var tr = [], k, n = Math.max(3, Math.round(vals.length / 5));
+    for (k = 0; k < vals.length; k++) { var s = 0, c = 0; for (var j = Math.max(0, k - n + 1); j <= k; j++) { s += vals[j]; c++; } tr.push(s / c); }
+    h += '<polyline points="' + vals.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ') + '" fill="none" stroke="#8cc4ff" stroke-width="2.5" opacity=".75"/>';
+    h += '<polyline points="' + tr.map(function (v, i) { return X(i).toFixed(1) + ',' + Y(v).toFixed(1); }).join(' ') + '" fill="none" stroke="#ffd34d" stroke-width="4"/>';
+    for (k = 0; k < vals.length; k++) h += '<circle cx="' + X(k).toFixed(1) + '" cy="' + Y(vals[k]).toFixed(1) + '" r="4.5" fill="#fff"><title>' + esc(labels[k] + ': ' + (opt.fmt ? opt.fmt(vals[k]) : f1(vals[k]))) + '</title></circle>';
+    h += '<text x="' + pl + '" y="' + (H - 6) + '">' + esc(labels[0]) + '</text><text x="' + (W - pr) + '" y="' + (H - 6) + '" text-anchor="end">' + esc(labels[labels.length - 1]) + '</text>';
+    return h + '</svg><p class="note">Weiß: einzelne Werte · <span class="gold">Gelb: Trend (gleitender Schnitt)</span></p>';
+  }
+  function bars(vals, labels) {
+    var W = 1000, H = 170, pb = 24, mx = Math.max.apply(null, vals.concat([1])), bw = (W - 20) / vals.length, h = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto">';
+    for (var i = 0; i < vals.length; i++) {
+      var bh = vals[i] / mx * (H - pb - 22), x = 10 + i * bw;
+      h += '<rect x="' + (x + 6).toFixed(1) + '" y="' + (H - pb - bh).toFixed(1) + '" width="' + (bw - 12).toFixed(1) + '" height="' + bh.toFixed(1) + '" rx="4" fill="' + (vals[i] ? '#8cc4ff' : '#23498f') + '"/>';
+      if (vals[i]) h += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - pb - bh - 5).toFixed(1) + '" text-anchor="middle" style="fill:#fff;font-weight:bold">' + vals[i] + '</text>';
+      h += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle">' + esc(labels[i]) + '</text>';
+    }
+    return h + '</svg>';
+  }
+
+  function profileHTML() {
+    var h = '<button class="back" data-back="1">← Alle Spieler</button><h2>' + esc(player) + '</h2>';
+    var ys = {}; ys[new Date().getFullYear()] = 1;
+    matches.forEach(function (m) { ys[new Date(m.date).getFullYear()] = 1; }); results.forEach(function (r) { ys[new Date(r.date).getFullYear()] = 1; });
+    h += '<div class="bar"><div class="seg">';
+    Object.keys(ys).sort().reverse().forEach(function (y) { h += '<button data-year="' + y + '"' + (+y === year ? ' class="on"' : '') + '>' + y + '</button>'; });
+    h += '<button data-year="0"' + (year === 0 ? ' class="on"' : '') + '>Alle Jahre</button></div></div>';
+    function inYear(d) { return !year || new Date(d).getFullYear() === year; }
+
+    // Trainingsbeteiligung
+    var att = M.attendance(matches, results, year || 0), me = null, rank = 0;
+    for (var i = 0; i < att.length; i++) if (same(att[i].name, player)) { me = att[i]; rank = i + 1; }
+    // X01
+    var ms = matches.filter(function (m) { return inYear(m.date) && !m.doubles && m.players && m.players.length === 2 && (same(m.players[0].name, player) || same(m.players[1].name, player)); })
+      .sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    var S = { games: 0, wins: 0, sum: 0, darts: 0, c180: 0, c140: 0, c100: 0, hf: 0, bl: 0, f9s: 0, f9n: 0, best: 0 }, per = [], lab = [];
+    ms.forEach(function (m) {
+      var i0 = same(m.players[0].name, player) ? 0 : 1, p = m.players[i0], d = p.darts || p.visits * 3;
+      S.games++; if (m.winner === i0) S.wins++;
+      S.sum += p.sum; S.darts += d; S.c180 += p.c180; S.c140 += p.c140; S.c100 += p.c100; S.f9s += p.f9s || 0; S.f9n += p.f9n || 0;
+      if (p.hf > S.hf) S.hf = p.hf; if (p.bl && (!S.bl || p.bl < S.bl)) S.bl = p.bl;
+      var av = d ? p.sum / d * 3 : 0; if (av > S.best) S.best = av;
+      per.push(av); lab.push(dstr(m.date));
+    });
+    var tr = results.filter(function (r) { return same(r.name, player) && inYear(r.date); });
+    var chW = 0, chT = {};
+    results.forEach(function (r) { if (r.ch && same(r.name, player)) chT[r.ch] = 1; });
+    for (var ck in chT) { var t = M.challengeTable(results, ck).list; if (t[0] && same(t[0].name, player)) chW++; }
+
+    h += '<div class="tiles">' +
+      tile('Trainingstage', me ? me.n : 0, me ? 'Platz ' + rank + ' im Verein · zuletzt ' + dstr(me.last) : 'noch keine') +
+      tile('X01-Spiele', S.games, S.games ? S.wins + ' Siege · ' + Math.round(S.wins / S.games * 100) + ' %' : '') +
+      tile('Ø 3 Darts', f1(S.darts ? S.sum / S.darts * 3 : null), S.best ? 'bestes Spiel ' + f1(S.best) : '') +
+      tile('First 9', f1(S.f9n ? S.f9s / S.f9n : null), S.f9n ? 'Ø der ersten 9 Darts' : 'ab den neuen Spielen') +
+      tile('180er', S.c180, '140+: ' + S.c140 + ' · 100+: ' + S.c100) +
+      tile('High Finish', S.hf || '–', S.bl ? 'bestes Leg ' + S.bl + ' Darts' : '') +
+      tile('Trainings', tr.length, 'gespielte Trainingsspiele') +
+      tile('Wochen-Challenge', Object.keys(chT).length, chW ? '🏆 ' + chW + '× Wochensieger' : 'Teilnahmen') + '</div>';
+
+    h += '<h3>Average-Verlauf (X01)</h3><div class="card">' + (per.length ? lineChart(per, lab) : '<p class="note">Noch keine X01-Spiele in dieser Auswahl.</p>') + '</div>';
+
+    // Training je Spiel/Variante
+    var G = {}, order = [];
+    tr.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (r) {
+      var key = r.game + '|' + (r.variant || '');
+      if (!G[key]) { G[key] = { game: r.game, variant: r.variant || '', list: [] }; order.push(key); }
+      G[key].list.push(r);
+    });
+    order.sort(function (a, b) { return G[b].list.length - G[a].list.length; });
+    h += '<h3>Training</h3>';
+    if (!order.length) h += '<div class="card"><p class="note">Noch keine Trainingsergebnisse in dieser Auswahl.</p></div>';
+    else {
+      h += '<div class="card"><table><tr><th class="l">Spiel</th><th>Anzahl</th><th>Bestwert</th><th>Schnitt</th><th>Letztes</th><th>Trend</th></tr>';
+      for (var o = 0; o < order.length; o++) {
+        var g = G[order[o]], L = g.list, best = L[0].score, sum = 0;
+        L.forEach(function (r) { sum += r.score; if (M.better(g.game, r.score, best)) best = r.score; });
+        var avg = sum / L.length, lastv = L[L.length - 1].score, trend = '';
+        if (L.length >= 4) {
+          var hlf = Math.floor(L.length / 2), a1 = 0, a2 = 0;
+          for (var x = 0; x < hlf; x++) a1 += L[x].score; for (x = L.length - hlf; x < L.length; x++) a2 += L[x].score;
+          a1 /= hlf; a2 /= hlf;
+          var up = M.mode(g.game) === 'min' ? a2 < a1 : a2 > a1;
+          trend = Math.abs(a2 - a1) < 0.0001 ? '→' : '<span class="' + (up ? 'up">▲ besser' : 'down">▼ schwächer') + '</span>';
+        } else trend = '<span class="note">ab 4×</span>';
+        h += '<tr class="pl" data-g="' + esc(order[o]) + '"><td class="l b">' + esc(M.name(g.game)) + (g.variant ? ' <span class="note">· ' + esc(g.variant) + '</span>' : '') + '</td><td>' + L.length + '</td><td class="b gold">' + esc(M.fmt(g.game, best)) + '</td><td>' + esc(M.fmt(g.game, Math.round(avg * 10) / 10)) + '</td><td>' + esc(M.fmt(g.game, lastv)) + '</td><td>' + trend + '</td></tr>';
+        if (open === order[o]) h += '<tr><td colspan="6" class="l">' + lineChart(L.map(function (r) { return r.score; }), L.map(function (r) { return dstr(r.date); }), { h: 170, fmt: function (v) { return M.fmt(g.game, Math.round(v * 10) / 10); } }) + '</td></tr>';
+      }
+      h += '</table></div><p class="note">Zeile antippen für den Verlauf. Trend: Vergleich erste Hälfte gegen zweite Hälfte deiner Ergebnisse.</p>';
+    }
+
+    // Beteiligung je Monat
+    h += '<h3>Trainingsbeteiligung' + (year ? ' ' + year : '') + '</h3><div class="card">';
+    if (me && year) h += bars(me.months, ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez']) + '<p class="note">Trainingstage je Monat · ' + me.n + ' Tage insgesamt, Platz ' + rank + ' von ' + att.length + '</p>';
+    else if (me) h += '<p class="note">' + me.n + ' Trainingstage insgesamt · Platz ' + rank + ' von ' + att.length + '</p>';
+    else h += '<p class="note">Noch keine Trainingstage in dieser Auswahl.</p>';
+    h += '</div>';
+    return h;
+  }
+  var open = null;
+
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    while (t && t !== document.body && !(t.hasAttribute && (t.hasAttribute('data-p') || t.hasAttribute('data-back') || t.hasAttribute('data-year') || t.hasAttribute('data-g')))) t = t.parentNode;
+    if (!t || t === document.body) return;
+    if (t.hasAttribute('data-p')) { player = t.getAttribute('data-p'); open = null; window.scrollTo(0, 0); try { history.replaceState(null, '', '?name=' + encodeURIComponent(player)); } catch (x) {} }
+    else if (t.hasAttribute('data-back')) { player = null; try { history.replaceState(null, '', location.pathname); } catch (x) {} }
+    else if (t.hasAttribute('data-year')) { year = +t.getAttribute('data-year'); }
+    else if (t.hasAttribute('data-g')) { var g = t.getAttribute('data-g'); open = open === g ? null : g; }
+    render();
+  }, false);
+  document.addEventListener('input', function (e) { if (e.target.id === 'q') { filter = e.target.value; render(); var q = $('q'); q.focus(); q.setSelectionRange(filter.length, filter.length); } }, false);
+  load(); wait();
+})();
+</script>
+</body>
+</html>

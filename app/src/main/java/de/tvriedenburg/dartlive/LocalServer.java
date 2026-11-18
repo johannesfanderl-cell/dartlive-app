@@ -186,6 +186,9 @@ public class LocalServer {
         PAGES.put("/diag", "diag.html");
         PAGES.put("/icon.svg", "icon.svg");
         PAGES.put("/logo.png", "logo.png");
+        PAGES.put("/dartmeta.js", "dartmeta.js");
+        PAGES.put("/profil", "profil.html");
+        PAGES.put("/challenge-tv", "best.html");
         PAGES.put("/local.js", "local.js");
         PAGES.put("/local-core.js", "local-core.js");
         PAGES.put("/sponsor.js", "sponsor.js");
