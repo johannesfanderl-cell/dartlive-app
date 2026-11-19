@@ -53,6 +53,7 @@ function parseZip(buf) {
 function readArchive(buf) {
   if (buf.length > 2 && buf[0] === 0x1f && buf[1] === 0x8b) return parseTar(zlib.gunzipSync(buf));
   if (buf.length > 4 && buf.readUInt32LE(0) === 0x04034b50) return parseZip(buf);
+  if (buf.length > 262 && buf.slice(257, 262).toString() === 'ustar') return parseTar(buf); // .tar (vom Handy schon entpackt)
   throw new Error('Das ist keine Update-Datei (erwartet: .zip oder .tar.gz von GitHub).');
 }
 

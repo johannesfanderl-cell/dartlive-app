@@ -9,6 +9,10 @@ curl -fsSL https://raw.githubusercontent.com/johannesfanderl-cell/dartlive-app/m
 
 Danach startet Dart Live bei jedem Einschalten von selbst (Port 3000).
 
+**Update ohne Internet im Keller:** zuhause am Handy diese Datei laden:
+https://github.com/johannesfanderl-cell/dartlive-app/archive/refs/heads/main.zip
+– im Verein Startseite → Verwaltung → „Update einspielen …“ und `dartlive-app-main.zip` wählen.
+
 Am Tablet läuft die Punkte-Eingabe, auf dem per HDMI angeschlossenen Monitor nur der Spielstand.
 Die App braucht den Dart-Live-Server (Chromebook) im WLAN „TVR Dart“.
 
