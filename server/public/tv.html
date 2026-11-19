@@ -33,6 +33,19 @@ table.grid td { vertical-align: top; }
 .idle img.ilogo { display: block; height: 4.5em; margin: 0 auto 0.3em; }
 .idle b { display: block; font-size: 2em; letter-spacing: 0.06em; text-transform: uppercase; }
 .idle span { display: block; font-size: 1.2em; color: #b7d3ff; margin-top: 0.3em; }
+.fin { overflow: hidden; background: #071d47; }
+.fin .fi { padding: 0.3em 0.6em; }
+.fin .fh { text-align: center; margin-bottom: 0.3em; }
+.fin .fh small { display: inline-block; vertical-align: middle; margin-right: 0.6em; font-size: 0.9em; letter-spacing: 0.15em; text-transform: uppercase; color: #b7d3ff; }
+.fin .fh b { display: inline-block; vertical-align: middle; font-size: 2em; text-transform: uppercase; color: #fff; line-height: 1.1; margin-right: 0.5em; }
+.fin .fh em { display: inline-block; vertical-align: middle; font-style: normal; font-weight: bold; font-size: 2.4em; color: #ffd34d; line-height: 1.05; }
+.fin table.ft { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 1.15em; }
+.fin table.ft th, .fin table.ft td { padding: 0.08em 0.4em; text-align: center; border-bottom: 0.05em solid #23498f; }
+.fin table.ft th { text-transform: uppercase; font-size: 0.95em; color: #b7d3ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fin table.ft th.w { color: #ffd34d; }
+.fin table.ft td { font-weight: bold; font-size: 1.15em; }
+.fin table.ft td.w { color: #fff; background: rgba(201,162,39,0.15); }
+.fin table.ft td.l { text-align: left; font-weight: normal; color: #b7d3ff; font-size: 1em; width: 30%; }
 .win { display: table; width: 100%; text-align: center; background: #ffffff; color: #071d47; }
 .win div { display: table-cell; vertical-align: middle; padding: 0 0.4em; }
 .win small { display: block; font-size: 1.1em; letter-spacing: 0.1em; text-transform: uppercase; }
@@ -254,7 +267,8 @@ body.single .intro .st { font-size: 1.6em; }
       }
     } else if (b.status === 'done' && b.players) {
       var w = b.players[b.winner], l = b.players[1 - b.winner];
-      if (b.players.length === 2) h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
+      if (single) h += finHTML(n, b);
+      else if (b.players.length === 2) h += '<div class="win"><div><small>Sieger</small><b>' + esc(w.name) + '</b><em>' + w.legs + ' : ' + l.legs + '</em>' +
         '<small>gegen ' + esc(l.name) + '</small></div></div>';
       else {
         var rk = b.players.slice().sort(function (x, y) { return y.legs - x.legs; }), rs = '';
@@ -277,6 +291,30 @@ body.single .intro .st { font-size: 1.6em; }
   /* Monitor an der Scheibe: Rest groß, Kennzahlen, alle Aufnahmen des Legs mit Rest */
   function num1(v) { return v.toFixed(1).replace('.', ','); }
   function legAvg(p) { var s = 0; for (var i = 0; i < p.legv.length; i++) if (!p.legv[i][2]) s += p.legv[i][0]; return p.ld ? num1(s / p.ld * 3) : '–'; }
+  // Spielende: Sieger + Statistik beider (aller) Spieler
+  function finHTML(n, b) {
+    var P = b.players, w = P[b.winner], two = P.length === 2, i;
+    var order = [b.winner]; for (i = 0; i < P.length; i++) if (i !== b.winner) order.push(i);
+    if (!two) order = P.map(function (p, k) { return k; }).sort(function (x, y) { return P[y].legs - P[x].legs; });
+    var h = '<div class="fin" id="fin' + n + '"><div class="fi"><div class="fh"><small>Sieger</small><b>🏆 ' + esc(w.name) + '</b><em>' +
+      (two ? w.legs + ' : ' + P[1 - b.winner].legs : w.legs + ' Legs') + '</em></div><table class="ft"><tr><th></th>';
+    for (i = 0; i < order.length; i++) h += '<th' + (order[i] === b.winner ? ' class="w"' : '') + '>' + esc(P[order[i]].name) + '</th>';
+    h += '</tr>';
+    function row(t, f) {
+      var r = '<tr><td class="l">' + t + '</td>';
+      for (var k = 0; k < order.length; k++) r += '<td' + (order[k] === b.winner ? ' class="w"' : '') + '>' + f(P[order[k]]) + '</td>';
+      return r + '</tr>';
+    }
+    h += row('Legs', function (p) { return p.legs; });
+    h += row('&Oslash; 3 Darts', function (p) { return avg(p); });
+    h += row('First 9', function (p) { return p.f9n ? num1(p.f9s / p.f9n) : '–'; });
+    h += row('100+ / 140+', function (p) { return (p.c100 || 0) + ' / ' + (p.c140 || 0); });
+    h += row('180er', function (p) { return p.c180 || 0; });
+    h += row('High Finish', function (p) { return p.hf || '–'; });
+    h += row('Bestes Leg', function (p) { return p.bl ? p.bl + ' Darts' : '–'; });
+    h += row('Darts gesamt', function (p) { return p.darts || '–'; });
+    return h + '</table></div></div>';
+  }
   function cell(t, v) { return '<td><small>' + t + '</small><b>' + v + '</b></td>'; }
   function monitorHTML(n, b) {
     var P = b.players, np = P.length;
@@ -338,7 +376,7 @@ body.single .intro .st { font-size: 1.6em; }
       for (var k = 0; k < kids.length; k++) {
         var c = kids[k].className;
         if (/^pb/.test(c)) kids[k].style.height = Math.floor(rest / npb) + 'px';
-        else if (/^idle/.test(c) || c === 'win' || c === 'crw' || (/duo/.test(c) && !/duo2/.test(c))) kids[k].style.height = rest + 'px';
+        else if (/^idle/.test(c) || c === 'win' || c === 'crw' || c === 'fin' || (/duo/.test(c) && !/duo2/.test(c))) kids[k].style.height = rest + 'px';
       }
       var cw = el('crw' + list[j]);
       if (cw) {
@@ -347,6 +385,8 @@ body.single .intro .st { font-size: 1.6em; }
         // Tafel so weit verkleinern, dass alle Zahlen sichtbar sind
         while (ctb && ctb.offsetHeight > cav + 1 && cf > 0.35) { cf -= 0.05; ctb.style.fontSize = cf + 'em'; }
       }
+      var fn = el('fin' + list[j]);
+      if (fn) { var fi = fn.firstChild, ff = 1; fi.style.fontSize = ''; while (fi.offsetHeight > fn.offsetHeight + 1 && ff > 0.35) { ff -= 0.05; fi.style.fontSize = ff + 'em'; } }
       var vl = el('vl' + list[j]);
       if (vl) {
         var used = vl.previousSibling ? vl.previousSibling.offsetHeight : 0;
